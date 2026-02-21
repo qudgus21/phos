@@ -1,31 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
+import { useSlider } from "@/hooks/use-slider";
 
 export function BeforeAfter() {
-  const [sliderPos, setSliderPos] = useState(50);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
-
-  const handleMove = useCallback((clientX: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setSliderPos(pct);
-  }, []);
-
-  const handleMouseDown = () => { isDragging.current = true; };
-  const handleMouseUp = () => { isDragging.current = false; };
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging.current) handleMove(e.clientX);
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    handleMove(e.touches[0].clientX);
-  };
+  const { sliderPos, sliderProps } = useSlider();
 
   return (
     <SectionWrapper>
@@ -41,14 +22,8 @@ export function BeforeAfter() {
 
       <motion.div variants={fadeInUp}>
         <div
-          ref={containerRef}
+          {...sliderProps}
           className="relative max-w-2xl mx-auto aspect-[3/4] rounded-2xl overflow-hidden cursor-col-resize select-none border border-border shadow-card-light dark:shadow-card-dark"
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleMouseUp}
         >
           {/* After (full background) */}
           <div className="absolute inset-0 bg-gradient-to-br from-pink-200 via-rose-100 to-pink-300 dark:from-pink-900/40 dark:via-rose-900/30 dark:to-pink-800/40" />

@@ -55,10 +55,10 @@ export function CtaSection() {
         className="text-center"
       >
         <p className="text-sm text-muted-foreground/60 mb-6">
-          refinetool에서 보정된 이미지입니다.
+          Phos AI에서 보정된 이미지입니다.
         </p>
         <p className="text-base text-muted-foreground mb-1">
-          RefineTool은 주변 픽셀을 최신 AI로 분석해
+          Phos AI는 주변 픽셀을 최신 AI로 분석해
         </p>
         <p className="text-xl md:text-2xl font-black mb-8">
           <span className="text-primary">실사처럼 보정</span>

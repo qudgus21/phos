@@ -6,7 +6,6 @@ import { CtaSection } from "@/components/sections/cta-section";
 import { SkinRealism } from "@/components/sections/skin-realism";
 import { Pricing } from "@/components/sections/pricing";
 import { Footer } from "@/components/sections/footer";
-import { DiscordFab } from "@/components/sections/discord-fab";
 
 export default function Home() {
   return (
@@ -19,7 +18,6 @@ export default function Home() {
       <SkinRealism />
       <Pricing />
       <Footer />
-      <DiscordFab />
     </div>
   );
 }

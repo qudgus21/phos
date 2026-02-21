@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
+import { useSlider } from "@/hooks/use-slider";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 const samples = [
   { id: "korean-female", label: "한국인 여성 (기본)" },
@@ -34,28 +35,9 @@ const sampleColors: Record<string, { before: string; after: string }> = {
 
 export function Compare() {
   const [selected, setSelected] = useState("korean-female");
-  const [sliderPos, setSliderPos] = useState(50);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
+  const { sliderPos, setSliderPos, sliderProps } = useSlider();
 
   const colors = sampleColors[selected];
-
-  const handleMove = useCallback((clientX: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    setSliderPos(pct);
-  }, []);
-
-  const handleMouseDown = () => { isDragging.current = true; };
-  const handleMouseUp = () => { isDragging.current = false; };
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging.current) handleMove(e.clientX);
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    handleMove(e.touches[0].clientX);
-  };
 
   return (
     <SectionWrapper className="bg-zinc-100 dark:bg-zinc-950/80">
@@ -100,14 +82,8 @@ export function Compare() {
           className="max-w-xl mx-auto"
         >
           <div
-            ref={containerRef}
+            {...sliderProps}
             className="relative aspect-[2/3] rounded-2xl overflow-hidden cursor-col-resize select-none border border-border"
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleMouseUp}
           >
             {/* After (full background) */}
             <div className={cn("absolute inset-0 bg-gradient-to-br", colors.after)} />

@@ -48,7 +48,7 @@ export function Footer() {
                 <Zap className="w-4 h-4 text-primary" />
               </div>
               <h3 className="text-2xl font-extrabold text-primary font-display">
-                Refine AI
+                Phos AI
               </h3>
             </div>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
