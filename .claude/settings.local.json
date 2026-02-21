@@ -22,7 +22,13 @@
       "Bash(npx next build:*)",
       "WebFetch(domain:refinetool.com)",
       "Bash(npm run build:*)",
-      "Skill(theme-picker)"
+      "Skill(theme-picker)",
+      "WebFetch(domain:api.pexels.com)",
+      "WebFetch(domain:www.pexels.com)",
+      "Bash(lsof:*)",
+      "Bash(npx playwright:*)",
+      "Bash(node -e:*)",
+      "Bash(ls:*)"
     ]
   }
 }

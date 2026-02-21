@@ -22,7 +22,7 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Revoa AI — AI 보정 SaaS",
+  title: "Phos AI — AI 보정 SaaS",
   description:
     "AI 기반 이미지 보정, 편집, 생성 도구. 초단위 디테일, 클릭 한 번으로 전문가 급.",
 };

@@ -29,7 +29,7 @@ export function Navigation() {
           </div>
           <div className="flex flex-col">
             <span className="text-2xl font-extrabold text-foreground leading-tight font-display tracking-tight">
-              Revoa AI
+              Phos AI
             </span>
             <span className="text-[11px] font-semibold text-muted-foreground leading-tight tracking-widest uppercase hidden sm:block">
               Studio quality. Single click.
@@ -64,7 +64,7 @@ export function Navigation() {
         {/* Desktop CTA */}
         <button
           onClick={() => setLoginOpen(true)}
-          className="hidden md:inline-flex items-center px-6 py-2.5 text-[15px] font-bold text-primary-foreground bg-primary rounded-xl hover:brightness-110 transition-all cursor-pointer"
+          className="hidden md:inline-flex items-center px-6 py-2.5 text-[15px] font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-500 rounded-xl hover:brightness-110 transition-all cursor-pointer"
         >
           로그인하기
         </button>
@@ -101,7 +101,7 @@ export function Navigation() {
               ))}
               <div className="mt-3 pt-3 border-t border-border">
                 <button
-                  className="w-full text-center px-5 py-2.5 text-sm font-bold text-primary-foreground bg-primary rounded-xl cursor-pointer"
+                  className="w-full text-center px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-500 rounded-xl cursor-pointer"
                   onClick={() => {
                     setMobileOpen(false);
                     setLoginOpen(true);

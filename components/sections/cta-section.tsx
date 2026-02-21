@@ -66,7 +66,7 @@ export function CtaSection() {
         </p>
         <Link
           href="/upscale"
-          className="inline-flex items-center px-12 py-4 text-lg font-extrabold text-white bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-2xl btn-glow transition-all hover:scale-105 hover:brightness-110"
+          className="inline-flex items-center px-12 py-4 text-lg font-extrabold text-white bg-gradient-to-r from-indigo-600 to-violet-500 rounded-2xl btn-glow transition-all hover:scale-105 hover:brightness-110"
         >
           지금 체험하기
         </Link>

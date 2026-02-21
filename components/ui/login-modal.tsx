@@ -112,7 +112,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   <Sparkles className="w-7 h-7 text-white" />
                 </motion.div>
                 <h2 className="text-2xl font-extrabold text-white font-display tracking-tight">
-                  {mode === "login" ? "Revoa AI 로그인" : "Revoa AI 시작하기"}
+                  {mode === "login" ? "Phos AI 로그인" : "Phos AI 시작하기"}
                 </h2>
                 <p className="text-sm text-indigo-400 mt-1.5 font-medium">
                   {mode === "login"

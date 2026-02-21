@@ -89,7 +89,7 @@ export function SkinRealism() {
               <motion.div variants={fadeInUp}>
                 <Link
                   href="/upscale"
-                  className="inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-xl btn-glow transition-all hover:scale-105 hover:brightness-110"
+                  className="inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-gradient-to-r from-indigo-600 via-violet-500 to-cyan-500 rounded-xl btn-glow transition-all hover:scale-105 hover:brightness-110"
                 >
                   지금 체험하기
                 </Link>

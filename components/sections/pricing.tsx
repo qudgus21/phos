@@ -102,8 +102,8 @@ export function Pricing() {
               className={cn(
                 "block w-full text-center py-3 rounded-xl font-bold transition-all",
                 plan.recommended
-                  ? "bg-gradient-to-r from-indigo-600 to-indigo-400 text-white btn-glow hover:scale-[1.02] hover:brightness-110"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  ? "bg-gradient-to-r from-indigo-600 to-violet-500 text-white btn-glow hover:scale-[1.02] hover:brightness-110"
+                  : "bg-gradient-to-r from-indigo-600 to-violet-500 text-white hover:brightness-110"
               )}
             >
               시작하기
