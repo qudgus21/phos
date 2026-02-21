@@ -25,18 +25,18 @@ staged된 파일 목록과 변경 내용을 분석하여 어떤 작업이 이루
 staged된 변경사항을 분석하여 의미있는 커밋 메시지를 작성합니다:
 
 **커밋 메시지 가이드라인:**
-- 첫 줄은 50자 이내로 요약 (동사로 시작: Add, Fix, Update, Refactor 등)
-- 한글 또는 영어 사용 가능
+- **반드시 한글로 작성한다**
+- 첫 줄은 50자 이내로 요약 (동사로 시작: 추가, 수정, 개선, 리팩토링 등)
 - 변경사항의 목적과 이유를 명확히 기술
 - 여러 파일이 변경된 경우 주요 변경사항 나열
 
 **예시:**
 ```
-Add user authentication feature
+사용자 인증 기능 추가
 
-- Implement login/logout functionality
-- Add JWT token validation
-- Create user session management
+- 로그인/로그아웃 기능 구현
+- JWT 토큰 검증 추가
+- 사용자 세션 관리 생성
 ```
 
 ## Step 3: 커밋 생성
