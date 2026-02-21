@@ -1,0 +1,116 @@
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { SectionWrapper } from "@/components/ui/section-wrapper";
+import { Badge } from "@/components/ui/badge";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const plans = [
+  {
+    name: "Basic",
+    price: "$9",
+    recommended: false,
+    features: [
+      "4,000 크레딧",
+      "AI 업스케일링",
+      "피부 보정 (기본)",
+      "고해상도 변환",
+      "실시간 처리",
+    ],
+  },
+  {
+    name: "Deluxe",
+    price: "$19",
+    recommended: true,
+    features: [
+      "8,500 크레딧",
+      "AI 업스케일링",
+      "피부 보정 (기본)",
+      "피부 보정 (메이크업)",
+      "고해상도 변환",
+      "실시간 처리",
+      "무제한 업로드",
+    ],
+  },
+  {
+    name: "Premium",
+    price: "$29",
+    recommended: false,
+    features: [
+      "13,000 크레딧",
+      "AI 업스케일링",
+      "피부 보정 (기본)",
+      "피부 보정 (메이크업)",
+      "고해상도 변환",
+      "실시간 처리",
+      "베타 기능 무료 제공",
+    ],
+  },
+];
+
+export function Pricing() {
+  return (
+    <SectionWrapper id="pricing">
+      <motion.div variants={fadeInUp} className="text-center mb-12">
+        <h2 className="text-3xl md:text-h2 font-black text-foreground font-display">
+          요금제
+        </h2>
+      </motion.div>
+
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+      >
+        {plans.map((plan) => (
+          <motion.div
+            key={plan.name}
+            variants={fadeInUp}
+            whileHover={{ y: -6 }}
+            className={cn(
+              "relative flex flex-col rounded-2xl border p-6 md:p-8 transition-shadow",
+              plan.recommended
+                ? "pricing-highlight bg-card"
+                : "border-border bg-card"
+            )}
+          >
+            {plan.recommended && (
+              <Badge variant="violet" className="absolute -top-3 left-1/2 -translate-x-1/2">
+                추천
+              </Badge>
+            )}
+
+            <h3 className="text-h4 font-bold text-foreground mb-2">{plan.name}</h3>
+            <p className="text-5xl font-black text-primary mb-6">{plan.price}</p>
+
+            <ul className="flex-1 space-y-3 mb-8">
+              {plan.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-muted-foreground">
+                  <Check className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                  <span className="text-sm">{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/pricing"
+              className={cn(
+                "block w-full text-center py-3 rounded-xl font-bold transition-all",
+                plan.recommended
+                  ? "bg-gradient-to-r from-violet-600 to-blue-500 text-white btn-glow hover:scale-[1.02]"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              )}
+            >
+              시작하기
+            </Link>
+          </motion.div>
+        ))}
+      </motion.div>
+    </SectionWrapper>
+  );
+}

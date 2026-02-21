@@ -2,22 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
+  /* ── Light Mode (default) ── */
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #09090b;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #8b5cf6;
+    --secondary-foreground: #ffffff;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    --accent: #8b5cf6;
+    --accent-foreground: #ffffff;
+    --card: #f8fafc;
+    --card-foreground: #09090b;
+    --border: #e4e4e7;
+  }
+
+  /* ── Dark Mode ── */
+  .dark {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #8b5cf6;
+    --secondary-foreground: #ffffff;
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+    --accent: #8b5cf6;
+    --accent-foreground: #ffffff;
+    --card: #111116;
+    --card-foreground: #fafafa;
+    --border: rgba(255, 255, 255, 0.06);
+  }
+
+  body {
+    color: var(--foreground);
+    background: var(--background);
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Glassmorphism navbar */
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .dark .glass-nav {
+    background: rgba(9, 9, 11, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Hero gradient overlay */
+  .hero-gradient {
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(139, 92, 246, 0.12) 0%,
+      transparent 60%
+    );
+  }
+  .dark .hero-gradient {
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(139, 92, 246, 0.15) 0%,
+      transparent 60%
+    );
+  }
+
+  /* Glow button */
+  .btn-glow {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
+    transition: box-shadow 0.3s ease;
+  }
+  .btn-glow:hover {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.4),
+      0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Before/After slider line */
+  .slider-line {
+    background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+  }
+
+  /* Pricing card highlight border */
+  .pricing-highlight {
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.1);
+  }
 }
 
 @layer utilities {
