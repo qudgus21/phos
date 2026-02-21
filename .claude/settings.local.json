@@ -17,7 +17,12 @@
       "Bash(yarn add:*)",
       "Bash(curl:*)",
       "Bash(yarn build:*)",
-      "Bash(yarn remove:*)"
+      "Bash(yarn remove:*)",
+      "Bash(find:*)",
+      "Bash(npx next build:*)",
+      "WebFetch(domain:refinetool.com)",
+      "Bash(npm run build:*)",
+      "Skill(theme-picker)"
     ]
   }
 }

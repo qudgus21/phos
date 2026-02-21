@@ -22,8 +22,9 @@ const variantStyles: Record<ButtonVariant, string> = {
     "bg-transparent hover:bg-muted text-foreground",
   outline:
     "border border-border bg-transparent hover:bg-muted text-foreground",
+  // Brand glow button
   glow:
-    "bg-gradient-to-r from-violet-600 to-blue-500 text-white btn-glow",
+    "bg-gradient-to-r from-indigo-600 to-indigo-400 text-white btn-glow hover:brightness-110",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

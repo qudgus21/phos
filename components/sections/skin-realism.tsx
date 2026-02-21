@@ -15,13 +15,13 @@ export function SkinRealism() {
   return (
     <section className="py-20 md:py-28 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* Dark container card with violet glow border */}
+        {/* Dark container card with glow border */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="rounded-3xl border border-violet-500/20 bg-zinc-100 dark:bg-zinc-950 p-6 md:p-12 shadow-[0_0_60px_rgba(139,92,246,0.08)] dark:shadow-[0_0_60px_rgba(139,92,246,0.12)]"
+          className="rounded-3xl border border-indigo-500/20 bg-zinc-100 dark:bg-zinc-950 p-6 md:p-12 shadow-[0_0_60px_rgba(99,102,241,0.08)] dark:shadow-[0_0_60px_rgba(99,102,241,0.12)]"
         >
           <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
             {/* Left: Image */}
@@ -44,7 +44,7 @@ export function SkinRealism() {
             >
               {/* Badge */}
               <motion.div variants={fadeInUp} className="mb-5">
-                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-violet-500/10 text-violet-500 dark:bg-violet-500/15 dark:text-violet-400 border border-violet-500/20">
+                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-indigo-500/10 text-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-300 border border-indigo-500/20">
                   <span>✨</span>
                   ULTRA SKIN ENHANCEMENT
                 </span>
@@ -89,7 +89,7 @@ export function SkinRealism() {
               <motion.div variants={fadeInUp}>
                 <Link
                   href="/upscale"
-                  className="inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-gradient-to-r from-violet-600 to-blue-500 rounded-xl btn-glow transition-all hover:scale-105"
+                  className="inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-xl btn-glow transition-all hover:scale-105 hover:brightness-110"
                 >
                   지금 체험하기
                 </Link>

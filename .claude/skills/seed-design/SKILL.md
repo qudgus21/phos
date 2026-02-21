@@ -4,7 +4,6 @@ description: Analyze a service URL or screenshot and clone the full UI - design 
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, Task
 user-invocable: true
-argument: "<URL or screenshot path> [options]"
 ---
 
 # Seed Design — Full UI Clone Skill

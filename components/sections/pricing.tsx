@@ -80,7 +80,7 @@ export function Pricing() {
             )}
           >
             {plan.recommended && (
-              <Badge variant="violet" className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <Badge variant="primary" className="absolute -top-3 left-1/2 -translate-x-1/2">
                 추천
               </Badge>
             )}
@@ -102,7 +102,7 @@ export function Pricing() {
               className={cn(
                 "block w-full text-center py-3 rounded-xl font-bold transition-all",
                 plan.recommended
-                  ? "bg-gradient-to-r from-violet-600 to-blue-500 text-white btn-glow hover:scale-[1.02]"
+                  ? "bg-gradient-to-r from-indigo-600 to-indigo-400 text-white btn-glow hover:scale-[1.02] hover:brightness-110"
                   : "bg-primary text-primary-foreground hover:bg-primary/90"
               )}
             >

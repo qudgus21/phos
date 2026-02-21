@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>revoa — 디자인 시스템 선택</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Pretendard Variable', 'Inter', sans-serif;
+    background: #06080C;
+    color: #e4e4e7;
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 56px; }
+  .header h1 { font-size: 32px; font-weight: 900; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .header .meta {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px;
+  }
+  .header .meta span {
+    font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px;
+    background: rgba(255,255,255,0.06); color: #a1a1aa;
+  }
+  .header .desc { color: #71717a; font-size: 14px; line-height: 1.6; }
+
+  /* Grid */
+  .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    max-width: 1200px; margin: 0 auto;
+  }
+  @media (max-width: 1024px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+  /* Card */
+  .card {
+    border-radius: 20px; overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.06);
+    transition: transform 0.25s ease, box-shadow 0.3s ease, border-color 0.2s;
+    cursor: pointer; position: relative;
+  }
+  .card:hover { transform: translateY(-4px); }
+  .card.active {
+    border-color: rgba(255,255,255,0.85);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
+  }
+
+  .card-head { padding: 20px 20px 12px; display: flex; justify-content: space-between; align-items: center; }
+  .card-head h2 { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .card-head .tag {
+    font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+    text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+  }
+  .current-label {
+    font-size: 9px; font-weight: 700; background: rgba(245,158,11,0.15);
+    color: #f59e0b; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(245,158,11,0.2);
+  }
+  .mood-tag { padding: 0 20px 14px; font-size: 12px; color: #71717a; font-weight: 500; }
+
+  .swatches { display: flex; gap: 6px; padding: 0 20px 16px; }
+  .swatch {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 3px; font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .divider { height: 1px; background: rgba(255,255,255,0.04); margin: 0 20px 16px; }
+
+  /* Mini preview */
+  .preview { padding: 0 20px 20px; }
+  .preview-box {
+    border-radius: 14px; padding: 20px; position: relative; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .preview-glow {
+    position: absolute; top: -30%; right: -15%; width: 55%; height: 80%;
+    border-radius: 50%; filter: blur(50px); opacity: 0.13; pointer-events: none;
+  }
+  .preview-glass {
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,0.03); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px;
+  }
+  .preview-badge {
+    display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px;
+    border-radius: 99px; margin-bottom: 10px; letter-spacing: 0.3px;
+  }
+  .preview-title {
+    font-size: 18px; font-weight: 900; margin-bottom: 5px;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .preview-desc { font-size: 12px; color: #94a3b8; margin-bottom: 14px; line-height: 1.5; }
+  .preview-btn {
+    display: inline-block; padding: 8px 22px; border-radius: 10px;
+    font-weight: 800; font-size: 13px; color: #fff; border: none;
+  }
+  .preview-feature {
+    margin-top: 12px; padding: 8px 12px; border-radius: 8px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: #94a3b8; font-weight: 500;
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+  }
+  .preview-feature .dot {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  /* ── Per-option styles ── */
+
+  /* 1. Emerald Tide (현재) */
+  .opt1 { background: #0A0F1A; }
+  .opt1:hover { box-shadow: 0 8px 40px rgba(16,185,129,0.12); }
+  .opt1 .tag { background: rgba(16,185,129,0.12); color: #10B981; }
+  .opt1 .preview-box { background: #111827; }
+  .opt1 .preview-glow { background: #10B981; }
+  .opt1 .preview-badge { background: rgba(16,185,129,0.12); color: #10B981; }
+  .opt1 .preview-title { background: linear-gradient(135deg, #10B981, #06B6D4); }
+  .opt1 .preview-btn { background: linear-gradient(135deg, #10B981, #06B6D4); box-shadow: 0 0 18px rgba(16,185,129,0.3); }
+  .opt1 .preview-feature .dot { background: #10B981; }
+
+  /* 2. Violet Luxe */
+  .opt2 { background: #0C0A14; }
+  .opt2:hover { box-shadow: 0 8px 40px rgba(139,92,246,0.12); }
+  .opt2 .tag { background: rgba(139,92,246,0.12); color: #8B5CF6; }
+  .opt2 .preview-box { background: #13111C; }
+  .opt2 .preview-glow { background: #8B5CF6; }
+  .opt2 .preview-badge { background: rgba(139,92,246,0.12); color: #8B5CF6; }
+  .opt2 .preview-title { background: linear-gradient(135deg, #8B5CF6, #EC4899); }
+  .opt2 .preview-btn { background: linear-gradient(135deg, #8B5CF6, #EC4899); box-shadow: 0 0 18px rgba(139,92,246,0.3); }
+  .opt2 .preview-feature .dot { background: #8B5CF6; }
+
+  /* 3. Rose Quartz */
+  .opt3 { background: #0E0A0C; }
+  .opt3:hover { box-shadow: 0 8px 40px rgba(244,63,94,0.12); }
+  .opt3 .tag { background: rgba(244,63,94,0.12); color: #F43F5E; }
+  .opt3 .preview-box { background: #1A1215; }
+  .opt3 .preview-glow { background: #F43F5E; }
+  .opt3 .preview-badge { background: rgba(244,63,94,0.12); color: #F43F5E; }
+  .opt3 .preview-title { background: linear-gradient(135deg, #F43F5E, #FB923C); }
+  .opt3 .preview-btn { background: linear-gradient(135deg, #F43F5E, #FB923C); box-shadow: 0 0 18px rgba(244,63,94,0.3); }
+  .opt3 .preview-feature .dot { background: #F43F5E; }
+
+  /* 4. Electric Indigo */
+  .opt4 { background: #090A14; }
+  .opt4:hover { box-shadow: 0 8px 40px rgba(99,102,241,0.12); }
+  .opt4 .tag { background: rgba(99,102,241,0.12); color: #6366F1; }
+  .opt4 .preview-box { background: #10112A; }
+  .opt4 .preview-glow { background: #6366F1; }
+  .opt4 .preview-badge { background: rgba(99,102,241,0.12); color: #6366F1; }
+  .opt4 .preview-title { background: linear-gradient(135deg, #6366F1, #06B6D4); }
+  .opt4 .preview-btn { background: linear-gradient(135deg, #6366F1, #06B6D4); box-shadow: 0 0 18px rgba(99,102,241,0.3); }
+  .opt4 .preview-feature .dot { background: #6366F1; }
+
+  /* 5. Golden Hour */
+  .opt5 { background: #0F0D08; }
+  .opt5:hover { box-shadow: 0 8px 40px rgba(245,158,11,0.12); }
+  .opt5 .tag { background: rgba(245,158,11,0.12); color: #F59E0B; }
+  .opt5 .preview-box { background: #1A1610; }
+  .opt5 .preview-glow { background: #F59E0B; }
+  .opt5 .preview-badge { background: rgba(245,158,11,0.12); color: #F59E0B; }
+  .opt5 .preview-title { background: linear-gradient(135deg, #F59E0B, #EF4444); }
+  .opt5 .preview-btn { background: linear-gradient(135deg, #F59E0B, #EF4444); box-shadow: 0 0 18px rgba(245,158,11,0.3); }
+  .opt5 .preview-feature .dot { background: #F59E0B; }
+
+  /* 6. Arctic Blue */
+  .opt6 { background: #080C10; }
+  .opt6:hover { box-shadow: 0 8px 40px rgba(14,165,233,0.12); }
+  .opt6 .tag { background: rgba(14,165,233,0.12); color: #0EA5E9; }
+  .opt6 .preview-box { background: #0F1720; }
+  .opt6 .preview-glow { background: #0EA5E9; }
+  .opt6 .preview-badge { background: rgba(14,165,233,0.12); color: #0EA5E9; }
+  .opt6 .preview-title { background: linear-gradient(135deg, #0EA5E9, #22D3EE); }
+  .opt6 .preview-btn { background: linear-gradient(135deg, #0EA5E9, #22D3EE); box-shadow: 0 0 18px rgba(14,165,233,0.3); }
+  .opt6 .preview-feature .dot { background: #0EA5E9; }
+
+  /* 7. Neon Mint */
+  .opt7 { background: #060E0C; }
+  .opt7:hover { box-shadow: 0 8px 40px rgba(52,211,153,0.12); }
+  .opt7 .tag { background: rgba(52,211,153,0.12); color: #34D399; }
+  .opt7 .preview-box { background: #0D1916; }
+  .opt7 .preview-glow { background: #34D399; }
+  .opt7 .preview-badge { background: rgba(52,211,153,0.12); color: #34D399; }
+  .opt7 .preview-title { background: linear-gradient(135deg, #34D399, #A78BFA); }
+  .opt7 .preview-btn { background: linear-gradient(135deg, #34D399, #A78BFA); box-shadow: 0 0 18px rgba(52,211,153,0.3); }
+  .opt7 .preview-feature .dot { background: #34D399; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>revoa — 디자인 시스템 선택</h1>
+  <div class="meta">
+    <span>AI 이미지 보정 SaaS</span>
+    <span>타겟: 크리에이터 · 사진작가 · 쇼핑몰 셀러</span>
+    <span>무드: Professional · AI/Tech · Trust</span>
+  </div>
+  <p class="desc">카드를 클릭해서 비교해보세요. 원하는 번호나 이름을 알려주시면 바로 적용합니다.</p>
+</div>
+
+<div class="grid">
+
+  <!-- 1. Emerald Tide (현재 적용) -->
+  <div class="card opt1" onclick="select(this)">
+    <div class="card-head">
+      <h2>1. Emerald Tide <span class="current-label">현재 적용</span></h2>
+      <span class="tag">Tech</span>
+    </div>
+    <div class="mood-tag">Tech · Fresh · Trust</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#10B981">Pri</div>
+      <div class="swatch" style="background:#06B6D4">Sec</div>
+      <div class="swatch" style="background:#0A0F1A">BG</div>
+      <div class="swatch" style="background:#111827">Card</div>
+      <div class="swatch" style="background:#1F2937">Mut</div>
+    </div>
+    <div class="divider"></div>
+    <div class="preview">
+      <div class="preview-box">
+        <div class="preview-glow"></div>
+        <div class="preview-glass">
+          <span class="preview-badge">✨ AI ENHANCEMENT</span>
+          <div class="preview-title">차원이 다른 피부 리얼리즘</div>
+          <p class="preview-desc">흐릿한 디테일, 클릭 한 번으로 선명하게.</p>
+          <span class="preview-btn">시작하기</span>
+          <div class="preview-feature">
+            <div class="dot"></div>
+            <span>정체성 보존 · 실제 질감 · 3D 음영</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Violet Luxe -->
+  <div class="card opt2" onclick="select(this)">
+    <div class="card-head">
+      <h2>2. Violet Luxe</h2>
+      <span class="tag">Creative</span>
+    </div>
+    <div class="mood-tag">Creative · Premium · Refined</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#8B5CF6">Pri</div>
+      <div class="swatch" style="background:#EC4899">Sec</div>
+      <div class="swatch" style="background:#0C0A14">BG</div>
+      <div class="swatch" style="background:#13111C">Card</div>
+      <div class="swatch" style="background:#1E1B2E">Mut</div>
+    </div>
+    <div class="divider"></div>
+    <div class="preview">
+      <div class="preview-box">
+        <div class="preview-glow"></div>
+        <div class="preview-glass">
+          <span class="preview-badge">✨ AI ENHANCEMENT</span>
+          <div class="preview-title">차원이 다른 피부 리얼리즘</div>
+          <p class="preview-desc">흐릿한 디테일, 클릭 한 번으로 선명하게.</p>
+          <span class="preview-btn">시작하기</span>
+          <div class="preview-feature">
+            <div class="dot"></div>
+            <span>정체성 보존 · 실제 질감 · 3D 음영</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Rose Quartz -->
+  <div class="card opt3" onclick="select(this)">
+    <div class="card-head">
+      <h2>3. Rose Quartz</h2>
+      <span class="tag">Beauty</span>
+    </div>
+    <div class="mood-tag">Beauty · Soft · Approachable</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#F43F5E">Pri</div>
+      <div class="swatch" style="background:#FB923C">Sec</div>
+      <div class="swatch" style="background:#0E0A0C">BG</div>
+      <div class="swatch" style="background:#1A1215">Card</div>
+      <div class="swatch" style="background:#2A1D22">Mut</div>
+    </div>
+    <div class="divider"></div>
+    <div class="preview">
+      <div class="preview-box">
+        <div class="preview-glow"></div>
+        <div class="preview-glass">
+          <span class="preview-badge">✨ AI ENHANCEMENT</span>
+          <div class="preview-title">차원이 다른 피부 리얼리즘</div>
+          <p class="preview-desc">흐릿한 디테일, 클릭 한 번으로 선명하게.</p>
+          <span class="preview-btn">시작하기</span>
+          <div class="preview-feature">
+            <div class="dot"></div>
+            <span>정체성 보존 · 실제 질감 · 3D 음영</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Electric Indigo -->
+  <div class="card opt4" onclick="select(this)">
+    <div class="card-head">
+      <h2>4. Electric Indigo</h2>
+      <span class="tag">Trust</span>
+    </div>
+    <div class="mood-tag">Tech · Trust · Bold</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#6366F1">Pri</div>
+      <div class="swatch" style="background:#06B6D4">Sec</div>
+      <div class="swatch" style="background:#090A14">BG</div>
+      <div class="swatch" style="background:#10112A">Card</div>
+      <div class="swatch" style="background:#1A1B38">Mut</div>
+    </div>
+    <div class="divider"></div>
+    <div class="preview">
+      <div class="preview-box">
+        <div class="preview-glow"></div>
+        <div class="preview-glass">
+          <span class="preview-badge">✨ AI ENHANCEMENT</span>
+          <div class="preview-title">차원이 다른 피부 리얼리즘</div>
+          <p class="preview-desc">흐릿한 디테일, 클릭 한 번으로 선명하게.</p>
+          <span class="preview-btn">시작하기</span>
+          <div class="preview-feature">
+            <div class="dot"></div>
+            <span>정체성 보존 · 실제 질감 · 3D 음영</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Golden Hour -->
+  <div class="card opt5" onclick="select(this)">
+    <div class="card-head">
+      <h2>5. Golden Hour</h2>
+      <span class="tag">Warm</span>
+    </div>
+    <div class="mood-tag">Warm · Professional · Photography</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#F59E0B">Pri</div>
+      <div class="swatch" style="background:#EF4444">Sec</div>
+      <div class="swatch" style="background:#0F0D08">BG</div>
+      <div class="swatch" style="background:#1A1610">Card</div>
+      <div class="swatch" style="background:#292316">Mut</div>
+    </div>
+    <div class="divider"></div>
+    <div class="preview">
+      <div class="preview-box">
+        <div class="preview-glow"></div>
+        <div class="preview-glass">
+          <span class="preview-badge">✨ AI ENHANCEMENT</span>
+          <div class="preview-title">차원이 다른 피부 리얼리즘</div>
+          <p class="preview-desc">흐릿한 디테일, 클릭 한 번으로 선명하게.</p>
+          <span class="preview-btn">시작하기</span>
+          <div class="preview-feature">
+            <div class="dot"></div>
+            <span>정체성 보존 · 실제 질감 · 3D 음영</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Arctic Blue -->
+  <div class="card opt6" onclick="select(this)">
+    <div class="card-head">
+      <h2>6. Arctic Blue</h2>
+      <span class="tag">Clean</span>
+    </div>
+    <div class="mood-tag">Clean · Minimal · Modern</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#0EA5E9">Pri</div>
+      <div class="swatch" style="background:#22D3EE">Sec</div>
+      <div class="swatch" style="background:#080C10">BG</div>
+      <div class="swatch" style="background:#0F1720">Card</div>
+      <div class="swatch" style="background:#172030">Mut</div>
+    </div>
+    <div class="divider"></div>
+    <div class="preview">
+      <div class="preview-box">
+        <div class="preview-glow"></div>
+        <div class="preview-glass">
+          <span class="preview-badge">✨ AI ENHANCEMENT</span>
+          <div class="preview-title">차원이 다른 피부 리얼리즘</div>
+          <p class="preview-desc">흐릿한 디테일, 클릭 한 번으로 선명하게.</p>
+          <span class="preview-btn">시작하기</span>
+          <div class="preview-feature">
+            <div class="dot"></div>
+            <span>정체성 보존 · 실제 질감 · 3D 음영</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Neon Mint -->
+  <div class="card opt7" onclick="select(this)">
+    <div class="card-head">
+      <h2>7. Neon Mint</h2>
+      <span class="tag">Future</span>
+    </div>
+    <div class="mood-tag">Fresh · Futuristic · Energy</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#34D399">Pri</div>
+      <div class="swatch" style="background:#A78BFA">Sec</div>
+      <div class="swatch" style="background:#060E0C">BG</div>
+      <div class="swatch" style="background:#0D1916">Card</div>
+      <div class="swatch" style="background:#162922">Mut</div>
+    </div>
+    <div class="divider"></div>
+    <div class="preview">
+      <div class="preview-box">
+        <div class="preview-glow"></div>
+        <div class="preview-glass">
+          <span class="preview-badge">✨ AI ENHANCEMENT</span>
+          <div class="preview-title">차원이 다른 피부 리얼리즘</div>
+          <p class="preview-desc">흐릿한 디테일, 클릭 한 번으로 선명하게.</p>
+          <span class="preview-btn">시작하기</span>
+          <div class="preview-feature">
+            <div class="dot"></div>
+            <span>정체성 보존 · 실제 질감 · 3D 음영</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function select(el) {
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+</script>
+
+</body>
+</html>

@@ -16,8 +16,8 @@ export function Hero() {
         <div className="absolute top-[10%] right-[5%] w-[40%] h-[70%] bg-gradient-to-bl from-[#e8cdb5]/30 via-[#d4b896]/15 to-transparent dark:from-[#e8cdb5]/20 dark:via-[#d4b896]/10 rounded-full blur-md" />
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/40 dark:bg-black/50" />
-        {/* Purple/violet ambient light from top */}
-        <div className="absolute top-0 right-[20%] w-[30%] h-[40%] bg-gradient-to-b from-violet-600/15 to-transparent dark:from-violet-600/20 blur-2xl" />
+        {/* Emerald ambient light from top */}
+        <div className="absolute top-0 right-[20%] w-[30%] h-[40%] bg-gradient-to-b from-indigo-500/15 to-transparent dark:from-indigo-500/20 blur-2xl" />
       </div>
 
       {/* Content */}
@@ -50,7 +50,7 @@ export function Hero() {
         <motion.div variants={fadeInUp}>
           <Link
             href="/upscale"
-            className="inline-flex items-center px-10 py-4 text-xl font-extrabold text-white bg-gradient-to-r from-violet-600 to-blue-500 rounded-2xl btn-glow transition-all hover:scale-105"
+            className="inline-flex items-center px-10 py-4 text-xl font-extrabold text-white bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-2xl btn-glow transition-all hover:scale-105 hover:brightness-110"
           >
             시작하기
           </Link>

@@ -70,13 +70,13 @@ export function BeforeAfter() {
             className="absolute top-0 bottom-0 w-[3px] bg-primary z-10"
             style={{ left: `${sliderPos}%` }}
           >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-transparent border-[3px] border-primary shadow-lg flex items-center justify-center">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-transparent border-[3px] border-primary shadow-lg flex items-center justify-center text-primary">
               <div className="flex gap-1">
                 <svg width="6" height="12" viewBox="0 0 6 12" fill="none">
-                  <path d="M5 1L1 6L5 11" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M5 1L1 6L5 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <svg width="6" height="12" viewBox="0 0 6 12" fill="none">
-                  <path d="M1 1L5 6L1 11" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M1 1L5 6L1 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>

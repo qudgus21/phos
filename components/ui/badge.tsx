@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type BadgeVariant = "default" | "violet" | "blue" | "outline";
+type BadgeVariant = "default" | "primary" | "secondary" | "success" | "error" | "outline";
 
 interface BadgeProps {
   variant?: BadgeVariant;
@@ -10,8 +10,10 @@ interface BadgeProps {
 
 const variantStyles: Record<BadgeVariant, string> = {
   default: "bg-muted text-muted-foreground",
-  violet: "bg-violet-500/10 text-violet-500 dark:bg-violet-500/20 dark:text-violet-400",
-  blue: "bg-blue-500/10 text-blue-500 dark:bg-blue-500/20 dark:text-blue-400",
+  primary: "bg-primary/10 text-primary",
+  secondary: "bg-secondary/10 text-secondary",
+  success: "bg-success/10 text-success",
+  error: "bg-error/10 text-error",
   outline: "border border-border text-muted-foreground",
 };
 
