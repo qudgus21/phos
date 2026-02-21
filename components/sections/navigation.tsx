@@ -3,115 +3,71 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, Zap } from "lucide-react";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { cn } from "@/lib/utils";
+import { Menu, X, Sparkles } from "lucide-react";
+import { LoginModal } from "@/components/ui/login-modal";
 
-const navLinks = [
-  { label: "홈", href: "/" },
-  { label: "AI수업", href: "/ai-class" },
-];
-
-const navLinksRight = [
-  { label: "가격", href: "/pricing" },
-  { label: "로그인하기", href: "/login" },
-];
-
-const aiFeatures = [
-  { label: "보정", href: "/upscale" },
+const navItems = [
   { label: "이미지 편집", href: "/image-edit" },
   { label: "얼굴 변경", href: "/face-edit" },
+  { label: "피부 보정", href: "/upscale" },
   { label: "컨셉 스토어", href: "/studio" },
+  { label: "가격", href: "/pricing" },
 ];
 
 export function Navigation() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [hoveredHref, setHoveredHref] = useState<string | null>(null);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
-      <nav className="glass-nav mx-4 lg:mx-auto mt-3 max-w-6xl rounded-2xl px-5 py-3 flex items-center justify-between gap-4">
-        {/* Logo + Theme toggle */}
-        <div className="flex items-center gap-3 shrink-0">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 dark:bg-primary/20">
-              <Zap className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-extrabold text-foreground leading-tight font-display">
-                Refine AI
-              </span>
-              <span className="text-[9px] font-semibold text-muted-foreground leading-tight tracking-widest uppercase hidden sm:block">
-                BETTER VISUALS, FASTER DECISIONS
-              </span>
-            </div>
-          </Link>
-          <ThemeToggle className="hidden md:flex" />
-        </div>
-
-        {/* Desktop Nav — centered-right */}
-        <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="px-3.5 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
-            >
-              {link.label}
-            </Link>
-          ))}
-
-          {/* AI 기능 Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted cursor-pointer"
-            >
-              <span>AI 기능</span>
-              <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-1.5 py-0.5 rounded-full">
-                4개 기능
-              </span>
-              <ChevronDown
-                className={cn(
-                  "w-3 h-3 text-muted-foreground/60 transition-transform",
-                  dropdownOpen && "rotate-180"
-                )}
-              />
-            </button>
-            <AnimatePresence>
-              {dropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute top-full mt-2 left-0 w-44 rounded-xl border border-border bg-card shadow-elevated p-2"
-                >
-                  {aiFeatures.map((f) => (
-                    <Link
-                      key={f.href}
-                      href={f.href}
-                      className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                    >
-                      {f.label}
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+      <nav className="glass-nav px-6 lg:px-16 xl:px-24 py-4 flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-indigo-400">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
+          <div className="flex flex-col">
+            <span className="text-2xl font-extrabold text-foreground leading-tight font-display tracking-tight">
+              Revoa AI
+            </span>
+            <span className="text-[11px] font-semibold text-muted-foreground leading-tight tracking-widest uppercase hidden sm:block">
+              Studio quality. Single click.
+            </span>
+          </div>
+        </Link>
 
-          {navLinksRight.map((link) => (
+        {/* Desktop Nav — center */}
+        <div
+          className="hidden md:flex items-center gap-2"
+          onMouseLeave={() => setHoveredHref(null)}
+        >
+          {navItems.map((item) => (
             <Link
-              key={link.href}
-              href={link.href}
-              className="px-3.5 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+              key={item.href}
+              href={item.href}
+              className="relative px-4 py-2.5 text-[15px] font-semibold text-slate-300 hover:text-white transition-colors"
+              onMouseEnter={() => setHoveredHref(item.href)}
             >
-              {link.label}
+              {item.label}
+              {hoveredHref === item.href && (
+                <motion.span
+                  layoutId="nav-underline"
+                  className="absolute left-1.5 right-1.5 -bottom-0.5 h-0.5 bg-primary rounded-full"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
             </Link>
           ))}
         </div>
+
+        {/* Desktop CTA */}
+        <button
+          onClick={() => setLoginOpen(true)}
+          className="hidden md:inline-flex items-center px-6 py-2.5 text-[15px] font-bold text-primary-foreground bg-primary rounded-xl hover:brightness-110 transition-all cursor-pointer"
+        >
+          로그인하기
+        </button>
 
         {/* Mobile menu button */}
         <button
@@ -133,36 +89,32 @@ export function Navigation() {
             className="md:hidden mx-4 mt-2 rounded-2xl border border-border bg-card overflow-hidden"
           >
             <div className="p-4 flex flex-col gap-1">
-              {[...navLinks, ...navLinksRight].map((link) => (
+              {navItems.map((item) => (
                 <Link
-                  key={link.href}
-                  href={link.href}
+                  key={item.href}
+                  href={item.href}
                   className="px-3 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
                   onClick={() => setMobileOpen(false)}
                 >
-                  {link.label}
-                </Link>
-              ))}
-              <div className="px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider mt-2">
-                AI 기능
-              </div>
-              {aiFeatures.map((f) => (
-                <Link
-                  key={f.href}
-                  href={f.href}
-                  className="px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted transition-colors"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {f.label}
+                  {item.label}
                 </Link>
               ))}
               <div className="mt-3 pt-3 border-t border-border">
-                <ThemeToggle />
+                <button
+                  className="w-full text-center px-5 py-2.5 text-sm font-bold text-primary-foreground bg-primary rounded-xl cursor-pointer"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setLoginOpen(true);
+                  }}
+                >
+                  로그인하기
+                </button>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
     </header>
   );
 }
