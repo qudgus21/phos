@@ -28,7 +28,15 @@
       "Bash(lsof:*)",
       "Bash(npx playwright:*)",
       "Bash(node -e:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git -C /Applications/hbh/dev/revoa commit -m \"$\\(cat <<''EOF''\n코드 리뷰 스킬 추가 및 리뷰 기반 코드 개선\n\n- code-review 스킬 추가 \\(diff/staged/전체/파일 모드, 자동 수정 지원\\)\n- 브랜드명 불일치 수정 \\(Refine AI/refinetool → Phos AI\\)\n- useSlider 커스텀 훅 추출로 슬라이더 로직 중복 제거\n- LoginModal에 Escape 키 핸들링 및 body scroll lock 추가\n- ToastProvider를 layout.tsx에 연결\n- SkinRealism CTA 그라디언트 통일 \\(3색 → 2색\\)\n- DiscordFab 컴포넌트 제거\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "WebFetch(domain:lawsofux.com)",
+      "WebFetch(domain:baymard.com)",
+      "WebFetch(domain:www.nngroup.com)",
+      "WebFetch(domain:goodui.org)",
+      "WebFetch(domain:uxmyths.com)",
+      "Bash(identify:*)",
+      "Bash(sips -g all:*)"
     ]
   }
 }
