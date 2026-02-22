@@ -113,14 +113,14 @@ export function Compare() {
 
             {/* Labels — center of each half */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 px-4 py-2 rounded bg-black/50 text-white text-sm font-medium z-20"
-              style={{ left: `${sliderPos / 4}%`, transform: `translate(-50%, -50%)`, top: "50%" }}
+              className="absolute top-1/2 -translate-y-1/2 px-4 py-2 rounded bg-black/50 text-white text-sm font-medium z-20 transition-opacity duration-200"
+              style={{ left: `${sliderPos / 4}%`, transform: `translate(-50%, -50%)`, top: "50%", opacity: sliderPos > 15 ? 1 : 0 }}
             >
               Before
             </div>
             <div
-              className="absolute top-1/2 -translate-y-1/2 px-4 py-2 rounded bg-black/50 text-white text-sm font-medium z-20"
-              style={{ right: `${(100 - sliderPos) / 4}%`, transform: `translate(50%, -50%)`, top: "50%" }}
+              className="absolute top-1/2 -translate-y-1/2 px-4 py-2 rounded bg-black/50 text-white text-sm font-medium z-20 transition-opacity duration-200"
+              style={{ right: `${(100 - sliderPos) / 4}%`, transform: `translate(50%, -50%)`, top: "50%", opacity: sliderPos < 85 ? 1 : 0 }}
             >
               After
             </div>

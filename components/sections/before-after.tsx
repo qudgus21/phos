@@ -1,84 +1,192 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { useSlider } from "@/hooks/use-slider";
+import { Badge } from "@/components/ui/badge";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { ArrowRight } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
 export function BeforeAfter() {
-  const { sliderPos, sliderProps } = useSlider();
+  const { sliderPos, setSliderPos, sliderProps } = useSlider(70);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const sweepRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(sweepRef, { once: true, margin: "-100px" });
+
+  useEffect(() => {
+    if (!isInView || hasInteracted) return;
+
+    const keyframes = [
+      { from: 70, to: 20, duration: 800 },
+      { from: 20, to: 70, duration: 800 },
+    ];
+    let currentKeyframe = 0;
+    let animationId: number;
+    let startTime = 0;
+
+    const easeInOutCubic = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const { from, to, duration } = keyframes[currentKeyframe];
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeInOutCubic(progress);
+
+      setSliderPos(from + (to - from) * eased);
+
+      if (progress < 1) {
+        animationId = requestAnimationFrame(animate);
+      } else {
+        currentKeyframe++;
+        if (currentKeyframe < keyframes.length) {
+          startTime = 0;
+          animationId = requestAnimationFrame(animate);
+        }
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      animationId = requestAnimationFrame(animate);
+    }, 600);
+
+    return () => {
+      clearTimeout(timeout);
+      if (animationId) cancelAnimationFrame(animationId);
+    };
+  }, [isInView, hasInteracted, setSliderPos]);
+
+  const handleInteraction = useCallback(() => {
+    setHasInteracted(true);
+  }, []);
 
   return (
-    <SectionWrapper>
-      <motion.div variants={fadeInUp} className="text-center mb-12">
-        <h2 className="text-3xl md:text-h2 font-black text-foreground mb-4 font-display">
-          모든 이미지를 다 쓸 수 있는 이미지로
-        </h2>
-        <p className="text-lg md:text-2xl text-muted-foreground">
-          깨진 픽셀까지 <span className="font-black text-primary">AI 보정</span>으로
-          복원합니다.
-        </p>
-      </motion.div>
+    <SectionWrapper className="py-10 md:py-14">
+      <div ref={sweepRef}>
+        <motion.div variants={fadeInUp} className="text-center mb-12">
+          <h2 className="text-3xl md:text-h2 font-black text-foreground mb-4 font-display">
+            같은 사진, 다른 퀄리티
+          </h2>
+          <p className="text-lg md:text-2xl text-muted-foreground">
+            깨진 픽셀, 뭉개진 디테일까지{" "}
+            <span className="font-black text-primary">AI</span>가 복원합니다.
+          </p>
+        </motion.div>
 
-      <motion.div variants={fadeInUp}>
-        <div
-          {...sliderProps}
-          className="relative max-w-2xl mx-auto aspect-[3/4] rounded-2xl overflow-hidden cursor-col-resize select-none border border-border shadow-card-light dark:shadow-card-dark"
-        >
-          {/* After (full background) */}
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-200 via-rose-100 to-pink-300 dark:from-pink-900/40 dark:via-rose-900/30 dark:to-pink-800/40" />
-
-          {/* Before (clipped) — more muted/grayish to show "before" quality */}
+        <motion.div variants={fadeInUp}>
           <div
-            className="absolute inset-0 bg-gradient-to-br from-stone-300 via-stone-200 to-stone-400 dark:from-stone-700 dark:via-stone-600 dark:to-stone-800"
-            style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+            {...sliderProps}
+            onMouseDown={() => {
+              handleInteraction();
+              sliderProps.onMouseDown();
+            }}
+            onTouchStart={(e) => {
+              handleInteraction();
+              sliderProps.onTouchStart(e);
+            }}
+            className="relative max-w-2xl mx-auto aspect-square rounded-2xl overflow-hidden cursor-col-resize select-none border border-border shadow-card-light dark:shadow-card-dark"
+            style={{ touchAction: "none" }}
           >
-            {/* Noise-like dots to simulate lower quality */}
-            <div className="absolute inset-0 opacity-20 dark:opacity-30" style={{
-              backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
-              backgroundSize: "8px 8px",
-            }} />
-          </div>
+            {/* 업스케일 배율 배지 */}
+            <div className="absolute top-4 right-4 z-30">
+              <Badge
+                variant="primary"
+                className="backdrop-blur-md bg-black/50 border border-white/20 text-white"
+              >
+                4x 업스케일
+              </Badge>
+            </div>
 
-          {/* Slider line — blue like original */}
-          <div
-            className="absolute top-0 bottom-0 w-[3px] bg-primary z-10"
-            style={{ left: `${sliderPos}%` }}
-          >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-transparent border-[3px] border-primary shadow-lg flex items-center justify-center text-primary">
-              <div className="flex gap-1">
-                <svg width="6" height="12" viewBox="0 0 6 12" fill="none">
-                  <path d="M5 1L1 6L5 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <svg width="6" height="12" viewBox="0 0 6 12" fill="none">
-                  <path d="M1 1L5 6L1 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+            {/* After */}
+            <Image
+              src="/images/before-after/after.png"
+              alt="보정 후"
+              fill
+              className="object-cover"
+              draggable={false}
+              sizes="(max-width: 672px) 100vw, 672px"
+              priority
+            />
+
+            {/* Before */}
+            <div
+              className="absolute inset-0"
+              style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+            >
+              <Image
+                src="/images/before-after/before.png"
+                alt="보정 전"
+                fill
+                className="object-cover blur-[1px]"
+                draggable={false}
+                sizes="(max-width: 672px) 100vw, 672px"
+              />
+            </div>
+
+            {/* 디바이더 */}
+            <div
+              className="absolute top-0 bottom-0 w-[3px] bg-primary z-10"
+              style={{ left: `${sliderPos}%` }}
+            >
+              {/* 핸들 */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/20 flex items-center justify-center">
+                <div className="flex gap-1.5 text-white drop-shadow-md">
+                  <svg width="6" height="12" viewBox="0 0 6 12" fill="none">
+                    <path
+                      d="M5 1L1 6L5 11"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <svg width="6" height="12" viewBox="0 0 6 12" fill="none">
+                    <path
+                      d="M1 1L5 6L1 11"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Labels — positioned at left/right center vertically */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 z-20 px-4 py-2 bg-black/50 text-white text-sm"
-            style={{ left: "5%" }}
-          >
-            Before
+            {/* 라벨 */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-white text-xs font-bold transition-opacity duration-200"
+              style={{ left: "3%", opacity: sliderPos > 15 ? 1 : 0 }}
+            >
+              Before
+            </div>
+            <div
+              className="absolute top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-white text-xs font-bold transition-opacity duration-200"
+              style={{ right: "3%", opacity: sliderPos < 85 ? 1 : 0 }}
+            >
+              After
+            </div>
           </div>
-          <div
-            className="absolute top-1/2 -translate-y-1/2 z-20 px-4 py-2 bg-black/50 text-white text-sm"
-            style={{ right: "5%" }}
-          >
-            After
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      <motion.p
-        variants={fadeInUp}
-        className="text-center text-muted-foreground mt-6 text-base md:text-lg font-semibold"
-      >
-        메이크업 예시 결과물
-      </motion.p>
+        {/* 마이크로 CTA */}
+        <motion.div variants={fadeInUp} className="text-center mt-6 space-y-3">
+          <p className="text-muted-foreground text-base md:text-lg font-semibold">
+            보정 전후 비교
+          </p>
+          <Link
+            href="#pricing"
+            className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
+          >
+            무료로 보정해 보기
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </motion.div>
+      </div>
     </SectionWrapper>
   );
 }

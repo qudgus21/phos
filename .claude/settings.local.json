@@ -36,7 +36,8 @@
       "WebFetch(domain:goodui.org)",
       "WebFetch(domain:uxmyths.com)",
       "Bash(identify:*)",
-      "Bash(sips -g all:*)"
+      "Bash(sips -g all:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

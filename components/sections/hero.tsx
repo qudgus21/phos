@@ -62,7 +62,7 @@ function BeforeAfterPreview() {
       >
         {/* After (enhanced) */}
         <Image
-          src="/hero-after.jpg"
+          src="/images/hero/hero-after.jpg"
           alt="AI 보정 후"
           fill
           className="object-cover"
@@ -74,7 +74,7 @@ function BeforeAfterPreview() {
           style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
         >
           <Image
-            src="/hero-before.jpg"
+            src="/images/hero/hero-before.jpg"
             alt="보정 전"
             fill
             className="object-cover"
@@ -83,7 +83,7 @@ function BeforeAfterPreview() {
 
         {/* Slider line */}
         <div
-          className="absolute top-0 bottom-0 w-[2px] bg-white z-10"
+          className="absolute top-0 bottom-0 w-[3px] bg-primary z-10"
           style={{ left: `${sliderPos}%` }}
         >
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
@@ -111,10 +111,16 @@ function BeforeAfterPreview() {
         </div>
 
         {/* Labels */}
-        <span className="absolute bottom-2 left-2 text-[10px] font-medium text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
+        <span
+          className="absolute bottom-2 left-2 text-[10px] font-medium text-white/70 bg-black/40 px-1.5 py-0.5 rounded transition-opacity duration-200"
+          style={{ opacity: sliderPos > 15 ? 1 : 0 }}
+        >
           Before
         </span>
-        <span className="absolute bottom-2 right-2 text-[10px] font-medium text-white/70 bg-black/40 px-1.5 py-0.5 rounded">
+        <span
+          className="absolute bottom-2 right-2 text-[10px] font-medium text-white/70 bg-black/40 px-1.5 py-0.5 rounded transition-opacity duration-200"
+          style={{ opacity: sliderPos < 85 ? 1 : 0 }}
+        >
           After
         </span>
       </div>
@@ -151,7 +157,7 @@ export function Hero() {
       {/* Model image — right side */}
       <div className="absolute inset-y-0 right-0 w-full md:w-[70%] z-0">
         <Image
-          src="/hero-model.png"
+          src="/images/hero/hero-model.png"
           alt="AI로 보정된 고해상도 뷰티 이미지"
           fill
           className="object-cover object-top"

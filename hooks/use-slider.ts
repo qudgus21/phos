@@ -30,6 +30,14 @@ export function useSlider(initialPos = 50) {
     [handleMove]
   );
 
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      isDragging.current = true;
+      handleMove(e.touches[0].clientX);
+    },
+    [handleMove]
+  );
+
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
       handleMove(e.touches[0].clientX);
@@ -43,6 +51,7 @@ export function useSlider(initialPos = 50) {
     onMouseUp: handleMouseUp,
     onMouseLeave: handleMouseUp,
     onMouseMove: handleMouseMove,
+    onTouchStart: handleTouchStart,
     onTouchMove: handleTouchMove,
     onTouchEnd: handleMouseUp,
   };
