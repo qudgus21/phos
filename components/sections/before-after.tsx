@@ -21,7 +21,7 @@ export function BeforeAfter() {
 
     const keyframes = [
       { from: 70, to: 20, duration: 800 },
-      { from: 20, to: 70, duration: 800 },
+      { from: 20, to: 50, duration: 800 },
     ];
     let currentKeyframe = 0;
     let animationId: number;
