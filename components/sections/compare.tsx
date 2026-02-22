@@ -6,6 +6,7 @@ import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { useSlider } from "@/hooks/use-slider";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 const samples = [
   { id: "asian-female", label: "동양인 여성" },
@@ -14,10 +15,17 @@ const samples = [
   { id: "western-male", label: "서양인 남성" },
 ];
 
+const sampleImages: Record<string, { before?: string; after?: string }> = {
+  "asian-female": {
+    before: "/images/compare/asian-before.png",
+    after: "/images/compare/asian-after.png",
+  },
+};
+
 const sampleColors: Record<string, { before: string; after: string }> = {
   "asian-female": {
-    before: "from-amber-200 to-orange-200 dark:from-amber-900/40 dark:to-orange-900/40",
-    after: "from-rose-200 to-pink-200 dark:from-rose-900/40 dark:to-pink-900/40",
+    before: "",
+    after: "",
   },
   "asian-male": {
     before: "from-stone-200 to-zinc-300 dark:from-stone-800/40 dark:to-zinc-700/40",
@@ -89,6 +97,8 @@ export function Compare() {
   }, []);
 
   const colors = sampleColors[selected];
+  const images = sampleImages[selected];
+  const hasImages = !!images;
 
   return (
     <SectionWrapper className="!py-10 md:!py-14 bg-zinc-100 dark:bg-zinc-950/80">
@@ -98,7 +108,7 @@ export function Compare() {
           차이를 직접 확인해보세요
         </h2>
         <p className="text-lg text-muted-foreground">
-          메이크업 보정부터 업스케일까지, AI 전/후를 비교해보세요.
+          메이크업 보정부터 업스케일까지, AI 보정 전후를 비교해보세요.
         </p>
       </motion.div>
 
@@ -147,13 +157,37 @@ export function Compare() {
             style={{ touchAction: "none" }}
           >
             {/* After (full background) */}
-            <div className={cn("absolute inset-0 bg-gradient-to-br", colors.after)} />
+            {hasImages ? (
+              <Image
+                src={images.after!}
+                alt="보정 후"
+                fill
+                className="object-cover"
+                draggable={false}
+                sizes="(max-width: 672px) 100vw, 672px"
+              />
+            ) : (
+              <div className={cn("absolute inset-0 bg-gradient-to-br", colors.after)} />
+            )}
 
             {/* Before (clipped) */}
             <div
-              className={cn("absolute inset-0 bg-gradient-to-br", colors.before)}
+              className="absolute inset-0"
               style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
-            />
+            >
+              {hasImages ? (
+                <Image
+                  src={images.before!}
+                  alt="보정 전"
+                  fill
+                  className="object-cover"
+                  draggable={false}
+                  sizes="(max-width: 672px) 100vw, 672px"
+                />
+              ) : (
+                <div className={cn("absolute inset-0 bg-gradient-to-br", colors.before)} />
+              )}
+            </div>
 
             {/* Slider line */}
             <div
@@ -190,14 +224,6 @@ export function Compare() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Bottom labels */}
-      <motion.div
-        variants={fadeInUp}
-        className="flex justify-between max-w-2xl mx-auto mt-4 px-2"
-      >
-        <span className="text-base font-bold text-muted-foreground">원본 이미지</span>
-        <span className="text-base font-bold text-muted-foreground">AI 업스케일</span>
-      </motion.div>
       </div>
     </SectionWrapper>
   );

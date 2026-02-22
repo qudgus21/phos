@@ -48,7 +48,8 @@
       "Bash(unzip:*)",
       "Bash(export PATH=\"/tmp/gh/gh_2.87.2_macOS_arm64/bin:$PATH\")",
       "Bash(gh:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(sips:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
