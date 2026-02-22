@@ -4,9 +4,12 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { useSlider } from "@/hooks/use-slider";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 const samples = [
   { id: "asian-female", label: "동양인 여성" },
@@ -34,31 +37,14 @@ const sampleImages: Record<string, { before: string; after: string }> = {
   },
 };
 
-const sampleColors: Record<string, { before: string; after: string }> = {
-  "asian-female": {
-    before: "",
-    after: "",
-  },
-  "asian-male": {
-    before: "",
-    after: "",
-  },
-  "western-female": {
-    before: "",
-    after: "",
-  },
-  "western-male": {
-    before: "",
-    after: "",
-  },
-};
-
-export function Compare() {
+export function SkinRetouch() {
   const [selected, setSelected] = useState("asian-female");
   const { sliderPos, setSliderPos, sliderProps } = useSlider(70);
   const [hasInteracted, setHasInteracted] = useState(false);
   const sweepRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sweepRef, { once: true, margin: "-100px" });
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isHovering, setIsHovering] = useState(false);
 
   useEffect(() => {
     if (!isInView || hasInteracted) return;
@@ -108,9 +94,14 @@ export function Compare() {
     setHasInteracted(true);
   }, []);
 
-  const colors = sampleColors[selected];
+  const handleZoomMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPos({ x: Math.max(15, Math.min(85, x)), y: Math.max(15, Math.min(85, y)) });
+  }, []);
+
   const images = sampleImages[selected];
-  const hasImages = !!images;
 
   return (
     <SectionWrapper className="!py-10 md:!py-14 bg-zinc-100 dark:bg-zinc-950/80">
@@ -124,7 +115,7 @@ export function Compare() {
         </p>
       </motion.div>
 
-      {/* Tab buttons */}
+      {/* Tab buttons with thumbnails */}
       <motion.div
         variants={fadeInUp}
         className="flex flex-wrap justify-center gap-2 mb-10"
@@ -134,18 +125,27 @@ export function Compare() {
             key={s.id}
             onClick={() => { setSelected(s.id); setSliderPos(50); setHasInteracted(false); }}
             className={cn(
-              "px-5 py-2.5 text-sm md:text-base font-bold rounded-xl border transition-all cursor-pointer",
+              "flex items-center gap-2 px-4 py-2 text-sm md:text-base font-bold rounded-xl border transition-all cursor-pointer",
               selected === s.id
                 ? "bg-foreground text-background border-foreground shadow-lg"
                 : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:text-foreground hover:border-foreground/30"
             )}
           >
+            <div className="relative w-7 h-7 rounded-full overflow-hidden shrink-0 border border-white/20">
+              <Image
+                src={sampleImages[s.id].after}
+                alt={s.label}
+                fill
+                className="object-cover"
+                sizes="28px"
+              />
+            </div>
             {s.label}
           </button>
         ))}
       </motion.div>
 
-      {/* Before/After slider comparison */}
+      {/* Slider + Zoom */}
       <AnimatePresence mode="wait">
         <motion.div
           key={selected}
@@ -153,8 +153,9 @@ export function Compare() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.3 }}
-          className="max-w-2xl mx-auto"
+          className="max-w-3xl mx-auto grid grid-cols-1 md:grid-cols-[1fr_200px] gap-3"
         >
+          {/* Slider */}
           <div
             {...sliderProps}
             onMouseDown={() => {
@@ -165,40 +166,51 @@ export function Compare() {
               handleInteraction();
               sliderProps.onTouchStart(e);
             }}
+            onMouseMove={(e) => {
+              sliderProps.onMouseMove(e);
+              handleZoomMove(e);
+            }}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => {
+              sliderProps.onMouseLeave();
+              setIsHovering(false);
+            }}
             className="relative aspect-square rounded-2xl overflow-hidden cursor-col-resize select-none border border-border shadow-card-light dark:shadow-card-dark"
             style={{ touchAction: "none" }}
           >
-            {/* After (full background) */}
-            {hasImages ? (
-              <Image
-                src={images.after!}
-                alt="보정 후"
-                fill
-                className="object-cover"
-                draggable={false}
-                sizes="(max-width: 672px) 100vw, 672px"
-              />
-            ) : (
-              <div className={cn("absolute inset-0 bg-gradient-to-br", colors.after)} />
-            )}
+            {/* Badge */}
+            <div className="absolute top-4 right-4 z-30">
+              <Badge
+                variant="primary"
+                className="backdrop-blur-md bg-black/50 border border-white/20 text-white"
+              >
+                4x 업스케일
+              </Badge>
+            </div>
+
+            {/* After */}
+            <Image
+              src={images.after}
+              alt="보정 후"
+              fill
+              className="object-cover"
+              draggable={false}
+              sizes="(max-width: 768px) 100vw, 560px"
+            />
 
             {/* Before (clipped) */}
             <div
               className="absolute inset-0"
               style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
             >
-              {hasImages ? (
-                <Image
-                  src={images.before!}
-                  alt="보정 전"
-                  fill
-                  className={cn("object-cover", "blur-[0.7px]")}
-                  draggable={false}
-                  sizes="(max-width: 672px) 100vw, 672px"
-                />
-              ) : (
-                <div className={cn("absolute inset-0 bg-gradient-to-br", colors.before)} />
-              )}
+              <Image
+                src={images.before}
+                alt="보정 전"
+                fill
+                className="object-cover blur-[0.7px]"
+                draggable={false}
+                sizes="(max-width: 768px) 100vw, 560px"
+              />
             </div>
 
             {/* Slider line */}
@@ -206,7 +218,6 @@ export function Compare() {
               className="absolute top-0 bottom-0 w-[3px] bg-primary z-10"
               style={{ left: `${sliderPos}%` }}
             >
-              {/* Handle */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/30 dark:border-white/20 flex items-center justify-center">
                 <div className="flex gap-1.5 text-white drop-shadow-md">
                   <svg width="6" height="12" viewBox="0 0 6 12" fill="none">
@@ -233,8 +244,65 @@ export function Compare() {
               After
             </div>
           </div>
+
+          {/* Zoom panels — desktop only, always visible */}
+          <div className="hidden md:flex flex-col gap-3">
+            <div className={cn(
+              "relative flex-1 rounded-xl overflow-hidden border border-border transition-all duration-300",
+              isHovering ? "border-primary/30" : ""
+            )}>
+              <div className="absolute top-2 left-2 z-10">
+                <Badge variant="outline" className="text-[10px] bg-black/50 text-white border-white/20 backdrop-blur-sm">
+                  Before
+                </Badge>
+              </div>
+              <div
+                className="absolute inset-0 blur-[0.7px]"
+                style={{
+                  backgroundImage: `url(${images.before})`,
+                  backgroundSize: "400%",
+                  backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
+                }}
+              />
+            </div>
+            <div className={cn(
+              "relative flex-1 rounded-xl overflow-hidden border border-border transition-all duration-300",
+              isHovering ? "border-primary/30" : ""
+            )}>
+              <div className="absolute top-2 left-2 z-10">
+                <Badge variant="outline" className="text-[10px] bg-black/50 text-white border-white/20 backdrop-blur-sm">
+                  After
+                </Badge>
+              </div>
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url(${images.after})`,
+                  backgroundSize: "400%",
+                  backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
+                }}
+              />
+            </div>
+            <p className={cn(
+              "text-xs text-center transition-colors duration-300",
+              isHovering ? "text-primary" : "text-muted-foreground"
+            )}>
+              {isHovering ? "마우스를 움직여 디테일 비교" : "슬라이더에 마우스를 올려보세요"}
+            </p>
+          </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* Micro CTA */}
+      <motion.div variants={fadeInUp} className="text-center mt-6">
+        <Link
+          href="#pricing"
+          className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
+        >
+          내 사진으로 확인하기
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </motion.div>
 
       </div>
     </SectionWrapper>

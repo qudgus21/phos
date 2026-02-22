@@ -10,7 +10,7 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-export function BeforeAfter() {
+export function Upscale() {
   const { sliderPos, setSliderPos, sliderProps } = useSlider(70);
   const [hasInteracted, setHasInteracted] = useState(false);
   const sweepRef = useRef<HTMLDivElement>(null);
@@ -182,7 +182,7 @@ export function BeforeAfter() {
             href="#pricing"
             className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
           >
-            무료로 보정해 보기
+            직접 체험해 보기
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </motion.div>

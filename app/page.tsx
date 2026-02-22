@@ -1,8 +1,9 @@
 import { Navigation } from "@/components/sections/navigation";
 import { Hero } from "@/components/sections/hero";
-import { BeforeAfter } from "@/components/sections/before-after";
-import { Compare } from "@/components/sections/compare";
-import { CtaSection } from "@/components/sections/cta-section";
+import { Upscale } from "@/components/sections/upscale";
+import { ImageEdit } from "@/components/sections/image-edit";
+import { SkinRetouch } from "@/components/sections/skin-retouch";
+import { FaceSwap } from "@/components/sections/face-swap";
 import { SkinRealism } from "@/components/sections/skin-realism";
 import { Pricing } from "@/components/sections/pricing";
 import { Footer } from "@/components/sections/footer";
@@ -12,9 +13,10 @@ export default function Home() {
     <div className="min-h-screen bg-background relative">
       <Navigation />
       <Hero />
-      <BeforeAfter />
-      <Compare />
-      <CtaSection />
+      <Upscale />
+      <ImageEdit />
+      <SkinRetouch />
+      <FaceSwap />
       <SkinRealism />
       <Pricing />
       <Footer />

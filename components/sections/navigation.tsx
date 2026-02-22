@@ -10,9 +10,8 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "이미지 편집", href: "/image-edit" },
-  { label: "얼굴 변경", href: "/face-edit" },
   { label: "피부 보정", href: "/upscale" },
-  { label: "컨셉 스토어", href: "/studio" },
+  { label: "얼굴 변경", href: "/face-edit" },
   { label: "가격", href: "/pricing" },
 ];
 

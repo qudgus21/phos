@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer, slideInLeft, slideInRight } from "@/lib/animations";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 
-export function CtaSection() {
+export function FaceSwap() {
   return (
     <SectionWrapper>
       <motion.div
