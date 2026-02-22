@@ -15,10 +15,22 @@ const samples = [
   { id: "western-male", label: "서양인 남성" },
 ];
 
-const sampleImages: Record<string, { before?: string; after?: string }> = {
+const sampleImages: Record<string, { before: string; after: string }> = {
   "asian-female": {
-    before: "/images/compare/asian-before.png",
-    after: "/images/compare/asian-after.png",
+    before: "/images/compare/asian-woman-before.png",
+    after: "/images/compare/asian-woman-after.png",
+  },
+  "asian-male": {
+    before: "/images/compare/asian-man-before.png",
+    after: "/images/compare/asian-man-after.png",
+  },
+  "western-female": {
+    before: "/images/compare/western-woman-before.png",
+    after: "/images/compare/western-woman-after.png",
+  },
+  "western-male": {
+    before: "/images/compare/western-man-before.png",
+    after: "/images/compare/western-man-after.png",
   },
 };
 
@@ -28,16 +40,16 @@ const sampleColors: Record<string, { before: string; after: string }> = {
     after: "",
   },
   "asian-male": {
-    before: "from-stone-200 to-zinc-300 dark:from-stone-800/40 dark:to-zinc-700/40",
-    after: "from-sky-200 to-blue-200 dark:from-sky-900/40 dark:to-blue-900/40",
+    before: "",
+    after: "",
   },
   "western-female": {
-    before: "from-neutral-200 to-stone-300 dark:from-neutral-800/40 dark:to-stone-700/40",
-    after: "from-fuchsia-200 to-pink-200 dark:from-fuchsia-900/40 dark:to-pink-900/40",
+    before: "",
+    after: "",
   },
   "western-male": {
-    before: "from-slate-200 to-gray-300 dark:from-slate-800/40 dark:to-gray-700/40",
-    after: "from-violet-200 to-purple-200 dark:from-violet-900/40 dark:to-purple-900/40",
+    before: "",
+    after: "",
   },
 };
 
@@ -90,7 +102,7 @@ export function Compare() {
       clearTimeout(timeout);
       if (animationId) cancelAnimationFrame(animationId);
     };
-  }, [isInView, hasInteracted, setSliderPos, selected]);
+  }, [isInView, hasInteracted, setSliderPos]);
 
   const handleInteraction = useCallback(() => {
     setHasInteracted(true);
@@ -180,7 +192,7 @@ export function Compare() {
                   src={images.before!}
                   alt="보정 전"
                   fill
-                  className="object-cover"
+                  className={cn("object-cover", "blur-[0.7px]")}
                   draggable={false}
                   sizes="(max-width: 672px) 100vw, 672px"
                 />
