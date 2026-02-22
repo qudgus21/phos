@@ -37,7 +37,22 @@
       "WebFetch(domain:uxmyths.com)",
       "Bash(identify:*)",
       "Bash(sips -g all:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npx:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(gh api:*)",
+      "Bash(gh repo view:*)",
+      "Bash(brew install:*)",
+      "Bash(tar:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(unzip:*)",
+      "Bash(export PATH=\"/tmp/gh/gh_2.87.2_macOS_arm64/bin:$PATH\")",
+      "Bash(gh:*)",
+      "Bash(git config:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "vercel"
+  ]
 }
