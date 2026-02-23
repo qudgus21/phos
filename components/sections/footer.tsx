@@ -1,9 +1,5 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import { Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const footerSections = [
   {
@@ -12,16 +8,13 @@ const footerSections = [
       { label: "보정", href: "/upscale" },
       { label: "이미지 편집", href: "/image-edit" },
       { label: "얼굴 변경", href: "/face-edit" },
-      { label: "컨셉 스토어", href: "/studio" },
     ],
   },
   {
     title: "바로가기",
     links: [
       { label: "홈", href: "/" },
-      { label: "AI 수업", href: "/ai-class" },
       { label: "가격", href: "/pricing" },
-      { label: "마이페이지", href: "/mypage" },
     ],
   },
   {
@@ -35,8 +28,6 @@ const footerSections = [
 ];
 
 export function Footer() {
-  const [lang, setLang] = useState<"ko" | "en">("ko");
-
   return (
     <footer className="border-t border-border bg-card">
       <div className="max-w-6xl mx-auto px-4 py-12 md:py-16">
@@ -99,36 +90,10 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-8 pt-6 border-t border-border">
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} Anelo. All rights reserved.
           </p>
-          {/* Language switcher */}
-          <div className="flex items-center gap-2 text-sm">
-            <button
-              onClick={() => setLang("ko")}
-              className={cn(
-                "px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer",
-                lang === "ko"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              한국어
-            </button>
-            <span className="text-muted-foreground/40">|</span>
-            <button
-              onClick={() => setLang("en")}
-              className={cn(
-                "px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer",
-                lang === "en"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              English
-            </button>
-          </div>
         </div>
       </div>
     </footer>
