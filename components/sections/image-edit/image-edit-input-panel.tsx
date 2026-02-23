@@ -35,7 +35,7 @@ const MAX_IMAGES = 14;
 const fieldBase =
   "rounded-lg border border-white/[0.15] bg-white/[0.12] text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 const sliderThumb =
-  "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:cursor-pointer";
+  "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer";
 
 export function ImageEditInputPanel() {
   const [model, setModel] = useState("nano-banana");
@@ -139,15 +139,15 @@ export function ImageEditInputPanel() {
 
               {/* Scale */}
               <div className="flex items-center gap-3">
-                <span className="text-sm text-white/50 shrink-0 w-14">배율</span>
-                <input type="range" min={-2} max={2} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} className={cn("flex-1 h-1 rounded-full appearance-none cursor-pointer bg-white/[0.16]", sliderThumb)} />
-                <span className="text-sm text-white/50 shrink-0">{scaleDisplay}</span>
+                <span className="text-sm text-card-foreground shrink-0 w-14">배율</span>
+                <input type="range" min={-2} max={2} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
+                <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{scaleDisplay}</span>
               </div>
 
               {/* Image Count */}
               <div className="flex items-center gap-3">
-                <span className="text-sm text-white/50 shrink-0 w-14">이미지 수</span>
-                <input type="range" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn("flex-1 h-1 rounded-full appearance-none cursor-pointer bg-white/[0.16]", sliderThumb)} />
+                <span className="text-sm text-card-foreground shrink-0 w-14">이미지 수</span>
+                <input type="range" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
                 <input type="number" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn(fieldBase, "w-12 px-2 py-1 text-center")} />
               </div>
           </div>
