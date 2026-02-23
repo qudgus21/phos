@@ -12,33 +12,33 @@ import Image from "next/image";
 import Link from "next/link";
 
 const samples = [
-  { id: "asian-female", label: "동양인 여성" },
-  { id: "asian-male", label: "동양인 남성" },
-  { id: "western-female", label: "서양인 여성" },
-  { id: "western-male", label: "서양인 남성" },
+  { id: "beauty", label: "뷰티 광고" },
+  { id: "fashion", label: "패션 룩북" },
+  { id: "profile", label: "프로필 · 헤드샷" },
+  { id: "ecommerce", label: "이커머스 상세페이지" },
 ];
 
 const sampleImages: Record<string, { before: string; after: string }> = {
-  "asian-female": {
-    before: "/images/compare/asian-woman-before.png",
-    after: "/images/compare/asian-woman-after.png",
+  beauty: {
+    before: "/images/compare/beauty-before.png",
+    after: "/images/compare/beauty-after.png",
   },
-  "asian-male": {
-    before: "/images/compare/asian-man-before.png",
-    after: "/images/compare/asian-man-after.png",
+  fashion: {
+    before: "/images/compare/fashion-before.png",
+    after: "/images/compare/fashion-after.png",
   },
-  "western-female": {
-    before: "/images/compare/western-woman-before.png",
-    after: "/images/compare/western-woman-after.png",
+  profile: {
+    before: "/images/compare/profile-before.png",
+    after: "/images/compare/profile-after.png",
   },
-  "western-male": {
-    before: "/images/compare/western-man-before.png",
-    after: "/images/compare/western-man-after.png",
+  ecommerce: {
+    before: "/images/compare/ecommerce-before.png",
+    after: "/images/compare/ecommerce-after.png",
   },
 };
 
 export function SkinRetouch() {
-  const [selected, setSelected] = useState("asian-female");
+  const [selected, setSelected] = useState("beauty");
   const { sliderPos, setSliderPos, sliderProps } = useSlider(70);
   const [hasInteracted, setHasInteracted] = useState(false);
   const sweepRef = useRef<HTMLDivElement>(null);
