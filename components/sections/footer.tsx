@@ -75,10 +75,10 @@ export function Footer() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
             <span>📧</span>
             <a
-              href="mailto:support@refinetool.com"
+              href="mailto:support@anelo.kr"
               className="hover:text-foreground transition-colors"
             >
-              support@refinetool.com
+              support@anelo.kr
             </a>
           </div>
           <div className="space-y-1 text-xs text-muted-foreground/70">

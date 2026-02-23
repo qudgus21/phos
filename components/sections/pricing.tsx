@@ -16,7 +16,6 @@ const plans = [
     monthlyPrice: 9,
     yearlyPrice: 7,
     recommended: false,
-    cta: "시작하기",
     features: [
       "4,000 크레딧",
       "AI 업스케일링",
@@ -31,7 +30,6 @@ const plans = [
     monthlyPrice: 19,
     yearlyPrice: 15,
     recommended: true,
-    cta: "시작하기",
     features: [
       "8,500 크레딧",
       "AI 업스케일링",
@@ -48,7 +46,6 @@ const plans = [
     monthlyPrice: 29,
     yearlyPrice: 23,
     recommended: false,
-    cta: "시작하기",
     features: [
       "13,000 크레딧",
       "AI 업스케일링",
@@ -92,7 +89,9 @@ export function Pricing() {
             "relative w-14 h-7 rounded-full transition-colors cursor-pointer",
             isYearly ? "bg-primary" : "bg-muted-foreground/30"
           )}
-          aria-label="결제 주기 전환"
+          role="switch"
+          aria-checked={isYearly}
+          aria-label="연간 결제"
         >
           <motion.div
             className="absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm"
@@ -195,7 +194,7 @@ export function Pricing() {
                 href="/pricing"
                 className="block w-full text-center py-3 rounded-xl font-bold transition-all bg-gradient-to-r from-indigo-600 to-violet-500 text-white hover:brightness-110"
               >
-                {plan.cta}
+                시작하기
               </Link>
             </motion.div>
           );
