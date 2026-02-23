@@ -57,6 +57,12 @@
     --destructive-foreground: #ffffff;
   }
 
+  /* ── Editor Page — 패널만 강조 (배경·텍스트·GNB는 랜딩 동일) ── */
+  .dark .editor-theme {
+    --card: #1e1e26;
+    --muted: #2e2e38;
+    --border: rgba(255, 255, 255, 0.08);
+  }
   body {
     color: var(--foreground);
     background: var(--background);
@@ -90,6 +96,12 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(99, 102, 241, 0.12);
+  }
+  .dark .editor-theme .glass-card {
+    background: #1e1e26;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   /* Glass surface — generic */
@@ -168,5 +180,27 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .gradient-border-wrap {
+    position: relative;
+  }
+  .gradient-border-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, #818CF8, #22D3EE);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+  .gradient-border-wrap:focus-within::before {
+    opacity: 1;
   }
 }

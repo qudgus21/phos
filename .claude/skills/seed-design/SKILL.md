@@ -18,8 +18,64 @@ user-invocable: true
 사용자가 제공한 인자를 파싱한다:
 
 - **URL인 경우** (`http://` 또는 `https://`로 시작): 페이지 분석 (Phase 1 참조)
+  - URL에 경로가 있으면 (예: `https://example.com/image-edit`) **라우트 경로**를 추출한다 → `/image-edit`
+  - 루트 URL이면 (예: `https://example.com` 또는 `https://example.com/`) 라우트 경로는 `/` (홈)
 - **파일 경로인 경우** (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif` 등): Read tool로 스크린샷 이미지를 시각적으로 분석
 - **인자가 없는 경우**: 사용자에게 URL 또는 스크린샷 경로를 요청
+
+---
+
+## 모드 감지 (Mode Detection) ⭐
+
+Input 파싱 직후, 프로젝트 상태를 확인하여 **실행 모드**를 결정한다.
+
+### 감지 방법
+
+다음 파일들의 존재 여부를 `Glob`으로 확인한다:
+
+```
+tailwind.config.ts
+app/globals.css
+lib/utils.ts
+lib/animations.ts
+components/ui/*.tsx
+```
+
+### 모드 판정
+
+| 조건 | 모드 | 설명 |
+|------|------|------|
+| 위 파일들이 대부분 없음 | **Full 모드** | 디자인 시스템 + 컴포넌트 + 페이지 전체 생성 |
+| 위 파일들이 이미 존재함 | **Page-Add 모드** | 기존 디자인 시스템 활용, 새 페이지만 추가 |
+
+### 모드별 Phase 실행 흐름
+
+| Phase | Full 모드 | Page-Add 모드 |
+|-------|-----------|---------------|
+| Phase 1: 분석 | O | O |
+| Phase 2: 디자인 시스템 구축 | O | **SKIP** |
+| Phase 3: 컴포넌트 생성 | O (전체) | **증분만** (새로 필요한 것만) |
+| Phase 4: 페이지 클론 | `app/page.tsx` 생성 | `app/{route}/page.tsx` 생성 |
+| Phase 4.5: 디테일 검증 | O | O |
+| Phase 5: 검증 및 정리 | O | O |
+
+### Page-Add 모드 시 사용자 확인
+
+Page-Add 모드가 감지되면 다음을 출력한다:
+
+```
+기존 디자인 시스템이 감지되었습니다.
+- tailwind.config.ts ✓
+- globals.css ✓
+- components/ui/ ✓
+- lib/utils.ts ✓
+- lib/animations.ts ✓
+
+**Page-Add 모드**로 실행합니다:
+- 디자인 시스템(Phase 2)을 건드리지 않습니다
+- 기존 UI 컴포넌트를 재사용합니다
+- 새 라우트 `app/{route}/page.tsx`에 페이지를 생성합니다
+```
 
 ---
 
@@ -218,6 +274,8 @@ Read tool로 이미지를 읽어 시각적으로 분석한다. 아래 체크리�
 15. 플로팅 요소 (FAB, 채팅 위젯, 토스트 등)
 
 ### 분석 결과 정리
+
+#### Full 모드일 때:
 분석이 끝나면 아래 형식으로 요약을 **사용자에게 출력**한다:
 
 ```
@@ -234,11 +292,37 @@ Read tool로 이미지를 읽어 시각적으로 분석한다. 아래 체크리�
 진행할까요?
 ```
 
-사용자 확인을 받은 후 Phase 2로 진행한다.
+#### Page-Add 모드일 때:
+기존 컴포넌트 목록을 먼저 확인한 뒤, 분석 결과를 출력한다:
+
+```
+## 페이지 분석 결과 (Page-Add 모드)
+
+**라우트**: `app/{route}/page.tsx`
+**레이아웃**: [구조 요약]
+**핵심 섹션**: [식별된 섹션 목록]
+
+### 기존 재사용 컴포넌트
+- Button ✓ (components/ui/button.tsx)
+- Card ✓ (components/ui/card.tsx)
+- ...
+
+### 새로 필요한 컴포넌트
+- [ComponentName] — [용도 설명]
+- ...
+
+이 분석을 기반으로 페이지를 생성합니다.
+진행할까요?
+```
+
+사용자 확인을 받은 후 다음 Phase로 진행한다.
 
 ---
 
 ## Phase 2: 디자인 시스템 구축 (Design System Seeding)
+
+> **Page-Add 모드에서는 이 Phase를 전체 SKIP한다.**
+> 기존 `tailwind.config.ts`, `globals.css`, `lib/utils.ts`, `lib/animations.ts`를 그대로 사용한다.
 
 ### Step 2-1: 패키지 설치 확인
 
@@ -323,7 +407,18 @@ export const staggerContainer: Variants = {
 
 ## Phase 3: 재사용 컴포넌트 생성 (Component Library)
 
+### Full 모드
+
 `components/ui/` 디렉토리에 분석에서 식별된 컴포넌트를 생성한다.
+
+### Page-Add 모드 (증분 생성)
+
+> **기존 컴포넌트는 절대 수정하지 않는다.**
+
+1. `Glob("components/ui/*.tsx")`로 기존 컴포넌트 목록을 확인한다
+2. 분석에서 식별된 컴포넌트 중 **기존에 없는 것만** 새로 생성한다
+3. 기존 컴포넌트의 variant가 부족한 경우 (예: Button에 새 variant 필요), **기존 파일에 variant를 추가**하되 기존 코드를 깨트리지 않도록 주의한다
+4. 새 페이지에만 필요한 복합 컴포넌트는 `components/sections/{route}/` 안에 인라인으로 구현하거나, 재사용 가능성이 높으면 `components/ui/`에 생성한다
 
 ### 컴포넌트 작성 규칙
 
@@ -361,6 +456,7 @@ export const staggerContainer: Variants = {
 
 ### Step 4-1: 레이아웃 구성
 
+#### Full 모드
 `app/layout.tsx`를 업데이트한다:
 - **폰트**: `next/font/google`로 적용 (CSS `@import` 대신 — 성능 최적)
 - 한글 폰트(Pretendard 등)는 `next/font/local`로 woff2 다운로드 후 로컬 로드
@@ -368,18 +464,46 @@ export const staggerContainer: Variants = {
 - 메타데이터 업데이트 (title, description, og:image 등)
 - `suppressHydrationWarning` 추가 (hydration mismatch 방지)
 
+#### Page-Add 모드
+`app/layout.tsx`는 **수정하지 않는다** (기존 레이아웃을 상속받음).
+
+필요 시 라우트 전용 레이아웃을 `app/{route}/layout.tsx`에 생성할 수 있다:
+- 해당 페이지에만 필요한 네비게이션/레이아웃 변경이 있는 경우
+- 공통 레이아웃과 다른 구조가 필요한 경우
+
 ### Step 4-2: 섹션별 컴포넌트 생성
 
-페이지를 섹션 단위로 분리하여 각각 컴포넌트로 만든다:
+#### Full 모드 — 기존과 동일
+페이지를 섹션 단위로 분리하여 `components/sections/`에 생성:
 - `components/sections/navigation.tsx`
 - `components/sections/hero.tsx`
-- `components/sections/features.tsx` (또는 highlights.tsx)
-- `components/sections/[feature-name].tsx` (기능별 상세 섹션)
-- `components/sections/testimonials.tsx`
-- `components/sections/cta.tsx`
-- `components/sections/footer.tsx`
-- `components/sections/discord-fab.tsx` (또는 기타 플로팅 요소)
-- 등 (분석 결과에 따라)
+- `components/sections/features.tsx`
+- 등
+
+#### Page-Add 모드 — 라우트별 네임스페이스
+기존 섹션 컴포넌트와 충돌을 방지하기 위해 **라우트별 하위 디렉토리**에 생성한다:
+
+```
+components/sections/{route}/
+├── {route}-hero.tsx        (또는 해당 페이지의 주요 섹션명)
+├── {route}-editor.tsx
+├── {route}-features.tsx
+└── ...
+```
+
+예시 (`/image-edit` 페이지):
+```
+components/sections/image-edit/
+├── image-edit-hero.tsx
+├── image-edit-canvas.tsx
+├── image-edit-toolbar.tsx
+├── image-edit-sidebar.tsx
+└── ...
+```
+
+**네이밍 규칙:**
+- 파일명에 라우트 prefix를 붙여 전역 검색 시 쉽게 구분
+- 기존 `components/sections/navigation.tsx` 같은 공통 컴포넌트는 **import하여 재사용** (복제 X)
 
 각 섹션 컴포넌트 규칙:
 - **반응형**: mobile-first, `sm:`, `md:`, `lg:` breakpoint 활용
@@ -389,8 +513,9 @@ export const staggerContainer: Variants = {
 - **아이콘**: `lucide-react`에서 가장 유사한 아이콘 선택
 - **텍스트**: 원본의 텍스트를 **정확히** 사용한다 (extracted-design.json의 textContent 참조)
 
-### Step 4-3: 메인 페이지 조합
+### Step 4-3: 페이지 조합
 
+#### Full 모드
 `app/page.tsx`에서 섹션 컴포넌트를 조합:
 
 ```tsx
@@ -411,6 +536,32 @@ export default function Home() {
   );
 }
 ```
+
+#### Page-Add 모드
+`app/{route}/page.tsx`에 새 페이지를 생성한다:
+
+```tsx
+import { Navigation } from "@/components/sections/navigation"; // 공통 컴포넌트 재사용
+import { ImageEditHero } from "@/components/sections/image-edit/image-edit-hero";
+import { ImageEditCanvas } from "@/components/sections/image-edit/image-edit-canvas";
+// ...
+
+export default function ImageEditPage() {
+  return (
+    <div className="min-h-screen bg-background relative">
+      <Navigation /> {/* 기존 GNB 재사용 */}
+      <ImageEditHero />
+      <ImageEditCanvas />
+      {/* ... */}
+    </div>
+  );
+}
+```
+
+**Page-Add 모드 주의사항:**
+- `app/page.tsx`는 **절대 수정하지 않는다**
+- 기존 Navigation, Footer 등 공통 섹션은 import하여 재사용
+- 해당 페이지에서만 Navigation이 다르게 보여야 하면, props로 variant를 전달하거나 별도 네비게이션 컴포넌트를 만든다
 
 ---
 
@@ -451,6 +602,12 @@ export default function Home() {
 9. **플로팅 요소 누락**: Discord FAB, 채팅 위젯 등
 10. **섹션 래핑**: 특정 섹션이 카드 컨테이너(보더+그림자)로 감싸져 있는데 무시함
 
+### Page-Add 모드 추가 체크
+
+11. **기존 디자인 시스템 준수**: 새 페이지의 색상/간격/타이포가 기존 페이지와 일관적인지 확인
+12. **공통 컴포넌트 재사용 누락**: Navigation, Footer 등을 복제하지 않고 import했는지 확인
+13. **라우팅 연결**: 기존 Navigation에 새 페이지로의 링크가 필요하면 사용자에게 안내
+
 ---
 
 ## Phase 5: 검증 및 정리 (Verification & Cleanup)
@@ -482,7 +639,7 @@ yarn remove playwright  # devDependencies에서 제거
 
 ### 최종 보고
 
-작업 완료 후 사용자에게 결과를 보고한다:
+#### Full 모드
 
 ```
 ## Seed Design 완료
@@ -504,6 +661,30 @@ yarn remove playwright  # devDependencies에서 제거
 ### 다음 단계
 - `yarn dev`로 로컬에서 확인
 - 필요 시 색상/간격 미세 조정
+- 실제 이미지/아이콘 교체
+```
+
+#### Page-Add 모드
+
+```
+## 페이지 추가 완료 (Page-Add 모드)
+
+### 새 라우트
+`app/{route}/page.tsx`
+
+### 생성된 파일
+- `app/{route}/page.tsx` — 페이지 엔트리
+- `components/sections/{route}/...` — 페이지 전용 섹션 컴포넌트
+- `components/ui/...` — 새로 추가된 UI 컴포넌트 (있는 경우)
+
+### 재사용된 기존 요소
+- 디자인 시스템: tailwind.config.ts, globals.css (수정 없음)
+- UI 컴포넌트: [재사용된 컴포넌트 목록]
+- 섹션 컴포넌트: [재사용된 섹션 목록 — Navigation, Footer 등]
+
+### 다음 단계
+- `yarn dev`로 로컬에서 `/{route}` 확인
+- 기존 Navigation에 새 페이지 링크 추가 검토
 - 실제 이미지/아이콘 교체
 ```
 

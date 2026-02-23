@@ -50,7 +50,11 @@
       "Bash(gh:*)",
       "Bash(git config:*)",
       "Bash(sips:*)",
-      "Skill(section-developer)"
+      "Skill(section-developer)",
+      "Bash(grep:*)",
+      "Bash(git stash:*)",
+      "Bash(timeout 10 yarn dev:*)",
+      "Bash(git reset:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
