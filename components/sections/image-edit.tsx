@@ -47,7 +47,7 @@ export function ImageEdit() {
   const current = useCases.find((u) => u.id === selected)!;
 
   return (
-    <SectionWrapper className="!py-10 md:!py-14">
+    <SectionWrapper>
       <motion.div
         variants={staggerContainer}
         initial="hidden"

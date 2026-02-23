@@ -13,11 +13,11 @@ export default function Home() {
     <div className="min-h-screen bg-background relative">
       <Navigation />
       <Hero />
-      <Upscale />
-      <ImageEdit />
       <SkinRetouch />
-      <FaceSwap />
       <SkinRealism />
+      <ImageEdit />
+      <FaceSwap />
+      <Upscale />
       <Pricing />
       <Footer />
     </div>

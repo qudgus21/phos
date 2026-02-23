@@ -65,7 +65,7 @@ export function Pricing() {
   const [isYearly, setIsYearly] = useState(true);
 
   return (
-    <SectionWrapper id="pricing" className="!py-10 md:!py-14">
+    <SectionWrapper id="pricing">
       {/* 섹션 헤더 */}
       <motion.div variants={fadeInUp} className="text-center mb-6">
         <h2 className="text-3xl md:text-h2 font-black text-foreground font-display">

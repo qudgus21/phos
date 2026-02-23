@@ -65,7 +65,7 @@ export function Upscale() {
   }, []);
 
   return (
-    <SectionWrapper className="py-10 md:py-14">
+    <SectionWrapper>
       <div ref={sweepRef}>
         <motion.div variants={fadeInUp} className="text-center mb-12">
           <h2 className="text-3xl md:text-h2 font-black text-foreground mb-4 font-display">

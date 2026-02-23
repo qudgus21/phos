@@ -104,7 +104,7 @@ export function SkinRetouch() {
   const images = sampleImages[selected];
 
   return (
-    <SectionWrapper className="!py-10 md:!py-14 bg-zinc-100 dark:bg-zinc-950/80">
+    <SectionWrapper className="pt-16 md:pt-20 bg-zinc-100 dark:bg-zinc-950/80">
       <div ref={sweepRef}>
       <motion.div variants={fadeInUp} className="text-center mb-10">
         <h2 className="text-3xl md:text-h3 font-black text-foreground mb-3 font-display">

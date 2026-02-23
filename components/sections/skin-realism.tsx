@@ -32,7 +32,7 @@ export function SkinRealism() {
   );
 
   return (
-    <SectionWrapper id="skin-realism" className="!py-10 md:!py-14">
+    <SectionWrapper id="skin-realism">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}

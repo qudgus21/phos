@@ -15,7 +15,7 @@ const availableOptions = [
 
 export function FaceSwap() {
   return (
-    <SectionWrapper className="!py-10 md:!py-14">
+    <SectionWrapper>
       <motion.div
         variants={staggerContainer}
         initial="hidden"
