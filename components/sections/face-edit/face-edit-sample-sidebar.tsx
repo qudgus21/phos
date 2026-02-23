@@ -3,24 +3,22 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-interface Sample {
+type Gender = "female" | "male";
+
+export interface SampleData {
   id: string;
-  gender: "female" | "male";
+  gender: Gender;
   label: string;
+  image: string;
 }
 
-const SAMPLES: Sample[] = [
-  { id: "f1", gender: "female", label: "여성" },
-  { id: "m1", gender: "male", label: "남성" },
-  { id: "f2", gender: "female", label: "여성" },
-  { id: "f3", gender: "female", label: "여성" },
-  { id: "f4", gender: "female", label: "여성" },
+const SAMPLES: SampleData[] = [
+  { id: "f1", gender: "female", label: "여성", image: "" },
+  { id: "m1", gender: "male", label: "남성", image: "" },
+  { id: "f2", gender: "female", label: "여성", image: "" },
+  { id: "f3", gender: "female", label: "여성", image: "" },
+  { id: "f4", gender: "female", label: "여성", image: "" },
 ];
-
-const genderEmoji: Record<string, string> = {
-  female: "👩",
-  male: "👨",
-};
 
 const gradientPlaceholders = [
   "from-rose-300 via-amber-200 to-pink-300",
@@ -30,8 +28,19 @@ const gradientPlaceholders = [
   "from-amber-100 via-rose-200 to-pink-300",
 ];
 
-export function FaceEditSampleSidebar() {
+interface FaceEditSampleSidebarProps {
+  onSampleSelect?: (sample: SampleData) => void;
+}
+
+export function FaceEditSampleSidebar({
+  onSampleSelect,
+}: FaceEditSampleSidebarProps) {
   const [selected, setSelected] = useState<string | null>(null);
+
+  const handleSelect = (sample: SampleData) => {
+    setSelected(sample.id);
+    onSampleSelect?.(sample);
+  };
 
   return (
     <aside className="hidden lg:flex flex-col w-[140px] shrink-0 min-h-0 rounded-2xl glass-card shadow-elevated overflow-hidden">
@@ -46,7 +55,7 @@ export function FaceEditSampleSidebar() {
           <button
             key={sample.id}
             type="button"
-            onClick={() => setSelected(sample.id)}
+            onClick={() => handleSelect(sample)}
             className={cn(
               "w-full flex flex-col items-center gap-1.5 cursor-pointer group"
             )}
@@ -61,14 +70,14 @@ export function FaceEditSampleSidebar() {
                   : "border-transparent group-hover:border-white/20"
               )}
             />
-            {/* Gender Badge */}
+            {/* Gender Badge — D: 이모지 제거 */}
             <span
               className={cn(
                 "inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-semibold rounded-full",
                 "bg-primary/15 text-[#A5B4FC]"
               )}
             >
-              {genderEmoji[sample.gender]} {sample.label}
+              {sample.label}
             </span>
           </button>
         ))}
