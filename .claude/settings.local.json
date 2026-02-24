@@ -55,7 +55,13 @@
       "Bash(git stash:*)",
       "Bash(timeout 10 yarn dev:*)",
       "Bash(git reset:*)",
-      "Skill(seed-design)"
+      "Skill(seed-design)",
+      "Bash(xargs:*)",
+      "Bash(wc:*)",
+      "Skill(db-model)",
+      "Skill(api-builder)",
+      "Skill(test-api)",
+      "Bash(yarn dev:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

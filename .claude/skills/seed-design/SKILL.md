@@ -13,6 +13,13 @@ user-invocable: true
 
 ---
 
+## Phase 0: 지식 로드
+
+1. `memory/skills/seed-design-lessons.md` 파일을 읽는다 (없으면 skip)
+2. 기존 교훈을 이번 클론 작업에 반영한다
+
+---
+
 ## Input 파싱
 
 사용자가 제공한 인자를 파싱한다:
@@ -750,3 +757,18 @@ yarn remove playwright  # devDependencies에서 제거
 - 이미지는 placeholder (gradient, solid color, 도형)로 대체한다
 - 텍스트 콘텐츠는 원본의 구조를 따르되, 필요 시 의미는 유지하면서 변경 가능
 - 외부 API 호출이나 인증이 필요한 동적 기능은 제외하고, UI/레이아웃만 복제한다
+
+---
+
+## 지식 저장 (완료 후)
+
+클론 작업 중 발견한 새로운 교훈을 `memory/skills/seed-design-lessons.md`에 기록한다.
+기존 교훈과 중복되면 skip.
+
+형식:
+```markdown
+### {번호}. {제목}
+- **상황**: {어떤 상황에서}
+- **교훈**: {무엇을 배웠는지}
+- **날짜**: {YYYY-MM-DD}
+```

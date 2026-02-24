@@ -26,6 +26,13 @@ Next.js + React + TypeScript + Tailwind CSS 프로젝트의 코드를 깊이 있
 
 ---
 
+## Phase 0: 지식 로드
+
+1. `memory/skills/code-review-lessons.md` 파일을 읽는다 (없으면 skip)
+2. 기존 교훈을 리뷰 기준에 반영한다
+
+---
+
 ## Phase 1: 코드 수집
 
 ### Diff 모드 (기본)
@@ -369,45 +376,15 @@ yarn build
 
 ---
 
-## 실전 레슨런
+## Phase 6: 지식 저장
 
-이 섹션은 실제 코드 리뷰를 수행하면서 배운 교훈이다.
+리뷰 중 발견한 새로운 패턴이나 교훈을 `memory/skills/code-review-lessons.md`에 기록한다.
+기존 교훈과 중복되면 skip.
 
-### 1. 리브랜딩 후 브랜드명 잔여 참조는 Critical로 잡아라
-- 프로젝트가 리브랜딩(예: RefineTool → Phos AI)을 거치면 **구 브랜드명이 곳곳에 남아있다**
-- 특히 Footer, CTA 섹션, 이메일 주소, 메타데이터 등 본문 텍스트에 숨어있는 경우가 많다
-- 리뷰 시 `metadata.title`, Navigation 로고, Footer 브랜드, 각 섹션 텍스트의 **브랜드명 일관성**을 반드시 교차 확인
-- 이것은 사소한 오타가 아니라 사용자에게 혼란을 주는 **Critical 이슈**
-
-### 2. 중복 로직은 커스텀 훅으로 추출하라
-- 2개 이상의 컴포넌트에서 동일한 상태 + 핸들러 패턴이 반복되면 커스텀 훅 후보
-- 예: Before/After 슬라이더 로직 (`useSlider`) — `sliderPos` state + 마우스/터치 이벤트 핸들러가 완전 동일
-- 훅이 `sliderProps` 같은 spread 가능한 객체를 반환하면, 사용처에서 `{...sliderProps}`로 깔끔하게 적용 가능
-- `hooks/` 디렉토리에 `use-{name}.ts` 파일로 생성
-
-### 3. 기존 UI 컴포넌트가 있는데 재구현하는 패턴을 잡아라
-- 프로젝트에 `Modal` 컴포넌트가 있는데 `LoginModal`이 모달 로직을 직접 재구현하는 패턴
-- 프로젝트에 `Input` 컴포넌트가 있는데 `LoginModal`이 raw `<input>`을 사용하는 패턴
-- 이런 경우 접근성(Escape 키, body scroll lock, 포커스 트래핑)이 누락되기 쉽다
-- 리뷰 시 `components/ui/`에 어떤 컴포넌트가 있는지 파악하고, 사용되지 않는 컴포넌트가 있으면 왜 안 쓰이는지 확인
-
-### 4. Provider가 만들어졌는데 layout.tsx에 연결 안 된 경우를 잡아라
-- `ToastProvider`, `ThemeProvider` 등 Context Provider를 만들어 놓고 `layout.tsx`에서 래핑하지 않으면 런타임 에러 발생
-- `useToast()` 같은 훅을 호출하는 순간 "must be used within Provider" 에러
-- 전체 리뷰 시 **Provider 컴포넌트가 있으면 layout.tsx에서 사용되는지 반드시 확인**
-
-### 5. CTA 버튼 그라디언트 일관성을 체크하라
-- 같은 역할(CTA)의 버튼이 섹션마다 다른 그라디언트를 쓰고 있으면 디자인 일관성이 깨진다
-- 예: 대부분 `from-indigo-600 to-violet-500` (2색)인데 한 곳만 `from-indigo-600 via-violet-500 to-cyan-500` (3색)
-- 리뷰 시 모든 CTA 버튼의 `from-`, `to-`, `via-` 패턴을 비교
-
-### 6. useEffect 의존성 배열은 빌드 전에 확인하라
-- `handleClose` 같은 함수를 useEffect 내에서 호출하면서 의존성 배열에 넣지 않으면 ESLint 경고 발생
-- 수정 시 `onClose`처럼 props 레벨의 안정적인 참조를 직접 사용하는 것이 더 안전
-- 자동 수정 후 빌드로 ESLint 경고까지 0건인지 반드시 확인
-
-### 7. 구조적 리팩토링도 가능한 한 자동 수정하라
-- 처음에 "구조적 리팩토링 필요"라고 건너뛴 항목(커스텀 훅 추출, useEffect 추가 등)도 사용자가 요청하면 수정 가능
-- 커스텀 훅 추출: 새 파일 생성 → 기존 코드에서 로직 제거 → 훅 import + 사용으로 교체
-- useEffect 추가: 기존 코드에 import 추가 → 함수 내부에 useEffect 블록 삽입
-- "건너뛰기" 기준을 너무 보수적으로 잡지 말 것 — 파일 생성이 필요한 경우에도 자동 수정 가능
+형식:
+```markdown
+### {번호}. {제목}
+- **상황**: {어떤 상황에서}
+- **교훈**: {무엇을 배웠는지}
+- **날짜**: {YYYY-MM-DD}
+```

@@ -15,13 +15,12 @@ user-invocable: true
 
 ---
 
-## Phase 0: 서비스 DNA 로드
+## Phase 0: 지식 + 서비스 DNA 로드
 
-모든 분석의 출발점. 반드시 먼저 읽는다:
+모든 분석의 출발점.
 
-```
-Read: SERVICE_GUIDE.md
-```
+1. `memory/skills/section-developer-lessons.md` 파일을 읽는다 (없으면 skip)
+2. `SERVICE_GUIDE.md`를 반드시 읽는다:
 
 이 문서의 내용이 모든 제안의 **기준선**이다:
 - **서비스 성격**: 하이엔드 실사 보정 SaaS
@@ -468,3 +467,18 @@ yarn build
 - 모든 분석, 제안, 코멘트는 **한글**로 작성
 - 기술 용어(CTA, UX, hover 등)는 영문 그대로 사용 가능
 - 코드 내 주석은 최소화 (필요 시 한글)
+
+---
+
+## 지식 저장 (구현 완료 후)
+
+구현 중 발견한 새로운 UX/디자인 인사이트나 교훈을 `memory/skills/section-developer-lessons.md`에 기록한다.
+기존 교훈과 중복되면 skip.
+
+형식:
+```markdown
+### {번호}. {제목}
+- **상황**: {어떤 상황에서}
+- **교훈**: {무엇을 배웠는지}
+- **날짜**: {YYYY-MM-DD}
+```
