@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Navigation } from "@/components/sections/navigation";
 import { ImageEditSampleSidebar } from "@/components/sections/image-edit/image-edit-sample-sidebar";
 import { ImageEditInputPanel } from "@/components/sections/image-edit/image-edit-input-panel";
@@ -24,14 +24,20 @@ export default function ImageEditPage() {
 
       {/* Main Editor */}
       <div className="flex-1 flex gap-2.5 p-2.5 min-h-0">
-        <ImageEditSampleSidebar />
+        <Suspense>
+          <ImageEditSampleSidebar />
+        </Suspense>
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.4fr_1.6fr_200px] gap-2.5 min-h-0">
           <div className={cn("min-h-0 min-w-0", mobileTab !== "input" && "hidden lg:block")}>
-            <ImageEditInputPanel />
+            <Suspense>
+              <ImageEditInputPanel />
+            </Suspense>
           </div>
           <div className={cn("min-h-0", mobileTab !== "result" && "hidden lg:block")}>
-            <ImageEditResultPanel />
+            <Suspense>
+              <ImageEditResultPanel />
+            </Suspense>
           </div>
           <div className={cn("min-h-0", mobileTab !== "history" && "hidden lg:block")}>
             <ImageEditHistoryPanel />

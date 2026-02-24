@@ -138,7 +138,20 @@ export function Dropdown({
           open && (variant === "gradient" ? "ring-1 ring-primary/50" : "ring-1 ring-primary/40 border-primary/40")
         )}
       >
-        <span className={cn("truncate", variant === "gradient" && "bg-gradient-to-r from-[#A5B4FC] to-[#67E8F9] bg-clip-text text-transparent font-semibold")}>{selectedLabel}</span>
+        <span className="grid items-center">
+          {options.map((opt) => (
+            <span
+              key={opt.value}
+              className={cn(
+                "col-start-1 row-start-1 whitespace-nowrap pointer-events-none",
+                opt.value !== value && "invisible",
+                variant === "gradient" && "bg-gradient-to-r from-[#A5B4FC] to-[#67E8F9] bg-clip-text text-transparent font-semibold"
+              )}
+            >
+              {opt.label}
+            </span>
+          ))}
+        </span>
         <ChevronDown
           className={cn(
             "w-3.5 h-3.5 shrink-0 transition-transform duration-200",

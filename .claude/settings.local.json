@@ -62,7 +62,12 @@
       "Skill(api-builder)",
       "Skill(test-api)",
       "Bash(yarn dev:*)",
-      "Skill(code-review)"
+      "Skill(code-review)",
+      "Bash(node --version:*)",
+      "Bash(wget:*)",
+      "Skill(grab-images)",
+      "Bash(node scripts/grab-images.mjs:*)",
+      "Bash(node:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

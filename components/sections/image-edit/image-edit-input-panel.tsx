@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, PenLine, X, GripVertical } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
+import { SAMPLES } from "@/lib/constants/samples";
 
 interface UploadedImage {
-  file: File;
+  file: File | null;
   previewUrl: string;
 }
 
@@ -46,6 +48,10 @@ const sliderThumb =
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export function ImageEditInputPanel() {
+  const searchParams = useSearchParams();
+  const sampleId = searchParams.get("sample_id");
+  const activeSample = SAMPLES.find((s) => s.id === sampleId);
+
   const [model, setModel] = useState("nano-banana");
   const [prompt, setPrompt] = useState("");
   const [imageSize, setImageSize] = useState("2K");
@@ -62,6 +68,26 @@ export function ImageEditInputPanel() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef<number | null>(null);
   const lastClientXRef = useRef(0);
+  const prevSampleIdRef = useRef<string | null>(null);
+
+  // 샘플 변경 시 images 상태에 샘플 input 주입
+  useEffect(() => {
+    if (sampleId === prevSampleIdRef.current) return;
+    prevSampleIdRef.current = sampleId;
+
+    // 기존 blob URL 정리
+    images.forEach((img) => {
+      if (img.file) URL.revokeObjectURL(img.previewUrl);
+    });
+
+    if (activeSample && activeSample.inputs.length > 0) {
+      setImages(
+        activeSample.inputs.map((src) => ({ file: null, previewUrl: src }))
+      );
+    } else {
+      setImages([]);
+    }
+  }, [sampleId, activeSample]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── 드래그 중 자동 스크롤 ── */
   const SCROLL_ZONE = 80;
@@ -120,7 +146,7 @@ export function ImageEditInputPanel() {
 
   const removeImage = useCallback((index: number) => {
     setImages((prev) => {
-      URL.revokeObjectURL(prev[index].previewUrl);
+      if (prev[index].file) URL.revokeObjectURL(prev[index].previewUrl);
       return prev.filter((_, i) => i !== index);
     });
   }, []);
@@ -385,7 +411,29 @@ export function ImageEditInputPanel() {
                   <input type="number" min={1} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[72px] px-2 py-1.5 text-center")} />
                   <span className="text-sm text-white/50">×</span>
                   <input type="number" min={1} max={4096} value={height} onChange={(e) => setHeight(Number(e.target.value))} className={cn(fieldBase, "w-[72px] px-2 py-1.5 text-center")} />
-                  <button type="button" disabled className="p-1.5 text-sm rounded-lg border border-border bg-muted text-white/50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer" title="첫 번째 이미지 비율로 자동 설정">📐</button>
+                  <button
+                    type="button"
+                    disabled={images.length === 0}
+                    onClick={() => {
+                      const first = images[0];
+                      if (!first) return;
+                      const img = new window.Image();
+                      img.onload = () => {
+                        const w = img.naturalWidth;
+                        const h = img.naturalHeight;
+                        if (w && h) {
+                          const maxDim = imageSize === "4K" ? 4096 : imageSize === "2K" ? 2048 : 1024;
+                          const scale = Math.min(maxDim / Math.max(w, h), 1);
+                          setWidth(Math.round(w * scale));
+                          setHeight(Math.round(h * scale));
+                          setRatio("AUTO");
+                        }
+                      };
+                      img.src = first.previewUrl;
+                    }}
+                    className="p-1.5 text-sm rounded-lg border border-border bg-muted text-white/50 hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:bg-muted disabled:hover:text-white/50 transition-all duration-200 cursor-pointer"
+                    title="첫 번째 이미지 비율로 자동 설정"
+                  >📐</button>
                 </div>
               </div>
 
@@ -413,7 +461,21 @@ export function ImageEditInputPanel() {
             {imageSize === "4K" ? "4K: 150 크레딧/장" : "1K/2K: 75 크레딧/장"}
           </span>
           <div className="flex items-center gap-2">
-            <button type="button" className="px-3.5 py-1.5 text-sm font-semibold text-foreground rounded-lg border border-border bg-muted hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] transition-all duration-200 cursor-pointer">
+            <button
+              type="button"
+              onClick={() => {
+                setPrompt("");
+                images.forEach((img) => { if (img.file) URL.revokeObjectURL(img.previewUrl); });
+                setImages([]);
+                setImageSize("4K");
+                setRatio("AUTO");
+                setWidth(2048);
+                setHeight(2048);
+                setScale(0);
+                setImageCount(1);
+              }}
+              className="px-3.5 py-1.5 text-sm font-semibold text-foreground rounded-lg border border-border bg-muted hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] transition-all duration-200 cursor-pointer"
+            >
               리셋
             </button>
             <button type="button" disabled className="px-3.5 py-1.5 text-sm font-semibold text-primary-foreground rounded-lg bg-primary hover:bg-[#818CF8] hover:shadow-[0_0_12px_rgba(99,102,241,0.3)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer">
