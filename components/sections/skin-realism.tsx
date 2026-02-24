@@ -159,7 +159,7 @@ export function SkinRealism() {
 
             <motion.div variants={fadeInUp}>
               <Link
-                href="/upscale"
+                href="/retouching"
                 className="inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-500 rounded-xl btn-glow transition-all hover:scale-105 hover:brightness-110"
               >
                 지금 체험하기

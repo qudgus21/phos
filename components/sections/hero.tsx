@@ -223,7 +223,7 @@ export function Hero() {
           {/* CTA — E */}
           <motion.div variants={fadeInUp} className="flex items-center gap-4 mb-16">
             <Link
-              href="/upscale"
+              href="/retouching"
               className="inline-flex items-center px-10 py-5 text-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl btn-glow transition-all duration-300 ease-out hover:scale-[1.06] hover:brightness-110 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-[0.98]"
             >
               무료로 보정하기

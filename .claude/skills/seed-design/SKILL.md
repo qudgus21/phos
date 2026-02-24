@@ -420,6 +420,38 @@ export const staggerContainer: Variants = {
 3. 기존 컴포넌트의 variant가 부족한 경우 (예: Button에 새 variant 필요), **기존 파일에 variant를 추가**하되 기존 코드를 깨트리지 않도록 주의한다
 4. 새 페이지에만 필요한 복합 컴포넌트는 `components/sections/{route}/` 안에 인라인으로 구현하거나, 재사용 가능성이 높으면 `components/ui/`에 생성한다
 
+#### Page-Add 모드 — 디자인 토큰 매핑 규칙 ⭐ 필수
+
+> **원본 사이트의 색상을 그대로 쓰지 않는다. 반드시 기존 프로젝트의 디자인 토큰으로 매핑한다.**
+
+Phase 1에서 추출한 원본 색상(rgb/hex)은 **참고용**이다. 코드에는 기존 `tailwind.config.ts`와 `globals.css`에 정의된 시맨틱 토큰만 사용한다.
+
+**코드 작성 전, 기존 토큰을 먼저 확인한다:**
+```bash
+# 1) tailwind.config.ts의 colors 섹션 확인
+# 2) globals.css의 CSS 변수 확인
+# 3) 기존 섹션 컴포넌트에서 사용하는 클래스 패턴 확인
+```
+
+**매핑 예시:**
+
+| 원본 사이트 색상 | ❌ 하면 안 되는 것 | ✅ 해야 하는 것 |
+|---|---|---|
+| 파란색 (#3B82F6 등) | `text-blue-500`, `bg-blue-500` | `text-primary`, `bg-primary` |
+| 흰색 텍스트 | `text-white` | `text-foreground` |
+| 회색 텍스트 | `text-slate-300`, `text-gray-400` | `text-muted-foreground` |
+| 카드 배경 | `style={{ background: "#151519" }}` | `bg-card` |
+| 보더 | `border-white/10` | `border-border` |
+| 비활성 배경 | `bg-white/10` | `bg-muted` |
+| CTA 버튼 그래디언트 | `from-blue-500 to-blue-600` | `from-indigo-600 to-violet-500` + `btn-glow` |
+| 추천 카드 보더/글로우 | 인라인 shadow | `pricing-recommended` 등 기존 CSS 클래스 |
+| 그림자 | 하드코딩 shadow | `shadow-glow-indigo` 등 기존 boxShadow 토큰 |
+
+**기존 코드 패턴을 따른다:**
+- 같은 역할의 기존 컴포넌트가 있으면(예: 랜딩의 `pricing.tsx` 섹션), 해당 파일의 클래스 패턴을 **그대로 답습**한다
+- 기존 `components/ui/` 컴포넌트를 최대한 import하여 사용한다 (Badge, Button, SectionWrapper 등)
+- `globals.css`에 정의된 유틸 클래스(`btn-glow`, `glass-card`, `pricing-recommended` 등)를 활용한다
+
 ### 컴포넌트 작성 규칙
 
 1. **파일 구조**: `components/ui/{component-name}.tsx`
@@ -512,6 +544,7 @@ components/sections/image-edit/
 - **이미지**: placeholder는 Tailwind 그라디언트로 대체 (아래 이미지 제약사항 참조)
 - **아이콘**: `lucide-react`에서 가장 유사한 아이콘 선택
 - **텍스트**: 원본의 텍스트를 **정확히** 사용한다 (extracted-design.json의 textContent 참조)
+- **색상 (Page-Add 모드)**: 원본 사이트의 raw 색상이 아니라 **기존 디자인 토큰**을 사용한다 (Phase 3의 "디자인 토큰 매핑 규칙" 참조)
 
 ### Step 4-3: 페이지 조합
 
@@ -604,7 +637,7 @@ export default function ImageEditPage() {
 
 ### Page-Add 모드 추가 체크
 
-11. **기존 디자인 시스템 준수**: 새 페이지의 색상/간격/타이포가 기존 페이지와 일관적인지 확인
+11. **기존 디자인 시스템 준수 (필수)**: 새 코드에 원본 사이트의 raw 색상(`blue-500`, `slate-300`, `text-white` 등)이 남아있지 않은지 **Grep으로 검색**한다. 발견되면 기존 토큰(`primary`, `foreground`, `muted-foreground`, `card`, `border` 등)으로 교체한다. 기존 섹션 컴포넌트(예: `components/sections/pricing.tsx`)와 동일한 클래스 패턴을 사용하는지 확인한다.
 12. **공통 컴포넌트 재사용 누락**: Navigation, Footer 등을 복제하지 않고 import했는지 확인
 13. **라우팅 연결**: 기존 Navigation에 새 페이지로의 링크가 필요하면 사용자에게 안내
 

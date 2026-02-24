@@ -5,7 +5,7 @@ const footerSections = [
   {
     title: "AI 기능",
     links: [
-      { label: "보정", href: "/upscale" },
+      { label: "보정", href: "/retouching" },
       { label: "이미지 편집", href: "/image-edit" },
       { label: "얼굴 변경", href: "/face-edit" },
     ],
