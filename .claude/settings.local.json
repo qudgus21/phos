@@ -61,7 +61,8 @@
       "Skill(db-model)",
       "Skill(api-builder)",
       "Skill(test-api)",
-      "Bash(yarn dev:*)"
+      "Bash(yarn dev:*)",
+      "Skill(code-review)"
     ]
   },
   "enableAllProjectMcpServers": true,
