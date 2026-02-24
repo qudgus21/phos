@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, PenLine } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Plus, PenLine, X, GripVertical } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
+
+interface UploadedImage {
+  file: File;
+  previewUrl: string;
+}
 
 const MODEL_OPTIONS = [
   { value: "seedream-4.5", label: "Seedream 4.5" },
@@ -37,6 +43,8 @@ const fieldBase =
 const sliderThumb =
   "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer";
 
+const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
 export function ImageEditInputPanel() {
   const [model, setModel] = useState("nano-banana");
   const [prompt, setPrompt] = useState("");
@@ -46,9 +54,156 @@ export function ImageEditInputPanel() {
   const [height, setHeight] = useState(2048);
   const [scale, setScale] = useState(0);
   const [imageCount, setImageCount] = useState(1);
+  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [insertIdx, setInsertIdx] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<number | null>(null);
+  const lastClientXRef = useRef(0);
+
+  /* ── 드래그 중 자동 스크롤 ── */
+  const SCROLL_ZONE = 80;
+  const SCROLL_SPEED = 12;
+
+  const startAutoScroll = useCallback(() => {
+    const tick = () => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const x = lastClientXRef.current;
+
+      if (x > rect.left && x < rect.left + SCROLL_ZONE) {
+        const intensity = 1 - (x - rect.left) / SCROLL_ZONE;
+        container.scrollLeft -= SCROLL_SPEED * Math.max(intensity, 0.2);
+      } else if (x < rect.right && x > rect.right - SCROLL_ZONE) {
+        const intensity = 1 - (rect.right - x) / SCROLL_ZONE;
+        container.scrollLeft += SCROLL_SPEED * Math.max(intensity, 0.2);
+      }
+
+      autoScrollRef.current = requestAnimationFrame(tick);
+    };
+
+    if (autoScrollRef.current === null) {
+      autoScrollRef.current = requestAnimationFrame(tick);
+    }
+  }, []);
+
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollRef.current !== null) {
+      cancelAnimationFrame(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => stopAutoScroll, [stopAutoScroll]);
 
   const scaleDisplay = `×${Math.pow(2, scale).toFixed(2)}`;
   const creditCost = imageSize === "4K" ? 150 : 75;
+
+  const addFiles = useCallback(
+    (files: FileList | File[]) => {
+      const validFiles = Array.from(files).filter((f) =>
+        ACCEPTED_TYPES.includes(f.type)
+      );
+      const remaining = MAX_IMAGES - images.length;
+      const toAdd = validFiles.slice(0, remaining).map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+      if (toAdd.length > 0) setImages((prev) => [...prev, ...toAdd]);
+    },
+    [images.length]
+  );
+
+  const removeImage = useCallback((index: number) => {
+    setImages((prev) => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const openFilePicker = () => fileInputRef.current?.click();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) addFiles(e.target.files);
+    e.target.value = "";
+  };
+
+  /* ── 외부 파일 드롭 / 컨테이너 핸들러 ── */
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dragIdx !== null) {
+      lastClientXRef.current = e.clientX;
+      return;
+    }
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    stopAutoScroll();
+
+    if (dragIdx !== null) {
+      if (insertIdx !== null) {
+        setImages((prev) => {
+          const next = [...prev];
+          const [moved] = next.splice(dragIdx, 1);
+          const adjusted = insertIdx > dragIdx ? insertIdx - 1 : insertIdx;
+          next.splice(adjusted, 0, moved);
+          return next;
+        });
+      }
+      setDragIdx(null);
+      setInsertIdx(null);
+      return;
+    }
+
+    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
+  };
+
+  /* ── 이미지 재정렬 드래그 ── */
+  const handleReorderStart = (e: React.DragEvent, index: number) => {
+    setDragIdx(index);
+    e.dataTransfer.effectAllowed = "move";
+    if (e.currentTarget instanceof HTMLElement) {
+      e.dataTransfer.setDragImage(e.currentTarget, 30, 30);
+    }
+    lastClientXRef.current = e.clientX;
+    startAutoScroll();
+  };
+
+  const handleReorderOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dragIdx === null) return;
+    e.dataTransfer.dropEffect = "move";
+    lastClientXRef.current = e.clientX;
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    const raw = e.clientX < midX ? index : index + 1;
+
+    if (raw === dragIdx || raw === dragIdx + 1) {
+      setInsertIdx(null);
+    } else {
+      setInsertIdx(raw);
+    }
+  };
+
+  const handleReorderEnd = () => {
+    stopAutoScroll();
+    setDragIdx(null);
+    setInsertIdx(null);
+  };
 
   return (
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col overflow-hidden">
@@ -84,37 +239,134 @@ export function ImageEditInputPanel() {
               className={cn(fieldBase, "focus:ring-0 focus:border-transparent w-full px-3.5 py-3 min-h-[110px] resize-y placeholder:text-white/50")}
             />
           </div>
-          <p className="text-[13px] text-muted-foreground">팁: 장소, 스타일, 조명을 구체적으로 입력하세요</p>
+          <p className="text-[13px] text-muted-foreground">장소, 스타일, 조명을 구체적으로 입력하세요</p>
         </div>
 
         {/* Reference Images */}
-        <div className="flex-1 flex flex-col gap-2.5 min-h-0">
+        <div
+          className="flex-1 flex flex-col gap-2.5 min-h-0"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_TYPES.join(",")}
+            multiple
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
           <div className="flex items-center justify-between shrink-0">
-            <span className="text-sm text-card-foreground">참조 이미지 (0/{MAX_IMAGES})</span>
+            <span className="text-sm text-card-foreground">참조 이미지 ({images.length}/{MAX_IMAGES})</span>
             <button
               type="button"
-              className="px-3 py-1.5 text-xs font-semibold text-foreground rounded-lg border border-border bg-muted hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] transition-all duration-200 cursor-pointer"
+              onClick={openFilePicker}
+              disabled={images.length >= MAX_IMAGES}
+              className="px-3 py-1.5 text-xs font-semibold text-foreground rounded-lg border border-border bg-muted hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
             >
               이미지 추가
             </button>
           </div>
 
-          <div className="flex-1 overflow-x-auto min-h-[60px]">
-            <div className="flex gap-2 w-max h-full">
-              {Array.from({ length: MAX_IMAGES }).map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="flex flex-col items-center justify-center gap-1 aspect-square h-full rounded-lg border border-dashed border-white/[0.18] bg-white/[0.16] hover:border-[#818CF8] hover:bg-[#A5B4FC]/10 transition-colors cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 text-[#A5B4FC]" />
-                  <span className="text-[10px] text-muted-foreground/60">이미지 추가</span>
-                </button>
-              ))}
+          <div
+            ref={scrollContainerRef}
+            className={cn(
+              "flex-1 overflow-x-auto min-h-[60px] rounded-lg transition-colors",
+              isDragOver && "bg-[#A5B4FC]/10 ring-2 ring-[#818CF8] ring-dashed"
+            )}
+          >
+            <div className="flex gap-2 w-max h-full items-stretch">
+              {images.flatMap((img, i) => {
+                const nodes: React.ReactNode[] = [];
+
+                {/* 삽입 인디케이터 — 독립 요소로 양쪽 gap 동일 */}
+                if (dragIdx !== null && insertIdx === i) {
+                  nodes.push(
+                    <motion.div
+                      key="insert-indicator"
+                      layout
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                      className="w-1.5 self-stretch shrink-0 rounded-full bg-[#818CF8] shadow-[0_0_16px_rgba(129,140,248,0.7)]"
+                    />
+                  );
+                }
+
+                nodes.push(
+                  <motion.div
+                    key={img.previewUrl}
+                    layout
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    className="h-full"
+                  >
+                    <div
+                      draggable
+                      onDragStart={(e) => handleReorderStart(e, i)}
+                      onDragOver={(e) => handleReorderOver(e, i)}
+                      onDragEnd={handleReorderEnd}
+                      className={cn(
+                        "relative aspect-square h-full rounded-lg overflow-hidden group cursor-grab active:cursor-grabbing transition-[opacity,transform] duration-200",
+                        dragIdx === i && "opacity-30 scale-[0.85] ring-2 ring-[#818CF8]/50"
+                      )}
+                    >
+                      <img
+                        src={img.previewUrl}
+                        alt={`참조 이미지 ${i + 1}`}
+                        className="w-full h-full object-cover pointer-events-none"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center pb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <GripVertical className="w-3 h-3 text-white/70" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-black/80"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <span className="absolute top-1 left-1 text-[10px] font-bold text-white/80 bg-black/50 rounded px-1 leading-4">{i + 1}</span>
+                    </div>
+                  </motion.div>
+                );
+
+                return nodes;
+              })}
+
+              {/* 맨 끝 삽입 인디케이터 */}
+              {dragIdx !== null && insertIdx === images.length && (
+                <motion.div
+                  key="insert-indicator"
+                  layout
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  className="w-1.5 self-stretch shrink-0 rounded-full bg-[#818CF8] shadow-[0_0_16px_rgba(129,140,248,0.7)]"
+                />
+              )}
+
+              {/* Empty slots */}
+              {images.length < MAX_IMAGES &&
+                Array.from({ length: MAX_IMAGES - images.length }).map((_, i) => (
+                  <button
+                    key={`empty-${i}`}
+                    type="button"
+                    onClick={openFilePicker}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (dragIdx !== null) {
+                        lastClientXRef.current = e.clientX;
+                        setInsertIdx(images.length);
+                      }
+                    }}
+                    className="flex flex-col items-center justify-center gap-1 aspect-square h-full rounded-lg border border-dashed border-white/[0.18] bg-white/[0.16] hover:border-[#818CF8] hover:bg-[#A5B4FC]/10 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-[#A5B4FC]" />
+                    <span className="text-[10px] text-muted-foreground/60">이미지 추가</span>
+                  </button>
+                ))}
             </div>
           </div>
 
-          <p className="text-xs text-white/50 shrink-0">힌트: 드래그 앤 드롭 또는 이미지 추가 버튼 클릭</p>
+          <p className="text-xs text-white/50 shrink-0">드래그 앤 드롭 또는 이미지 추가 버튼 클릭</p>
         </div>
 
         <hr className="border-border" />
