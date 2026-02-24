@@ -48,7 +48,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-md"
             onClick={onClose}
           />
           <motion.div
@@ -57,7 +57,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              "relative w-full rounded-2xl bg-card border border-border p-6 shadow-xl",
+              "relative w-full rounded-2xl bg-[#1a1a2e]/80 backdrop-blur-xl border border-white/[0.12] p-6 shadow-[0_8px_40px_rgba(0,0,0,0.5),0_0_80px_rgba(99,102,241,0.08)]",
               sizeStyles[size]
             )}
           >

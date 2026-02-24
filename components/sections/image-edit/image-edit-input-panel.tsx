@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, PenLine, X, GripVertical } from "lucide-react";
+import { Plus, PenLine, X, GripVertical, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
+import { useToast } from "@/components/ui/toast";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { SAMPLES } from "@/lib/constants/samples";
 
 interface UploadedImage {
@@ -47,7 +49,12 @@ const sliderThumb =
 
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
-export function ImageEditInputPanel() {
+export interface ImageEditInputPanelHandle {
+  addImageFromUrl: (url: string) => Promise<void>;
+}
+
+export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle>(function ImageEditInputPanel(_props, ref) {
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const sampleId = searchParams.get("sample_id");
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
@@ -60,6 +67,7 @@ export function ImageEditInputPanel() {
   const [height, setHeight] = useState(2048);
   const [scale, setScale] = useState(0);
   const [imageCount, setImageCount] = useState(1);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -143,6 +151,22 @@ export function ImageEditInputPanel() {
     },
     [images.length]
   );
+
+  useImperativeHandle(ref, () => ({
+    addImageFromUrl: async (url: string) => {
+      if (images.length >= MAX_IMAGES) return;
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const ext = blob.type.split("/")[1] || "png";
+        const file = new File([blob], `ref-${Date.now()}.${ext}`, { type: blob.type });
+        addFiles([file]);
+      } catch {
+        // 외부 URL fetch 실패 시 previewUrl만으로 추가
+        setImages((prev) => [...prev, { file: null, previewUrl: url }]);
+      }
+    },
+  }), [images.length, addFiles]);
 
   const removeImage = useCallback((index: number) => {
     setImages((prev) => {
@@ -232,6 +256,7 @@ export function ImageEditInputPanel() {
   };
 
   return (
+    <>
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col overflow-hidden">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -460,30 +485,57 @@ export function ImageEditInputPanel() {
           <span className="text-xs text-white/50">
             {imageSize === "4K" ? "4K: 150 크레딧/장" : "1K/2K: 75 크레딧/장"}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowResetConfirm(true)}
+              className="text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+            >
+              초기화
+            </button>
             <button
               type="button"
               onClick={() => {
-                setPrompt("");
-                images.forEach((img) => { if (img.file) URL.revokeObjectURL(img.previewUrl); });
-                setImages([]);
-                setImageSize("4K");
-                setRatio("AUTO");
-                setWidth(2048);
-                setHeight(2048);
-                setScale(0);
-                setImageCount(1);
+                if (!prompt.trim()) {
+                  toast("프롬프트를 입력해주세요", "warning");
+                  return;
+                }
+                // TODO: 실행 로직
               }}
-              className="px-3.5 py-1.5 text-sm font-semibold text-foreground rounded-lg border border-border bg-muted hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] transition-all duration-200 cursor-pointer"
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
+                prompt.trim()
+                  ? "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110"
+                  : "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40"
+              )}
             >
-              리셋
-            </button>
-            <button type="button" disabled className="px-3.5 py-1.5 text-sm font-semibold text-primary-foreground rounded-lg bg-primary hover:bg-[#818CF8] hover:shadow-[0_0_12px_rgba(99,102,241,0.3)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer">
+              <Zap className="w-3.5 h-3.5" />
               실행 / {creditCost * imageCount} 크레딧
             </button>
           </div>
         </div>
       </div>
     </div>
+
+      <ConfirmModal
+        open={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={() => {
+          setPrompt("");
+          images.forEach((img) => { if (img.file) URL.revokeObjectURL(img.previewUrl); });
+          setImages([]);
+          setImageSize("4K");
+          setRatio("AUTO");
+          setWidth(2048);
+          setHeight(2048);
+          setScale(0);
+          setImageCount(1);
+        }}
+        title="초기화"
+        description="입력한 프롬프트와 참조 이미지, 설정이 모두 초기화됩니다."
+        confirmLabel="초기화"
+        variant="danger"
+      />
+    </>
   );
-}
+});
