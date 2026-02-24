@@ -27,6 +27,17 @@ const formVariants = {
   exit: { opacity: 0, x: -20, transition: { duration: 0.15 } },
 };
 
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M24 12c0-6.627-5.373-12-12-12S0 5.373 0 12c0 5.99 4.388 10.954 10.125 11.854V15.47H7.078V12h3.047V9.356c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.875V12h3.328l-.532 3.47h-2.796v8.384C19.612 22.954 24 17.99 24 12Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none">
@@ -127,29 +138,39 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   <Sparkles className="w-7 h-7 text-white" />
                 </motion.div>
                 <h2 className="text-2xl font-extrabold text-white font-display tracking-tight">
-                  {mode === "login" ? "Phos AI 로그인" : "Phos AI 시작하기"}
+                  {mode === "login" ? "Sign in to Phos" : "Get started with Phos"}
                 </h2>
                 <p className="text-sm text-indigo-400 mt-1.5 font-medium">
                   {mode === "login"
-                    ? "AI 보정의 새로운 기준을 경험하세요"
-                    : "무료로 가입하고 시작하세요"}
+                    ? "The new standard for AI image editing"
+                    : "Create your free account"}
                 </p>
               </div>
 
-              {/* Google Login Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold text-[15px] hover:bg-gray-50 hover:shadow-md transition-all shadow-sm cursor-pointer"
-              >
-                <GoogleIcon className="w-5 h-5" />
-                Google로 계속하기
-              </motion.button>
+              {/* Social Login Buttons */}
+              <div className="flex flex-col gap-2.5">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold text-[15px] hover:bg-gray-50 hover:shadow-md transition-all shadow-sm cursor-pointer"
+                >
+                  <GoogleIcon className="w-5 h-5 shrink-0" />
+                  <span className="flex-1 text-center pr-8">Continue with Google</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-[#1877F2] text-white font-semibold text-[15px] hover:bg-[#166AE0] hover:shadow-md transition-all shadow-sm cursor-pointer"
+                >
+                  <FacebookIcon className="w-5 h-5 shrink-0" />
+                  <span className="flex-1 text-center pr-8">Continue with Facebook</span>
+                </motion.button>
+              </div>
 
               {/* Divider */}
               <div className="flex items-center gap-4 my-6">
                 <div className="flex-1 h-px bg-white/10" />
-                <span className="text-xs text-slate-500 font-medium">또는</span>
+                <span className="text-xs text-slate-500 font-medium">or</span>
                 <div className="flex-1 h-px bg-white/10" />
               </div>
 
@@ -167,7 +188,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400/60" />
                     <input
                       type="email"
-                      placeholder="이메일 주소"
+                      placeholder="Email address"
                       className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/8 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
                     />
                   </div>
@@ -175,7 +196,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400/60" />
                     <input
                       type="password"
-                      placeholder="비밀번호"
+                      placeholder="Password"
                       className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/8 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
                     />
                   </div>
@@ -184,7 +205,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     whileTap={{ scale: 0.98 }}
                     className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-primary to-indigo-500 text-white font-bold text-[15px] hover:brightness-110 transition-all shadow-lg shadow-primary/20 cursor-pointer"
                   >
-                    {mode === "login" ? "로그인" : "가입하기"}
+                    {mode === "login" ? "Sign in" : "Create account"}
                     <ArrowRight className="w-4 h-4" />
                   </motion.button>
                 </motion.div>
@@ -194,22 +215,22 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <p className="text-sm text-slate-400 text-center mt-6">
                 {mode === "login" ? (
                   <>
-                    아직 계정이 없으신가요?{" "}
+                    Don&apos;t have an account?{" "}
                     <button
                       onClick={() => setMode("signup")}
                       className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors cursor-pointer"
                     >
-                      회원가입
+                      Sign up
                     </button>
                   </>
                 ) : (
                   <>
-                    이미 계정이 있으신가요?{" "}
+                    Already have an account?{" "}
                     <button
                       onClick={() => setMode("login")}
                       className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors cursor-pointer"
                     >
-                      로그인
+                      Sign in
                     </button>
                   </>
                 )}
@@ -217,15 +238,15 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
               {/* Terms */}
               <p className="text-[11px] text-slate-500 text-center mt-4 leading-relaxed">
-                계속 진행하면{" "}
-                <Link href="/terms/kr" className="text-slate-400 underline underline-offset-2 hover:text-indigo-400 transition-colors">
-                  이용약관
+                By continuing, you agree to our{" "}
+                <Link href="/terms" className="text-slate-400 underline underline-offset-2 hover:text-indigo-400 transition-colors">
+                  Terms of Service
                 </Link>
-                {" "}및{" "}
-                <Link href="/privacy/kr" className="text-slate-400 underline underline-offset-2 hover:text-indigo-400 transition-colors">
-                  개인정보처리방침
+                {" "}and{" "}
+                <Link href="/privacy" className="text-slate-400 underline underline-offset-2 hover:text-indigo-400 transition-colors">
+                  Privacy Policy
                 </Link>
-                에 동의하는 것으로 간주합니다.
+                .
               </p>
             </div>
           </motion.div>
