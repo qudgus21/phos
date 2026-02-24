@@ -20,20 +20,20 @@ const samples = [
 
 const sampleImages: Record<string, { before: string; after: string }> = {
   beauty: {
-    before: "/images/compare/beauty-before.png",
-    after: "/images/compare/beauty-after.png",
+    before: "/images/home/compare/beauty-before.png",
+    after: "/images/home/compare/beauty-after.png",
   },
   fashion: {
-    before: "/images/compare/fashion-before.png",
-    after: "/images/compare/fashion-after.png",
+    before: "/images/home/compare/fashion-before.png",
+    after: "/images/home/compare/fashion-after.png",
   },
   profile: {
-    before: "/images/compare/profile-before.png",
-    after: "/images/compare/profile-after.png",
+    before: "/images/home/compare/profile-before.png",
+    after: "/images/home/compare/profile-after.png",
   },
   ecommerce: {
-    before: "/images/compare/ecommerce-before.png",
-    after: "/images/compare/ecommerce-after.png",
+    before: "/images/home/compare/ecommerce-before.png",
+    after: "/images/home/compare/ecommerce-after.png",
   },
 };
 
