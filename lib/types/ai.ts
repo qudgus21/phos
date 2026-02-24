@@ -23,7 +23,7 @@ export interface GenerationResult {
 }
 
 export interface AIProvider {
-  name: AIProviderName;
+  readonly name: AIProviderName;
   generate(
     model: ModelConfig,
     input: GenerationInput

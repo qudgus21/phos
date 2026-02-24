@@ -5,30 +5,22 @@ import type {
   GenerationInput,
   GenerationResult,
 } from "../types";
+import { ApiError } from "@/lib/errors";
 
 export class ReplicateProvider implements AIProvider {
-  name: AIProviderName = "replicate";
+  readonly name: AIProviderName = "replicate";
 
   async generate(
     model: ModelConfig,
     input: GenerationInput
   ): Promise<GenerationResult> {
-    const start = Date.now();
-
     // TODO: Replicate API 연동
     // const response = await fetch("https://api.replicate.com/v1/predictions", { ... })
 
     void model;
     void input;
 
-    throw new Error("ReplicateProvider.generate() not implemented");
-
-    return {
-      outputUrl: "",
-      provider: this.name,
-      modelId: model.modelId,
-      durationMs: Date.now() - start,
-    };
+    throw new ApiError("ReplicateProvider.generate() not implemented", 501);
   }
 
   async getStatus(
@@ -36,6 +28,6 @@ export class ReplicateProvider implements AIProvider {
   ): Promise<"pending" | "processing" | "succeeded" | "failed"> {
     // TODO: Replicate API 상태 조회
     void predictionId;
-    throw new Error("ReplicateProvider.getStatus() not implemented");
+    throw new ApiError("ReplicateProvider.getStatus() not implemented", 501);
   }
 }

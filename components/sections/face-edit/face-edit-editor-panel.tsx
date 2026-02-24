@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Search,
   Download,
@@ -91,13 +91,15 @@ export function FaceEditEditorPanel({
 
   /* B: 샘플 이미지가 전달되면 에디터에 반영 */
   const prevSampleRef = useRef<string | null>(null);
-  if (sampleImage && sampleImage !== prevSampleRef.current) {
-    prevSampleRef.current = sampleImage;
-    setUploadedImage(sampleImage);
-    setFileName("샘플 이미지");
-    if (sampleGender) setGender(sampleGender);
-    onSampleConsumed?.();
-  }
+  useEffect(() => {
+    if (sampleImage && sampleImage !== prevSampleRef.current) {
+      prevSampleRef.current = sampleImage;
+      setUploadedImage(sampleImage);
+      setFileName("샘플 이미지");
+      if (sampleGender) setGender(sampleGender);
+      onSampleConsumed?.();
+    }
+  }, [sampleImage, sampleGender, onSampleConsumed]);
 
   const hasImage = !!uploadedImage;
   const currentStep = hasImage ? 2 : 1;
@@ -256,6 +258,7 @@ export function FaceEditEditorPanel({
           accept="image/jpeg,image/png"
           onChange={handleFileSelect}
           className="hidden"
+          aria-label="이미지 파일 선택"
         />
 
         {/* Gender Selection — D: 이모지 제거 */}

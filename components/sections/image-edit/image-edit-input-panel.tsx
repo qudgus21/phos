@@ -84,7 +84,7 @@ export function ImageEditInputPanel() {
               className={cn(fieldBase, "focus:ring-0 focus:border-transparent w-full px-3.5 py-3 min-h-[110px] resize-y placeholder:text-white/50")}
             />
           </div>
-          <p className="text-[13px] text-white/50">💡 팁: 장소, 스타일, 조명을 구체적으로 입력하세요</p>
+          <p className="text-[13px] text-muted-foreground">팁: 장소, 스타일, 조명을 구체적으로 입력하세요</p>
         </div>
 
         {/* Reference Images */}
@@ -108,7 +108,7 @@ export function ImageEditInputPanel() {
                   className="flex flex-col items-center justify-center gap-1 aspect-square h-full rounded-lg border border-dashed border-white/[0.18] bg-white/[0.16] hover:border-[#818CF8] hover:bg-[#A5B4FC]/10 transition-colors cursor-pointer"
                 >
                   <Plus className="w-4 h-4 text-[#A5B4FC]" />
-                  <span className="text-[10px] text-white/40">Add image</span>
+                  <span className="text-[10px] text-muted-foreground/60">이미지 추가</span>
                 </button>
               ))}
             </div>
@@ -121,7 +121,7 @@ export function ImageEditInputPanel() {
 
         {/* Additional Settings */}
         <div className="space-y-3">
-          <h3 className="text-base font-bold text-foreground">Additional Settings</h3>
+          <h3 className="text-base font-bold text-foreground">추가 설정</h3>
 
           <div className="space-y-3">
             {/* Image Size */}

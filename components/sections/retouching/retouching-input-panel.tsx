@@ -220,6 +220,7 @@ export function RetouchingInputPanel() {
           accept="image/jpeg,image/png"
           onChange={handleFileSelect}
           className="hidden"
+          aria-label="이미지 파일 선택"
         />
 
         {/* ── 이미지 크기 조절 ── */}

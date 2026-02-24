@@ -2,15 +2,20 @@ import type { AIProvider, AIProviderName, ModelConfig } from "./types";
 import { ReplicateProvider } from "./providers/replicate";
 import { StabilityProvider } from "./providers/stability";
 
-const providers: Record<AIProviderName, AIProvider> = {
-  replicate: new ReplicateProvider(),
-  stability: new StabilityProvider(),
+const providerFactories: Record<AIProviderName, () => AIProvider> = {
+  replicate: () => new ReplicateProvider(),
+  stability: () => new StabilityProvider(),
 };
 
+const providerCache = new Map<AIProviderName, AIProvider>();
+
 export function getProvider(name: AIProviderName): AIProvider {
-  const provider = providers[name];
+  let provider = providerCache.get(name);
   if (!provider) {
-    throw new Error(`Unknown AI provider: ${name}`);
+    const factory = providerFactories[name];
+    if (!factory) throw new Error(`Unknown AI provider: ${name}`);
+    provider = factory();
+    providerCache.set(name, provider);
   }
   return provider;
 }

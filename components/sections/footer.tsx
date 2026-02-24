@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Zap } from "lucide-react";
+import { Zap, Mail } from "lucide-react";
 
 const footerSections = [
   {
@@ -73,7 +73,7 @@ export function Footer() {
         <div className="mt-10 pt-6 border-t border-border">
           <h4 className="text-base font-bold text-foreground mb-3">문의</h4>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-            <span>📧</span>
+            <Mail className="w-4 h-4 shrink-0" />
             <a
               href="mailto:support@anelo.kr"
               className="hover:text-foreground transition-colors"

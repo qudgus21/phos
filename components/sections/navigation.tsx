@@ -121,7 +121,7 @@ export function Navigation() {
                 href={item.href}
                 className={cn(
                   "relative px-4 py-2.5 text-[15px] font-semibold transition-colors",
-                  isActive ? "text-white" : "text-slate-300 hover:text-white"
+                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
                 onMouseEnter={() => setHoveredHref(item.href)}
               >

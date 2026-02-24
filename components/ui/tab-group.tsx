@@ -38,8 +38,8 @@ export function TabGroup({
               variant === "compact" &&
                 "px-3 py-2 text-[13px]",
               isActive
-                ? "text-blue-400"
-                : "text-slate-400 hover:text-slate-200"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {tab.label}

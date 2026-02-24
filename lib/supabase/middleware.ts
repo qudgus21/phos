@@ -3,33 +3,37 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import type { Database } from "@/lib/types/database";
-import { AuthError, AppError } from "@/lib/errors";
+import { AuthError, AppError, ValidationError } from "@/lib/errors";
 import type { ApiErrorResponse } from "@/lib/types/api";
+
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) throw new Error(`Missing required environment variable: ${key}`);
+  return value;
+}
 
 type RouteHandler = (
   request: NextRequest,
   context: {
     supabase: ReturnType<typeof createServerClient<Database>>;
-    user: { id: string; email: string };
+    user: { id: string; email: string | null };
   }
 ) => Promise<NextResponse>;
 
 export function withAuth(handler: RouteHandler) {
   return async (request: NextRequest) => {
-    const response = NextResponse.next({ request });
+    let cookiesToForward: Array<{ name: string; value: string; options: Record<string, unknown> }> = [];
 
     const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
+      requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
       {
         cookies: {
           getAll() {
             return request.cookies.getAll();
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options);
-            });
+            cookiesToForward = cookiesToSet;
           },
         },
       }
@@ -45,15 +49,25 @@ export function withAuth(handler: RouteHandler) {
         throw new AuthError("인증이 필요합니다");
       }
 
-      return await handler(request, {
+      const handlerResponse = await handler(request, {
         supabase,
-        user: { id: user.id, email: user.email ?? "" },
+        user: { id: user.id, email: user.email ?? null },
       });
+
+      cookiesToForward.forEach(({ name, value, options }) => {
+        handlerResponse.cookies.set(name, value, options);
+      });
+
+      return handlerResponse;
     } catch (err) {
       if (err instanceof AppError) {
         const body: ApiErrorResponse = {
           success: false,
-          error: { code: err.code, message: err.message },
+          error: {
+            code: err.code,
+            message: err.message,
+            ...(err instanceof ValidationError && err.fields ? { fields: err.fields } : {}),
+          },
         };
         return NextResponse.json(body, { status: err.statusCode });
       }

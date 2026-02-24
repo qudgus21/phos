@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, ArrowRight, Mail, Lock } from "lucide-react";
 
@@ -217,13 +218,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               {/* Terms */}
               <p className="text-[11px] text-slate-500 text-center mt-4 leading-relaxed">
                 계속 진행하면{" "}
-                <span className="text-slate-400 underline underline-offset-2 cursor-pointer hover:text-indigo-400 transition-colors">
+                <Link href="/terms/kr" className="text-slate-400 underline underline-offset-2 hover:text-indigo-400 transition-colors">
                   이용약관
-                </span>
+                </Link>
                 {" "}및{" "}
-                <span className="text-slate-400 underline underline-offset-2 cursor-pointer hover:text-indigo-400 transition-colors">
+                <Link href="/privacy/kr" className="text-slate-400 underline underline-offset-2 hover:text-indigo-400 transition-colors">
                   개인정보처리방침
-                </span>
+                </Link>
                 에 동의하는 것으로 간주합니다.
               </p>
             </div>
