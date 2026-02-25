@@ -70,7 +70,8 @@
       "Bash(node:*)",
       "Bash(git log:*)",
       "Bash(pbcopy:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(git restore:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

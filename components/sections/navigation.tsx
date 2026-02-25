@@ -75,6 +75,7 @@ const mobileItemVariants = {
 export function Navigation() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoveredHref, setHoveredHref] = useState<string | null>(null);
+  const [clickedHref, setClickedHref] = useState<string | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -82,6 +83,12 @@ export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const { scrolled, progress } = useNavScroll();
+
+  /* 페이지 전환 완료 시 상태 리셋 */
+  useEffect(() => {
+    setHoveredHref(null);
+    setClickedHref(null);
+  }, [pathname]);
 
   const supabase = createClient();
 
@@ -166,20 +173,31 @@ export function Navigation() {
                   "relative px-4 py-2.5 text-[15px] font-semibold transition-colors",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
-                onMouseEnter={() => setHoveredHref(item.href)}
+                onMouseEnter={() => !clickedHref && setHoveredHref(item.href)}
+                onClick={() => {
+                  setClickedHref(item.href);
+                  setHoveredHref(null);
+                }}
               >
                 {item.label}
-                {(hoveredHref === item.href ||
-                  (isActive && hoveredHref === null)) && (
-                  <motion.span
-                    layoutId="nav-underline"
-                    className="absolute left-1.5 right-1.5 -bottom-0.5 h-0.5 bg-primary rounded-full"
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 30,
-                    }}
-                  />
+                {/* 클릭 시: 클릭한 탭에 즉시 표시 / 평소: hover 슬라이드 */}
+                {clickedHref ? (
+                  clickedHref === item.href && (
+                    <span className="absolute left-1.5 right-1.5 -bottom-0.5 h-0.5 bg-primary rounded-full" />
+                  )
+                ) : (
+                  (hoveredHref === item.href ||
+                    (isActive && hoveredHref === null)) && (
+                    <motion.span
+                      layoutId="nav-underline"
+                      className="absolute left-1.5 right-1.5 -bottom-0.5 h-0.5 bg-primary rounded-full"
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                      }}
+                    />
+                  )
                 )}
               </Link>
             );
