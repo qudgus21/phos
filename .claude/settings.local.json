@@ -67,11 +67,15 @@
       "Bash(wget:*)",
       "Skill(grab-images)",
       "Bash(node scripts/grab-images.mjs:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(git log:*)",
+      "Bash(pbcopy:*)",
+      "Bash(python3:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "vercel"
+    "vercel",
+    "supabase"
   ]
 }

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify your email — Phos AI</title>
+</head>
+<body style="margin:0;padding:0;background-color:#07080f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased;">
+  <div style="width:100%;background-color:#07080f;padding:40px 0 60px;">
+    <div style="max-width:480px;margin:0 auto;padding:0 20px;">
+
+      <!-- Logo -->
+      <div style="text-align:center;padding:0 0 32px;">
+        <div style="display:inline-block;width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);line-height:52px;text-align:center;font-size:24px;">&#10024;</div>
+        <div style="font-size:26px;font-weight:700;color:#ffffff;margin-top:12px;letter-spacing:-0.5px;">Phos AI</div>
+      </div>
+
+      <!-- Card -->
+      <div style="background:linear-gradient(180deg,#14162b 0%,#111328 100%);border:1px solid rgba(99,102,241,0.12);border-radius:24px;overflow:hidden;">
+        <!-- Accent bar -->
+        <div style="height:3px;background:linear-gradient(90deg,#6366f1,#8b5cf6,#a78bfa);"></div>
+
+        <div style="padding:44px 40px 48px;text-align:center;">
+          <!-- Icon -->
+          <div style="display:inline-block;width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15));border:1px solid rgba(99,102,241,0.2);line-height:64px;font-size:28px;margin-bottom:28px;">&#9993;&#65039;</div>
+
+          <h1 style="font-size:24px;font-weight:700;color:#ffffff;margin:0 0 12px;letter-spacing:-0.3px;">Verify your email</h1>
+          <p style="font-size:15px;line-height:1.6;color:#94a3b8;margin:0 0 36px;">
+            You're almost there! Click the button below to verify
+            <br /><span style="color:#a5b4fc;font-weight:600;">{{ .Email }}</span>
+            and start editing with AI.
+          </p>
+
+          <!-- CTA Button -->
+          <div style="margin:0 0 32px;">
+            <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:16px 48px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#ffffff!important;font-size:16px;font-weight:700;text-decoration:none;border-radius:14px;letter-spacing:0.2px;">
+              Verify Email
+            </a>
+          </div>
+
+          <!-- Divider -->
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,0.15),transparent);margin:0 0 24px;"></div>
+
+          <p style="font-size:13px;color:#64748b;line-height:1.5;margin:0;">
+            This link expires in <strong style="color:#94a3b8;font-weight:600;">24 hours</strong>.<br />
+            If you didn't create this account, just ignore this email.
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align:center;padding:32px 0 0;">
+        <div style="font-size:13px;color:#334155;letter-spacing:2px;text-transform:uppercase;font-weight:600;">PHOS</div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

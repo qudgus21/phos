@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback, Suspense } from "react";
-import { Navigation } from "@/components/sections/navigation";
 import { ImageEditSampleSidebar } from "@/components/sections/image-edit/image-edit-sample-sidebar";
 import { ImageEditInputPanel, type ImageEditInputPanelHandle } from "@/components/sections/image-edit/image-edit-input-panel";
 import { ImageEditResultPanel } from "@/components/sections/image-edit/image-edit-result-panel";
@@ -19,8 +18,6 @@ export default function ImageEditPage() {
 
   return (
     <div className="editor-theme h-screen overflow-hidden bg-background flex flex-col">
-      <Navigation />
-
       {/* GNB offset — nav py-4(16*2) + logo h-10(40) + progress 2px ≈ 74px */}
       <div className="h-[74px] shrink-0" />
 

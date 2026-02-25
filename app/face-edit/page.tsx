@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Navigation } from "@/components/sections/navigation";
 import {
   FaceEditSampleSidebar,
   type SampleData,
@@ -33,8 +32,6 @@ export default function FaceEditPage() {
 
   return (
     <div className="editor-theme h-screen overflow-hidden bg-background flex flex-col">
-      <Navigation />
-
       {/* GNB offset */}
       <div className="h-[74px] shrink-0" />
 

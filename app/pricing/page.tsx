@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Navigation } from "@/components/sections/navigation";
 import { Footer } from "@/components/sections/footer";
 import { PricingHeader } from "@/components/sections/pricing/pricing-header";
 import { PricingCards } from "@/components/sections/pricing/pricing-cards";
@@ -15,7 +14,6 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <Navigation />
       <PricingHeader activeTab={activeTab} onTabChange={setActiveTab} />
       <PricingCards activeTab={activeTab} />
       <PricingFaq />

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Navigation } from "@/components/sections/navigation";
 import { RetouchingInputPanel } from "@/components/sections/retouching/retouching-input-panel";
 import { RetouchingResultPanel } from "@/components/sections/retouching/retouching-result-panel";
 import { RetouchingHistoryPanel } from "@/components/sections/retouching/retouching-history-panel";
@@ -13,8 +12,6 @@ export default function RetouchingPage() {
 
   return (
     <div className="editor-theme h-screen overflow-hidden bg-background flex flex-col">
-      <Navigation />
-
       {/* GNB offset */}
       <div className="h-[74px] shrink-0" />
 

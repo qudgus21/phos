@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ArrowRight, Mail, Lock } from "lucide-react";
+import { X, Sparkles, ArrowRight, Mail, Lock, Check, AlertCircle, RefreshCw } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.95, y: 20 },
@@ -61,24 +63,159 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
+// 비밀번호 유효성 검증
+const passwordRules = [
+  { key: "length", label: "8 characters or more", test: (pw: string) => pw.length >= 8 },
+  { key: "letter", label: "At least one letter", test: (pw: string) => /[a-zA-Z]/.test(pw) },
+  { key: "number", label: "At least one number", test: (pw: string) => /\d/.test(pw) },
+] as const;
+
+function isPasswordValid(password: string) {
+  return passwordRules.every((r) => r.test(password));
+}
+
+function isEmailValid(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// Supabase 에러 메시지 매핑
+function mapAuthError(message: string): string {
+  if (message.includes("Invalid login credentials")) return "Invalid email or password.";
+  if (message.includes("Email not confirmed")) return "Please verify your email first.";
+  if (message.includes("User already registered")) return "This email is already registered.";
+  if (message.includes("rate limit")) return "Too many attempts. Please try again later.";
+  if (message.includes("Password should be at least")) return "Password must be at least 8 characters.";
+  return message;
+}
+
+/* ── 공통 input 스타일 ── */
+const inputBase =
+  "w-full pl-11 pr-4 py-3.5 rounded-xl bg-[#383b5e] border border-[#4e5283] text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400/50 transition-all";
+const inputError =
+  "w-full pl-11 pr-4 py-3.5 rounded-xl bg-[#383b5e] border border-red-400/50 text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-400/40 focus:border-red-400/50 transition-all";
+
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type Mode = "login" | "signup";
+type Mode = "login" | "signup" | "check-email";
 
 export function LoginModal({ isOpen, onClose }: LoginModalProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [resending, setResending] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const supabase = createClient();
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : "";
+
+  const resetForm = useCallback(() => {
+    setEmail("");
+    setPassword("");
+    setError("");
+    setLoading(false);
+    setResending(false);
+    setSubmitted(false);
+  }, []);
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => setMode("login"), 200);
+    setTimeout(() => {
+      setMode("login");
+      resetForm();
+    }, 200);
   };
+
+  // 클라이언트 유효성 검증 — submit 시에만
+  const validate = (): string | null => {
+    if (!email.trim()) return "Please enter your email address.";
+    if (!isEmailValid(email)) return "Please enter a valid email address.";
+    if (!password.trim()) return "Please enter your password.";
+    if (mode === "signup" && !isPasswordValid(password)) return "Password doesn't meet the requirements below.";
+    return null;
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitted(true);
+    const msg = validate();
+    if (msg) { setError(msg); return; }
+
+    setLoading(true);
+    setError("");
+
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: redirectTo },
+    });
+
+    setLoading(false);
+
+    if (authError) {
+      setError(mapAuthError(authError.message));
+      return;
+    }
+
+    setMode("check-email");
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitted(true);
+    const msg = validate();
+    if (msg) { setError(msg); return; }
+
+    setLoading(true);
+    setError("");
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (authError) {
+      setError(mapAuthError(authError.message));
+      return;
+    }
+
+    handleClose();
+    router.refresh();
+  };
+
+  const handleOAuth = async (provider: "google" | "facebook") => {
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo },
+    });
+  };
+
+  const handleResendEmail = async () => {
+    setResending(true);
+    await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: redirectTo },
+    });
+    setResending(false);
+  };
+
+  const handleSubmit = mode === "signup" ? handleSignUp : handleLogin;
+
+  // 이메일/비밀번호 에러 상태 (submit 후에만)
+  const emailHasError = submitted && (!email.trim() || !isEmailValid(email));
+  const passwordHasError = submitted && !password.trim();
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     if (isOpen) {
       document.addEventListener("keydown", handleEsc);
@@ -88,7 +225,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       document.removeEventListener("keydown", handleEsc);
       document.body.style.overflow = "";
     };
-  }, [isOpen, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
@@ -100,7 +238,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={handleClose}
           />
 
@@ -110,14 +248,14 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="relative w-full max-w-[420px] mx-4 rounded-3xl bg-gradient-to-b from-[#2a2d4a] to-[#232540] shadow-2xl shadow-black/40 overflow-hidden"
+            className="relative w-full max-w-[420px] mx-4 rounded-3xl bg-gradient-to-b from-[#2f3363] to-[#282b52] shadow-2xl shadow-black/50 overflow-hidden"
           >
             {/* Top accent bar */}
-            <div className="h-1 bg-gradient-to-r from-primary via-indigo-400 to-violet-500" />
+            <div className="h-1 bg-gradient-to-r from-indigo-500 via-violet-400 to-purple-500" />
 
             <div className="relative p-8 pt-7">
               {/* Subtle glow */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-32 bg-indigo-500/15 blur-3xl rounded-full pointer-events-none" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-36 bg-indigo-400/20 blur-3xl rounded-full pointer-events-none" />
 
               {/* Close button */}
               <button
@@ -127,127 +265,232 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 <X className="w-5 h-5" />
               </button>
 
-              {/* Logo & Header */}
-              <div className="relative flex flex-col items-center mb-7">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.1, type: "spring" as const, stiffness: 300, damping: 25 }}
-                  className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-indigo-400 mb-4 shadow-lg shadow-primary/25"
-                >
-                  <Sparkles className="w-7 h-7 text-white" />
-                </motion.div>
-                <h2 className="text-2xl font-extrabold text-white font-display tracking-tight">
-                  {mode === "login" ? "Sign in to Phos" : "Get started with Phos"}
-                </h2>
-                <p className="text-sm text-indigo-400 mt-1.5 font-medium">
-                  {mode === "login"
-                    ? "The new standard for AI image editing"
-                    : "Create your free account"}
-                </p>
-              </div>
-
-              {/* Social Login Buttons */}
-              <div className="flex flex-col gap-2.5">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold text-[15px] hover:bg-gray-50 hover:shadow-md transition-all shadow-sm cursor-pointer"
-                >
-                  <GoogleIcon className="w-5 h-5 shrink-0" />
-                  <span className="flex-1 text-center pr-8">Continue with Google</span>
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-[#1877F2] text-white font-semibold text-[15px] hover:bg-[#166AE0] hover:shadow-md transition-all shadow-sm cursor-pointer"
-                >
-                  <FacebookIcon className="w-5 h-5 shrink-0" />
-                  <span className="flex-1 text-center pr-8">Continue with Facebook</span>
-                </motion.button>
-              </div>
-
-              {/* Divider */}
-              <div className="flex items-center gap-4 my-6">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-xs text-slate-500 font-medium">or</span>
-                <div className="flex-1 h-px bg-white/10" />
-              </div>
-
-              {/* Form */}
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={mode}
-                  variants={formVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  className="space-y-3"
-                >
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400/60" />
-                    <input
-                      type="email"
-                      placeholder="Email address"
-                      className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/8 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
-                    />
-                  </div>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400/60" />
-                    <input
-                      type="password"
-                      placeholder="Password"
-                      className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/8 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all"
-                    />
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-primary to-indigo-500 text-white font-bold text-[15px] hover:brightness-110 transition-all shadow-lg shadow-primary/20 cursor-pointer"
+                {mode === "check-email" ? (
+                  /* ── Check Email Screen ── */
+                  <motion.div
+                    key="check-email"
+                    variants={formVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="relative flex flex-col items-center text-center"
                   >
-                    {mode === "login" ? "Sign in" : "Create account"}
-                    <ArrowRight className="w-4 h-4" />
-                  </motion.button>
-                </motion.div>
-              </AnimatePresence>
+                    <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 mb-5 shadow-lg shadow-emerald-500/25">
+                      <Mail className="w-8 h-8 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-extrabold text-white font-display tracking-tight">
+                      Check your email
+                    </h2>
+                    <p className="text-sm text-slate-300 mt-3 leading-relaxed max-w-[300px]">
+                      We sent a verification link to{" "}
+                      <span className="text-indigo-300 font-semibold">{email}</span>.
+                      <br />
+                      Click the link to activate your account.
+                    </p>
 
-              {/* Toggle mode */}
-              <p className="text-sm text-slate-400 text-center mt-6">
-                {mode === "login" ? (
-                  <>
-                    Don&apos;t have an account?{" "}
                     <button
-                      onClick={() => setMode("signup")}
-                      className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors cursor-pointer"
+                      onClick={handleResendEmail}
+                      disabled={resending}
+                      className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/15 text-sm text-slate-200 font-medium hover:bg-white/15 transition-all cursor-pointer disabled:opacity-50"
                     >
-                      Sign up
+                      <RefreshCw className={`w-4 h-4 ${resending ? "animate-spin" : ""}`} />
+                      {resending ? "Sending..." : "Resend email"}
                     </button>
-                  </>
+
+                    <button
+                      onClick={() => {
+                        setMode("login");
+                        resetForm();
+                      }}
+                      className="mt-4 text-sm text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                    >
+                      Back to sign in
+                    </button>
+                  </motion.div>
                 ) : (
-                  <>
-                    Already have an account?{" "}
-                    <button
-                      onClick={() => setMode("login")}
-                      className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors cursor-pointer"
-                    >
-                      Sign in
-                    </button>
-                  </>
-                )}
-              </p>
+                  /* ── Login / Signup Form ── */
+                  <motion.div
+                    key={mode}
+                    variants={formVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="relative"
+                  >
+                    {/* Logo & Header */}
+                    <div className="flex flex-col items-center mb-7">
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.1, type: "spring" as const, stiffness: 300, damping: 25 }}
+                        className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-400 mb-4 shadow-lg shadow-indigo-500/30"
+                      >
+                        <Sparkles className="w-7 h-7 text-white" />
+                      </motion.div>
+                      <h2 className="text-2xl font-extrabold text-white font-display tracking-tight">
+                        {mode === "login" ? "Sign in to Phos" : "Get started with Phos"}
+                      </h2>
+                      <p className="text-sm text-indigo-300 mt-1.5 font-medium">
+                        {mode === "login"
+                          ? "The new standard for AI image editing"
+                          : "Create your free account"}
+                      </p>
+                    </div>
 
-              {/* Terms */}
-              <p className="text-[11px] text-slate-500 text-center mt-4 leading-relaxed">
-                By continuing, you agree to our{" "}
-                <Link href="/terms" className="text-slate-400 underline underline-offset-2 hover:text-indigo-400 transition-colors">
-                  Terms of Service
-                </Link>
-                {" "}and{" "}
-                <Link href="/privacy" className="text-slate-400 underline underline-offset-2 hover:text-indigo-400 transition-colors">
-                  Privacy Policy
-                </Link>
-                .
-              </p>
+                    {/* Social Login Buttons — login 모드에서만 표시 */}
+                    {mode === "login" && (
+                      <>
+                        <div className="flex flex-col gap-2.5">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleOAuth("google")}
+                            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold text-[15px] hover:bg-gray-50 hover:shadow-md transition-all shadow-sm cursor-pointer"
+                          >
+                            <GoogleIcon className="w-5 h-5 shrink-0" />
+                            <span className="flex-1 text-center pr-8">Continue with Google</span>
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleOAuth("facebook")}
+                            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-[#1877F2] text-white font-semibold text-[15px] hover:bg-[#166AE0] hover:shadow-md transition-all shadow-sm cursor-pointer"
+                          >
+                            <FacebookIcon className="w-5 h-5 shrink-0" />
+                            <span className="flex-1 text-center pr-8">Continue with Facebook</span>
+                          </motion.button>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="flex items-center gap-4 my-6">
+                          <div className="flex-1 h-px bg-white/15" />
+                          <span className="text-xs text-slate-400 font-medium">or</span>
+                          <div className="flex-1 h-px bg-white/15" />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Form */}
+                    <form onSubmit={handleSubmit} noValidate className="space-y-3">
+                      <div className="relative">
+                        <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${emailHasError ? "text-red-400/70" : "text-indigo-300/50"}`} />
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
+                          placeholder="Email address"
+                          className={emailHasError ? inputError : inputBase}
+                        />
+                      </div>
+                      <div className="relative">
+                        <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${passwordHasError ? "text-red-400/70" : "text-indigo-300/50"}`} />
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
+                          placeholder="Password"
+                          className={passwordHasError ? inputError : inputBase}
+                        />
+                      </div>
+
+                      {/* Password hints (signup only) */}
+                      {mode === "signup" && password.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          className="flex flex-col gap-1.5 pt-1"
+                        >
+                          {passwordRules.map((rule) => {
+                            const pass = rule.test(password);
+                            return (
+                              <div key={rule.key} className="flex items-center gap-2 text-xs">
+                                <Check
+                                  className={`w-3.5 h-3.5 ${pass ? "text-emerald-400" : "text-slate-500"}`}
+                                />
+                                <span className={pass ? "text-emerald-400" : "text-slate-400"}>
+                                  {rule.label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+
+                      {/* Error message — submit 후에만 표시 */}
+                      <AnimatePresence>
+                        {error && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-500/10 border border-red-400/20 text-[13px] text-red-300 leading-snug"
+                          >
+                            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                            {error}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <motion.button
+                        type="submit"
+                        disabled={loading || (mode === "signup" && password.length > 0 && !isPasswordValid(password))}
+                        whileHover={{ scale: loading ? 1 : 1.02 }}
+                        whileTap={{ scale: loading ? 1 : 0.98 }}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 text-white font-bold text-[15px] hover:brightness-110 transition-all shadow-lg shadow-indigo-500/25 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            {mode === "login" ? "Sign in" : "Create account"}
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </motion.button>
+                    </form>
+
+                    {/* Toggle mode */}
+                    <p className="text-sm text-slate-400 text-center mt-6">
+                      {mode === "login" ? (
+                        <>
+                          Don&apos;t have an account?{" "}
+                          <button
+                            onClick={() => { setMode("signup"); setError(""); setSubmitted(false); }}
+                            className="font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent hover:from-indigo-200 hover:to-violet-200 transition-all cursor-pointer"
+                          >
+                            Sign up
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          Already have an account?{" "}
+                          <button
+                            onClick={() => { setMode("login"); setError(""); setSubmitted(false); }}
+                            className="font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent hover:from-indigo-200 hover:to-violet-200 transition-all cursor-pointer"
+                          >
+                            Sign in
+                          </button>
+                        </>
+                      )}
+                    </p>
+
+                    {/* Terms */}
+                    <p className="text-[11px] text-slate-500 text-center mt-4 leading-relaxed">
+                      By continuing, you agree to our{" "}
+                      <Link href="/terms" className="text-slate-400 underline underline-offset-2 hover:text-indigo-300 transition-colors">
+                        Terms of Service
+                      </Link>
+                      {" "}and{" "}
+                      <Link href="/privacy" className="text-slate-400 underline underline-offset-2 hover:text-indigo-300 transition-colors">
+                        Privacy Policy
+                      </Link>
+                      .
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         </div>
