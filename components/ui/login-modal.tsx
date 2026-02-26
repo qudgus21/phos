@@ -149,7 +149,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setLoading(true);
     setError("");
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: redirectTo },
@@ -159,6 +159,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     if (authError) {
       setError(mapAuthError(authError.message));
+      return;
+    }
+
+    // 이미 가입된 이메일이면 identities가 빈 배열 (email enumeration protection)
+    if (data.user && data.user.identities?.length === 0) {
+      setError("This email is already registered. Try signing in with Google or Facebook.");
       return;
     }
 

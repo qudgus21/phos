@@ -26,7 +26,19 @@ export async function middleware(request: NextRequest) {
   );
 
   // 세션 갱신 — getUser()가 쿠키 refresh를 트리거
-  await supabase.auth.getUser();
+  const { error } = await supabase.auth.getUser();
+
+  // 세션 쿠키가 있는데 유저가 유효하지 않은 경우 → 쿠키 정리
+  // auth callback 경로는 제외 (PKCE code_verifier 쿠키가 signOut으로 삭제되면 OAuth 실패)
+  const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/");
+  if (error && !isAuthCallback) {
+    const hasAuthCookies = request.cookies
+      .getAll()
+      .some((c) => c.name.startsWith("sb-"));
+    if (hasAuthCookies) {
+      await supabase.auth.signOut();
+    }
+  }
 
   return supabaseResponse;
 }

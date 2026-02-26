@@ -71,7 +71,18 @@
       "Bash(git log:*)",
       "Bash(pbcopy:*)",
       "Bash(python3:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(supabase --version:*)",
+      "Bash(git rm:*)",
+      "Bash(npm cache clean:*)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__get_logs",
+      "mcp__supabase__list_migrations",
+      "Bash(cat:*)",
+      "mcp__supabase__search_docs",
+      "mcp__supabase__apply_migration"
     ]
   },
   "enableAllProjectMcpServers": true,

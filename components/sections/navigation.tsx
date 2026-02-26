@@ -94,9 +94,14 @@ export function Navigation() {
 
   /* Auth state listener */
   useEffect(() => {
-    // 초기 유저 확인
-    supabase.auth.getUser().then(({ data: { user: u } }) => {
-      setUser(u);
+    // 서버에서 유저 정보 검증 (JWT 유효성 + DB 존재 여부)
+    supabase.auth.getUser().then(({ data: { user: u }, error }) => {
+      if (error) {
+        supabase.auth.signOut();
+        setUser(null);
+      } else {
+        setUser(u);
+      }
       setAuthReady(true);
     });
 
@@ -132,8 +137,9 @@ export function Navigation() {
     };
   }, [mobileOpen]);
 
-  // 유저 이니셜 (이메일 첫 글자)
+  // 유저 아바타 (소셜 로그인 시 프로필 이미지, 없으면 이니셜)
   const userInitial = user?.email?.charAt(0).toUpperCase() ?? "U";
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
@@ -216,9 +222,13 @@ export function Navigation() {
               }}
               className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/8 transition-colors cursor-pointer"
             >
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-indigo-400 flex items-center justify-center text-white text-sm font-bold">
-                {userInitial}
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-indigo-400 flex items-center justify-center text-white text-sm font-bold">
+                  {userInitial}
+                </div>
+              )}
               <span className="text-sm text-slate-300 font-medium">
                 {user.email}
               </span>
@@ -340,9 +350,13 @@ export function Navigation() {
                   {user ? (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-3 px-4 py-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-400 flex items-center justify-center text-white text-sm font-bold">
-                          {userInitial}
-                        </div>
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-400 flex items-center justify-center text-white text-sm font-bold">
+                            {userInitial}
+                          </div>
+                        )}
                         <span className="text-sm text-slate-300 font-medium truncate">{user.email}</span>
                       </div>
                       <button
