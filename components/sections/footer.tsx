@@ -20,9 +20,9 @@ const footerSections = [
   {
     title: "정책",
     links: [
-      { label: "이용약관", href: "/terms/kr" },
-      { label: "개인정보처리방침", href: "/privacy/kr" },
-      { label: "환불정책", href: "/refund/kr" },
+      { label: "이용약관", href: "/terms" },
+      { label: "개인정보처리방침", href: "/privacy" },
+      { label: "데이터 삭제", href: "/data-deletion" },
     ],
   },
 ];

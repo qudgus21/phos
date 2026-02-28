@@ -199,7 +199,10 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const handleOAuth = async (provider: "google" | "facebook") => {
     await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo },
+      options: {
+        redirectTo,
+        scopes: provider === "facebook" ? "email public_profile" : undefined,
+      },
     });
   };
 
