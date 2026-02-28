@@ -94,7 +94,7 @@ export function RetouchingResultPanel() {
       </div>
 
       {/* Result image — single, original aspect ratio */}
-      <div className="flex-1 min-h-0 flex items-center justify-center p-4">
+      <div className="flex-1 min-h-0 flex items-start justify-center p-4 pt-[1px]">
         <img
           src={SAMPLE_RESULT}
           alt="Retouching result"
@@ -103,22 +103,22 @@ export function RetouchingResultPanel() {
       </div>
 
       {/* Floating action buttons */}
-      <div className="absolute right-3 top-16 flex flex-col gap-2">
+      <div className="absolute right-4 top-16 flex flex-col gap-2.5">
         <button
           type="button"
           onClick={() => setLightboxSrc(SAMPLE_RESULT)}
-          className="w-10 h-10 rounded-xl bg-card/80 border border-border flex items-center justify-center text-card-foreground hover:bg-card transition-colors cursor-pointer"
+          className="w-12 h-12 rounded-xl bg-card/80 border border-border flex items-center justify-center text-card-foreground hover:bg-card transition-colors cursor-pointer"
           title="확대 보기"
         >
-          <ZoomIn className="w-5 h-5" />
+          <ZoomIn className="w-6 h-6" />
         </button>
         <button
           type="button"
           onClick={handleDownload}
-          className="w-10 h-10 rounded-xl bg-card/80 border border-border flex items-center justify-center text-card-foreground hover:bg-card transition-colors cursor-pointer"
+          className="w-12 h-12 rounded-xl bg-card/80 border border-border flex items-center justify-center text-card-foreground hover:bg-card transition-colors cursor-pointer"
           title="다운로드"
         >
-          <Download className="w-5 h-5" />
+          <Download className="w-6 h-6" />
         </button>
       </div>
 
