@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 
 export type MaskMode = "draw" | "erase" | "rect";
 
@@ -42,6 +42,7 @@ export function useMaskCanvas({
   const rectStart = useRef<{ x: number; y: number } | null>(null);
   const rectSnapshot = useRef<ImageData | null>(null);
   const activeErasing = useRef(false);
+  const prevSize = useRef({ width: 0, height: 0 });
 
   /* ── Undo history ── */
   const history = useRef<ImageData[]>([]);
@@ -82,8 +83,15 @@ export function useMaskCanvas({
     const canvas = canvasRef.current;
     if (!canvas || !displayWidth || !displayHeight) return;
 
-    canvas.width = Math.round(displayWidth);
-    canvas.height = Math.round(displayHeight);
+    const w = Math.round(displayWidth);
+    const h = Math.round(displayHeight);
+
+    /* 크기 변동 없으면 재초기화 방지 */
+    if (prevSize.current.width === w && prevSize.current.height === h) return;
+    prevSize.current = { width: w, height: h };
+
+    canvas.width = w;
+    canvas.height = h;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -269,7 +277,10 @@ export function useMaskCanvas({
     return true;
   }, [canvasRef]);
 
-  const cursor = mode === "rect" ? "crosshair" : makeBrushCursor(brushSize, mode === "erase");
+  const cursor = useMemo(
+    () => (mode === "rect" ? "crosshair" : makeBrushCursor(brushSize, mode === "erase")),
+    [mode, brushSize]
+  );
 
   const canvasProps = {
     onMouseDown,

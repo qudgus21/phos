@@ -110,28 +110,31 @@ export function FaceEditMaskEditor({
     onClose();
   }, [exportMask, isEmpty, onSave, onClose]);
 
-  if (!isOpen) return null;
-
   return createPortal(
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
-        onClick={onClose}
-      >
-        {/* 에디터 카드 */}
+      {isOpen && (
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
+          key="mask-editor-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="flex flex-col bg-[#1a1a1a] rounded-2xl border border-white/[0.08] shadow-2xl overflow-hidden"
-          style={{ maxWidth: 720, maxHeight: "85vh", width: "calc(100vw - 48px)" }}
-          onClick={(e) => e.stopPropagation()}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80"
+          onClick={onClose}
         >
+          {/* 에디터 카드 */}
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="마스크 편집"
+            className="flex flex-col bg-[#1a1a1a] rounded-2xl border border-white/[0.08] shadow-2xl overflow-hidden"
+            style={{ maxWidth: 720, maxHeight: "85vh", width: "calc(100vw - 48px)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
             <h2 className="text-sm font-bold text-white/90">마스크 편집</h2>
@@ -242,6 +245,7 @@ export function FaceEditMaskEditor({
                 max={MAX_BRUSH}
                 value={brushSize}
                 onChange={(e) => setBrushSize(Number(e.target.value))}
+                aria-label="브러시 크기"
                 className={cn(
                   "w-16 h-1 rounded-full appearance-none cursor-pointer bg-white/15",
                   "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer",
@@ -271,8 +275,9 @@ export function FaceEditMaskEditor({
               초기화
             </button>
           </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>,
     document.body
   );

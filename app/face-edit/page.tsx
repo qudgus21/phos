@@ -20,7 +20,7 @@ export default function FaceEditPage() {
 
       {/* Main Editor */}
       <div className="flex-1 flex gap-2.5 px-6 lg:px-12 xl:px-20 py-2.5 min-h-0 max-w-[1400px] mx-auto w-full">
-        <Suspense>
+        <Suspense fallback={null}>
           <FaceEditSampleSidebar />
         </Suspense>
 
@@ -31,7 +31,7 @@ export default function FaceEditPage() {
               mobileTab !== "editor" && "hidden lg:block"
             )}
           >
-            <Suspense>
+            <Suspense fallback={null}>
               <FaceEditEditorPanel />
             </Suspense>
           </div>

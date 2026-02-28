@@ -23,67 +23,67 @@ import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
 import { FaceEditMaskEditor } from "./face-edit-mask-editor";
 
 /* ── 확대 모달 (라이트박스) ── */
-function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose]
-  );
-
+function LightboxModal({ src, onClose }: { src: string | null; onClose: () => void }) {
   useEffect(() => {
+    if (!src) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+  }, [src, onClose]);
 
-  const filename = src.split("/").pop() || "image.png";
+  const filename = src?.split("/").pop() || "image.png";
 
   return createPortal(
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/75"
-        onClick={onClose}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer z-10"
-        >
-          <X className="w-5 h-5 text-white" />
-        </button>
-
-        <motion.img
-          initial={{ scale: 0.92, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.92, opacity: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          src={src}
-          alt="확대 보기"
-          className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
-          onClick={(e) => e.stopPropagation()}
-        />
-
+      {src && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.2 }}
-          className="mt-4"
-          onClick={(e) => e.stopPropagation()}
+          key="lightbox"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/75"
+          onClick={onClose}
         >
-          <a
-            href={src}
-            download
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white hover:bg-white/20 transition-colors"
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer z-10"
           >
-            <Download className="w-4 h-4" />
-            {filename}
-          </a>
+            <X className="w-5 h-5 text-white" />
+          </button>
+
+          <motion.img
+            initial={{ scale: 0.92, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.92, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            src={src}
+            alt="확대 보기"
+            className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.2 }}
+            className="mt-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <a
+              href={src}
+              download
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white hover:bg-white/20 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              {filename}
+            </a>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>,
     document.body
   );
@@ -204,7 +204,7 @@ export function FaceEditEditorPanel() {
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file && (file.type === "image/jpeg" || file.type === "image/png")) {
+      if (file && (file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/webp")) {
         processFile(file);
       }
     },
@@ -436,7 +436,7 @@ export function FaceEditEditorPanel() {
             <>
               <Upload className="w-10 h-10 text-muted-foreground/50" />
               <p className="text-[15px] font-extrabold text-card-foreground">
-                Drop image here or click to upload
+                이미지를 드래그하거나 클릭하여 업로드
               </p>
               <p className="text-[15px] text-muted-foreground">
                 JPG, PNG, WebP
@@ -448,7 +448,7 @@ export function FaceEditEditorPanel() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png"
+          accept="image/jpeg,image/png,image/webp"
           onChange={handleFileSelect}
           className="hidden"
           aria-label="이미지 파일 선택"
@@ -505,6 +505,7 @@ export function FaceEditEditorPanel() {
               step={0.01}
               value={strength}
               onChange={(e) => setStrength(Number(e.target.value))}
+              aria-label="변화 강도"
               className={cn(
                 "w-full h-1.5 rounded-full appearance-none cursor-pointer",
                 "bg-primary",
@@ -530,6 +531,7 @@ export function FaceEditEditorPanel() {
               step={0.01}
               value={resultScale}
               onChange={(e) => setResultScale(Number(e.target.value))}
+              aria-label="결과 크기"
               className={cn(
                 "w-full h-1.5 rounded-full appearance-none cursor-pointer",
                 "bg-primary",
@@ -553,9 +555,7 @@ export function FaceEditEditorPanel() {
       </div>
 
       {/* Lightbox Modal */}
-      {lightboxSrc && (
-        <LightboxModal src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
-      )}
+      <LightboxModal src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
 
       {/* Mask Editor Modal */}
       {uploadedImage && !isSampleView && (
