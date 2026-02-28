@@ -42,13 +42,14 @@ export function useMaskCanvas({
   const rectStart = useRef<{ x: number; y: number } | null>(null);
   const rectSnapshot = useRef<ImageData | null>(null);
   const activeErasing = useRef(false);
-  const prevSize = useRef({ width: 0, height: 0 });
+  const dirty = useRef(false);
 
   /* ── Undo history ── */
   const history = useRef<ImageData[]>([]);
   const historyIndex = useRef(-1);
 
   const pushHistory = useCallback(() => {
+    dirty.current = true;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -86,9 +87,8 @@ export function useMaskCanvas({
     const w = Math.round(displayWidth);
     const h = Math.round(displayHeight);
 
-    /* 크기 변동 없으면 재초기화 방지 */
-    if (prevSize.current.width === w && prevSize.current.height === h) return;
-    prevSize.current = { width: w, height: h };
+    /* 실제 캔버스 DOM 크기로 비교 — 새 요소(300×150)는 항상 초기화됨 */
+    if (canvas.width === w && canvas.height === h) return;
 
     canvas.width = w;
     canvas.height = h;
@@ -99,6 +99,7 @@ export function useMaskCanvas({
     const initHistory = () => {
       history.current = [ctx.getImageData(0, 0, canvas.width, canvas.height)];
       historyIndex.current = 0;
+      dirty.current = false;
     };
 
     if (initialMaskDataUrl) {
@@ -294,6 +295,8 @@ export function useMaskCanvas({
     style: { cursor, touchAction: "none" as const },
   };
 
+  const isDirty = useCallback(() => dirty.current, []);
+
   return {
     mode,
     setMode,
@@ -302,6 +305,7 @@ export function useMaskCanvas({
     clearCanvas,
     exportMask,
     isEmpty,
+    isDirty,
     undo,
     redo,
     canvasProps,
