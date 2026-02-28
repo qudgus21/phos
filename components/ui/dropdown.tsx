@@ -138,7 +138,7 @@ export function Dropdown({
           open && (variant === "gradient" ? "ring-1 ring-primary/50" : "ring-1 ring-primary/40 border-primary/40")
         )}
       >
-        <span className="grid items-center">
+        <span className="grid items-center text-left">
           {options.map((opt) => (
             <span
               key={opt.value}

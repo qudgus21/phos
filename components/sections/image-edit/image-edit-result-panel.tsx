@@ -87,7 +87,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md"
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/75"
         onClick={onClose}
       >
         {/* 닫기 버튼 */}

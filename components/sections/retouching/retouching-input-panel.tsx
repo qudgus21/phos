@@ -4,10 +4,10 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Upload,
   X,
-  ChevronDown,
   Gem,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dropdown } from "@/components/ui/dropdown";
 
 /* ── Filter Chips ── */
 const FILTERS = [
@@ -27,74 +27,20 @@ const RETOUCH_AREAS = [
 ];
 
 /* ── Dropdown options ── */
-const GENDER_OPTIONS = ["여성", "남성"];
-const ETHNICITY_OPTIONS = ["동양인", "서양인"];
-const MODE_OPTIONS = ["보정(기본)", "보정(강하게)", "보정(자연스럽게)"];
-
-/* ── Generic dropdown ── */
-function MiniDropdown({
-  value,
-  options,
-  onChange,
-}: {
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative flex-1">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-1 px-3 py-1.5 rounded-lg border border-border bg-white/[0.03] text-sm font-semibold text-card-foreground hover:bg-white/[0.06] transition-colors cursor-pointer"
-      >
-        {value}
-        <ChevronDown
-          className={cn(
-            "w-3.5 h-3.5 text-primary transition-transform",
-            open && "rotate-180"
-          )}
-        />
-      </button>
-      {open && (
-        <div className="absolute bottom-full mb-1 left-0 w-full rounded-lg border border-border bg-card shadow-elevated z-50 py-1">
-          {options.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => {
-                onChange(opt);
-                setOpen(false);
-              }}
-              className={cn(
-                "w-full text-left px-3 py-1.5 text-sm cursor-pointer transition-colors",
-                opt === value
-                  ? "text-primary font-semibold bg-primary/10"
-                  : "text-card-foreground hover:bg-white/[0.06]"
-              )}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+const GENDER_OPTIONS = [
+  { value: "female", label: "여성" },
+  { value: "male", label: "남성" },
+];
+const ETHNICITY_OPTIONS = [
+  { value: "asian", label: "동양인" },
+  { value: "western", label: "서양인" },
+];
+const MODE_OPTIONS = [
+  { value: "basic", label: "보정(기본)" },
+  { value: "makeup", label: "보정(메이크업)" },
+  { value: "matte", label: "보정(매트메이크업)" },
+  { value: "glow", label: "물광보정" },
+];
 
 export function RetouchingInputPanel() {
   /* Image upload */
@@ -105,11 +51,12 @@ export function RetouchingInputPanel() {
   /* Settings */
   const [imageScale, setImageScale] = useState(1.0);
   const [activeFilter, setActiveFilter] = useState("none");
-  const [filterIntensity, setFilterIntensity] = useState(0);
+  const [filterIntensity, setFilterIntensity] = useState(0.5);
   const [excludedAreas, setExcludedAreas] = useState<string[]>([]);
-  const [gender, setGender] = useState("여성");
-  const [ethnicity, setEthnicity] = useState("동양인");
-  const [mode, setMode] = useState("보정(기본)");
+  const [gender, setGender] = useState("female");
+  const [ethnicity, setEthnicity] = useState("asian");
+  const [mode, setMode] = useState("basic");
+  const [showGuide, setShowGuide] = useState(false);
 
   const hasImage = !!uploadedImage;
 
@@ -136,7 +83,7 @@ export function RetouchingInputPanel() {
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file && (file.type === "image/jpeg" || file.type === "image/png")) {
+      if (file && ["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
         processFile(file);
       }
     },
@@ -205,10 +152,10 @@ export function RetouchingInputPanel() {
             <>
               <Upload className="w-8 h-8 text-muted-foreground/50" />
               <p className="text-sm font-bold text-card-foreground">
-                이미지를 끌어다 놓거나 클릭
+                Drop image here or click to upload
               </p>
               <p className="text-xs text-muted-foreground">
-                JPG / PNG
+                JPG, PNG, WebP
               </p>
             </>
           )}
@@ -217,7 +164,7 @@ export function RetouchingInputPanel() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png"
+          accept="image/jpeg,image/png,image/webp"
           onChange={handleFileSelect}
           className="hidden"
           aria-label="이미지 파일 선택"
@@ -235,7 +182,7 @@ export function RetouchingInputPanel() {
           </div>
           <input
             type="range"
-            min={0.5}
+            min={0}
             max={2}
             step={0.1}
             value={imageScale}
@@ -268,7 +215,7 @@ export function RetouchingInputPanel() {
                 className={cn(
                   "py-1.5 rounded-lg text-[13px] font-bold transition-all cursor-pointer border",
                   activeFilter === filter.id
-                    ? "border-primary bg-primary text-primary-foreground"
+                    ? "border-primary bg-gradient-to-r from-primary to-[#818CF8] text-primary-foreground"
                     : "border-border bg-white/[0.03] text-card-foreground hover:border-white/[0.15]"
                 )}
               >
@@ -277,20 +224,25 @@ export function RetouchingInputPanel() {
             ))}
           </div>
           {activeFilter !== "none" && (
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={filterIntensity}
-              onChange={(e) => setFilterIntensity(Number(e.target.value))}
-              className={cn(
-                "w-full h-1.5 rounded-full appearance-none cursor-pointer",
-                "bg-primary",
-                "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer",
-                "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
-              )}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.1}
+                value={filterIntensity}
+                onChange={(e) => setFilterIntensity(Number(e.target.value))}
+                className={cn(
+                  "flex-1 h-1.5 rounded-full appearance-none cursor-pointer",
+                  "bg-primary",
+                  "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer",
+                  "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
+                )}
+              />
+              <span className="text-[13px] font-bold text-primary w-7 text-right">
+                {filterIntensity.toFixed(1)}
+              </span>
+            </div>
           )}
         </div>
 
@@ -315,7 +267,7 @@ export function RetouchingInputPanel() {
                   className={cn(
                     "py-1.5 rounded-lg text-[13px] font-bold transition-all cursor-pointer border",
                     active
-                      ? "border-primary bg-primary/20 text-[#A5B4FC]"
+                      ? "border-primary bg-gradient-to-r from-primary to-[#818CF8] text-primary-foreground"
                       : "border-border bg-white/[0.03] text-card-foreground hover:border-white/[0.15]"
                   )}
                 >
@@ -331,26 +283,14 @@ export function RetouchingInputPanel() {
       <div className="shrink-0 px-3 pb-3 space-y-2">
         <div className="rounded-xl border border-border bg-white/[0.02] p-2.5 space-y-2.5">
           <div className="flex gap-1.5">
-            <MiniDropdown
-              value={gender}
-              options={GENDER_OPTIONS}
-              onChange={setGender}
-            />
-            <MiniDropdown
-              value={ethnicity}
-              options={ETHNICITY_OPTIONS}
-              onChange={setEthnicity}
-            />
-            <MiniDropdown
-              value={mode}
-              options={MODE_OPTIONS}
-              onChange={setMode}
-            />
+            <Dropdown options={GENDER_OPTIONS} value={gender} onChange={setGender} className="flex-1" />
+            <Dropdown options={ETHNICITY_OPTIONS} value={ethnicity} onChange={setEthnicity} className="flex-1" />
+            <Dropdown options={MODE_OPTIONS} value={mode} onChange={setMode} className="flex-1" />
           </div>
 
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-bold text-primary-foreground bg-primary hover:bg-[#818CF8] btn-glow transition-all duration-200 cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-bold text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110 transition-all duration-300 cursor-pointer"
           >
             생성하기
             <Gem className="w-4 h-4" />
@@ -360,10 +300,37 @@ export function RetouchingInputPanel() {
 
         <button
           type="button"
+          onClick={() => setShowGuide(true)}
           className="w-full text-[13px] font-semibold text-primary hover:text-[#818CF8] transition-colors cursor-pointer text-center"
         >
           생성 이미지 가이드
         </button>
+
+        {showGuide && (
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75"
+            onClick={() => setShowGuide(false)}
+          >
+            <div
+              className="rounded-xl border border-border bg-card shadow-[0_8px_30px_rgba(0,0,0,0.55)] p-5 space-y-3 max-w-xs w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-sm font-bold text-card-foreground">생성 이미지 가이드</p>
+              <ul className="space-y-1.5 text-[12px] text-card-foreground/80 leading-relaxed">
+                <li>· 최소 1024x1024 해상도 이상을 권장합니다.</li>
+                <li>· 큰 이미지는 자동으로 리사이즈되어 업로드됩니다.</li>
+                <li>· 필터 강도는 0~1 선택이며 1에 가까울수록 강합니다.</li>
+              </ul>
+              <button
+                type="button"
+                onClick={() => setShowGuide(false)}
+                className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-primary hover:bg-[#818CF8] transition-colors cursor-pointer"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
