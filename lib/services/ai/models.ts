@@ -14,6 +14,15 @@ export interface ModelDef {
 
 export const IMAGE_EDIT_MODELS: ModelDef[] = [
   {
+    id: "nano-banana",
+    label: "Nano Banana Pro",
+    provider: "replicate",
+    modelId: "google/nano-banana-pro",
+    maxImages: 4,
+    maxOutputs: 4,
+    supportedSizes: ["1K", "2K"],
+  },
+  {
     id: "seedream-5.0",
     label: "Seedream 5.0",
     provider: "byteplus",
@@ -32,13 +41,13 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     supportedSizes: ["1K", "2K", "4K"],
   },
   {
-    id: "nano-banana",
-    label: "Nano Banana Pro",
+    id: "flux-pro-1.1",
+    label: "Flux Pro 1.1",
     provider: "replicate",
-    modelId: "google/nano-banana-pro",
-    maxImages: 4,
-    maxOutputs: 4,
-    supportedSizes: ["1K", "2K"],
+    modelId: "black-forest-labs/flux-1.1-pro",
+    maxImages: 0,
+    maxOutputs: 1,
+    supportedSizes: ["1K", "2K", "4K"],
   },
   {
     id: "grok",
@@ -48,15 +57,6 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     maxImages: 3,
     maxOutputs: 4,
     supportedSizes: ["1K"],
-  },
-  {
-    id: "flux-pro-1.1",
-    label: "Flux Pro 1.1",
-    provider: "replicate",
-    modelId: "black-forest-labs/flux-1.1-pro",
-    maxImages: 0,
-    maxOutputs: 1,
-    supportedSizes: ["1K", "2K", "4K"],
   },
 ];
 
