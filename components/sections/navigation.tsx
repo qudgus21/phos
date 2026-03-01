@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles, LogOut, User as UserIcon } from "lucide-react";
+import { Menu, X, Sparkles, LogOut, Zap, Plus } from "lucide-react";
 import { LoginModal } from "@/components/ui/login-modal";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
+import type { UserCreditInfo } from "@/lib/types/credits";
 
 const navItems = [
   { label: "이미지 편집", href: "/image-edit" },
@@ -80,6 +81,7 @@ export function Navigation() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [creditInfo, setCreditInfo] = useState<UserCreditInfo | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const { scrolled, progress } = useNavScroll();
@@ -114,6 +116,20 @@ export function Navigation() {
     return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* 로그인 시 크레딧 정보 fetch */
+  useEffect(() => {
+    if (!user) {
+      setCreditInfo(null);
+      return;
+    }
+    fetch("/api/credits/balance")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) setCreditInfo(json.data);
+      })
+      .catch(() => {});
+  }, [user]);
 
   /* 드롭다운 외부 클릭 닫기 */
   useEffect(() => {
@@ -214,51 +230,77 @@ export function Navigation() {
         {!authReady ? (
           <div className="hidden md:block w-[100px]" />
         ) : user ? (
-          <div className="hidden md:block relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setDropdownOpen(!dropdownOpen);
-              }}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/8 transition-colors cursor-pointer"
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-indigo-400 flex items-center justify-center text-white text-sm font-bold">
-                  {userInitial}
-                </div>
-              )}
-              <span className="text-sm text-slate-300 font-medium">
-                {user.email}
-              </span>
-            </button>
+          <div className="hidden md:flex items-center gap-3">
+            {/* 크레딧 뱃지 */}
+            {creditInfo && (
+              <Link
+                href="/pricing"
+                className="group flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25 hover:border-indigo-400/40 transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+              >
+                <Zap className="w-4 h-4 text-indigo-400" />
+                <span className="text-sm font-bold text-white tabular-nums">
+                  {creditInfo.balance.total.toLocaleString()}
+                </span>
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
+                  <Plus className="w-3.5 h-3.5 text-indigo-300" />
+                </span>
+              </Link>
+            )}
 
-            <AnimatePresence>
-              {dropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-[#1e2040] shadow-2xl shadow-black/40 overflow-hidden"
-                >
-                  <div className="px-4 py-3 border-b border-white/10">
-                    <p className="text-sm font-semibold text-white truncate">{user.email}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Free plan</p>
+            {/* 구분선 */}
+            <div className="w-px h-6 bg-white/10" />
+
+            {/* 유저 프로필 드롭다운 */}
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDropdownOpen(!dropdownOpen);
+                }}
+                className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/8 transition-colors cursor-pointer"
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-indigo-400 flex items-center justify-center text-white text-sm font-bold">
+                    {userInitial}
                   </div>
-                  <div className="p-1.5">
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/8 transition-colors cursor-pointer"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign out
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                )}
+                <span className="text-sm text-slate-300 font-medium max-w-[140px] truncate">
+                  {user.email}
+                </span>
+              </button>
+
+              <AnimatePresence>
+                {dropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-[#1e2040] shadow-2xl shadow-black/40 overflow-hidden"
+                  >
+                    <div className="px-4 py-3 border-b border-white/10">
+                      <p className="text-sm font-semibold text-white truncate">{user.email}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {creditInfo
+                          ? `${creditInfo.plan.name} plan`
+                          : "Free plan"}
+                      </p>
+                    </div>
+                    <div className="p-1.5">
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/8 transition-colors cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         ) : (
           <button
@@ -269,7 +311,18 @@ export function Navigation() {
           </button>
         )}
 
-        {/* Mobile menu button */}
+        {/* Mobile: 크레딧 뱃지 */}
+        {user && creditInfo && (
+          <Link
+            href="/pricing"
+            className="md:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25"
+          >
+            <Zap className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-xs font-bold text-white tabular-nums">
+              {creditInfo.balance.total.toLocaleString()}
+            </span>
+          </Link>
+        )}
         <button
           className="md:hidden p-2 text-foreground cursor-pointer"
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -357,7 +410,12 @@ export function Navigation() {
                             {userInitial}
                           </div>
                         )}
-                        <span className="text-sm text-slate-300 font-medium truncate">{user.email}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm text-slate-300 font-medium truncate">{user.email}</span>
+                          <span className="text-xs text-slate-500 mt-0.5">
+                            {creditInfo ? `${creditInfo.plan.name} plan` : "Free plan"}
+                          </span>
+                        </div>
                       </div>
                       <button
                         className="w-full flex items-center justify-center gap-2 px-5 py-3 text-[15px] font-semibold text-slate-400 hover:text-white rounded-xl hover:bg-white/8 transition-colors cursor-pointer min-h-[48px]"

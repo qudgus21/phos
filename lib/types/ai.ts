@@ -1,4 +1,4 @@
-export type AIProviderName = "replicate" | "stability";
+export type AIProviderName = "replicate" | "stability" | "byteplus" | "xai";
 
 export interface ModelConfig {
   provider: AIProviderName;
@@ -8,14 +8,14 @@ export interface ModelConfig {
 }
 
 export interface GenerationInput {
-  image?: string; // base64 또는 URL
+  images?: string[];
   prompt?: string;
   negativePrompt?: string;
   params?: Record<string, unknown>;
 }
 
 export interface GenerationResult {
-  outputUrl: string;
+  outputUrls: string[];
   provider: AIProviderName;
   modelId: string;
   durationMs: number;
@@ -28,5 +28,4 @@ export interface AIProvider {
     model: ModelConfig,
     input: GenerationInput
   ): Promise<GenerationResult>;
-  getStatus(predictionId: string): Promise<"pending" | "processing" | "succeeded" | "failed">;
 }

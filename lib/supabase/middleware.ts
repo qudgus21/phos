@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import type { Database } from "@/lib/types/database";
-import { AuthError, AppError, ValidationError } from "@/lib/errors";
+import { AuthError, AppError, ApiError, ValidationError } from "@/lib/errors";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ApiErrorResponse } from "@/lib/types/api";
 
 function requireEnv(key: string): string {
@@ -17,6 +18,14 @@ type RouteHandler = (
   context: {
     supabase: ReturnType<typeof createServerClient<Database>>;
     user: { id: string; email: string | null };
+  }
+) => Promise<NextResponse>;
+
+type AdminRouteHandler = (
+  request: NextRequest,
+  context: {
+    supabase: ReturnType<typeof createServerClient<Database>>;
+    user: { id: string; email: string | null; role: string };
   }
 ) => Promise<NextResponse>;
 
@@ -79,4 +88,24 @@ export function withAuth(handler: RouteHandler) {
       return NextResponse.json(body, { status: 500 });
     }
   };
+}
+
+export function withAdmin(handler: AdminRouteHandler) {
+  return withAuth(async (request, { supabase, user }) => {
+    const admin = createAdminClient();
+    const { data: userRow, error } = await admin
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (error || !userRow || userRow.role !== "admin") {
+      throw new ApiError("관리자 권한이 필요합니다", 403);
+    }
+
+    return handler(request, {
+      supabase,
+      user: { ...user, role: userRow.role },
+    });
+  });
 }

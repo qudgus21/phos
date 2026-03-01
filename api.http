@@ -1,0 +1,66 @@
+### ============================================
+### PHOS API 테스트 파일
+### REST Client (VS Code) 확장 사용
+### ============================================
+
+### 사용법:
+### 1. 브라우저에서 로그인 후 쿠키를 아래 @cookie 변수에 붙여넣기
+### 2. 각 요청 위의 "Send Request" 클릭
+
+@base = http://localhost:3000
+
+### ── 인증 쿠키 ──
+### 브라우저 DevTools > Application > Cookies에서
+### sb-ltqzuqvjbiecbjdqgjge-auth-token.0 과 .1 값을 각각 복사
+@token0 = base64-<paste-from-browser-cookies>
+@token1 = <paste-from-browser-cookies>
+@cookie = sb-ltqzuqvjbiecbjdqgjge-auth-token.0={{token0}}; sb-ltqzuqvjbiecbjdqgjge-auth-token.1={{token1}}
+
+
+### ============================================
+### 크레딧
+### ============================================
+
+### 크레딧 잔액 + 플랜 조회
+GET {{base}}/api/credits/balance
+Cookie: {{cookie}}
+
+###
+
+### ============================================
+### 어드민 (admin role 필요)
+### ============================================
+
+### 전체 유저 목록 조회
+GET {{base}}/api/admin/users
+Cookie: {{cookie}}
+
+###
+
+### 이메일로 유저 조회
+GET {{base}}/api/admin/users?email=hbh4231@gmail.com
+Cookie: {{cookie}}
+
+###
+
+### ============================================
+### 이미지 생성
+### ============================================
+
+### 이미지 생성 (1024x1024, 1장)
+POST {{base}}/api/image-edit/generate
+Cookie: {{cookie}}
+Content-Type: application/json
+
+{
+  "modelId": "gpt-image-1",
+  "prompt": "테스트 프롬프트",
+  "imageSize": "1K",
+  "ratio": "1:1",
+  "width": 1024,
+  "height": 1024,
+  "scale": 0,
+  "imageCount": 1
+}
+
+###

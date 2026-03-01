@@ -17,6 +17,7 @@ const WORKFLOW_STEPS = [
 
 interface ImageEditResultPanelProps {
   onAddToInput?: (src: string) => void;
+  generatedUrls?: string[];
 }
 
 /* ── 이미지 액션 버튼 오버레이 ── */
@@ -134,11 +135,13 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function ImageEditResultPanel({ onAddToInput }: ImageEditResultPanelProps) {
+export function ImageEditResultPanel({ onAddToInput, generatedUrls }: ImageEditResultPanelProps) {
   const searchParams = useSearchParams();
   const sampleId = searchParams.get("sample_id");
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
-  const outputs = activeSample?.outputs ?? [];
+  const outputs = generatedUrls && generatedUrls.length > 0
+    ? generatedUrls
+    : activeSample?.outputs ?? [];
 
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 

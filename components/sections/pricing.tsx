@@ -6,18 +6,19 @@ import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { Badge } from "@/components/ui/badge";
-import { Check, RotateCcw } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const plans = [
+type PricingTab = "monthly" | "onetime";
+
+const monthlyPlans = [
   {
     name: "Basic",
     description: "기본",
-    monthlyPrice: 9,
-    yearlyPrice: 7,
+    price: 9,
     recommended: false,
     features: [
-      "4,000 크레딧",
+      "4,500 크레딧",
       "AI 업스케일링",
       "피부 보정 (기본)",
       "고해상도 변환",
@@ -27,11 +28,10 @@ const plans = [
   {
     name: "Deluxe",
     description: "전체 기능",
-    monthlyPrice: 19,
-    yearlyPrice: 15,
+    price: 19,
     recommended: true,
     features: [
-      "8,500 크레딧",
+      "9,500 크레딧",
       "AI 업스케일링",
       "피부 보정 (기본)",
       "피부 보정 (메이크업)",
@@ -43,11 +43,10 @@ const plans = [
   {
     name: "Premium",
     description: "전체 기능 + 베타",
-    monthlyPrice: 29,
-    yearlyPrice: 23,
+    price: 29,
     recommended: false,
     features: [
-      "13,000 크레딧",
+      "14,500 크레딧",
       "AI 업스케일링",
       "피부 보정 (기본)",
       "피부 보정 (메이크업)",
@@ -58,8 +57,16 @@ const plans = [
   },
 ];
 
+const onetimePacks = [
+  { price: 5, credits: "1,500" },
+  { price: 10, credits: "3,000" },
+  { price: 15, credits: "4,800" },
+  { price: 20, credits: "6,450" },
+  { price: 30, credits: "9,750" },
+];
+
 export function Pricing() {
-  const [isYearly, setIsYearly] = useState(true);
+  const [activeTab, setActiveTab] = useState<PricingTab>("monthly");
 
   return (
     <SectionWrapper id="pricing">
@@ -70,66 +77,46 @@ export function Pricing() {
         </h2>
       </motion.div>
 
-      {/* 월간/연간 토글 */}
+      {/* 월 구독 / 단건구매 탭 */}
       <motion.div
         variants={fadeInUp}
-        className="flex items-center justify-center gap-3 mb-8"
+        className="flex items-center justify-center gap-0 mb-8"
       >
-        <span
-          className={cn(
-            "text-sm font-medium transition-colors",
-            !isYearly ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          월간
-        </span>
         <button
-          onClick={() => setIsYearly(!isYearly)}
+          onClick={() => setActiveTab("monthly")}
           className={cn(
-            "relative w-14 h-7 rounded-full transition-colors cursor-pointer",
-            isYearly ? "bg-primary" : "bg-muted-foreground/30"
+            "px-8 py-3 text-sm font-semibold rounded-full transition-all cursor-pointer",
+            activeTab === "monthly"
+              ? "bg-primary text-primary-foreground shadow-glow-indigo-sm"
+              : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
           )}
-          role="switch"
-          aria-checked={isYearly}
-          aria-label="연간 결제"
         >
-          <motion.div
-            className="absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm"
-            animate={{ x: isYearly ? 28 : 0 }}
-            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          />
+          월 구독
         </button>
-        <span
+        <button
+          onClick={() => setActiveTab("onetime")}
           className={cn(
-            "text-sm font-medium transition-colors",
-            isYearly ? "text-foreground" : "text-muted-foreground"
+            "px-8 py-3 text-sm font-semibold rounded-full transition-all cursor-pointer",
+            activeTab === "onetime"
+              ? "bg-primary text-primary-foreground shadow-glow-indigo-sm"
+              : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
           )}
         >
-          연간
-        </span>
-        <Badge
-          variant="success"
-          className={cn(
-            "ml-1 transition-opacity duration-200",
-            isYearly ? "opacity-100" : "opacity-0"
-          )}
-        >
-          2개월 무료
-        </Badge>
+          단건구매
+        </button>
       </motion.div>
 
-      {/* 요금 카드 */}
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto"
-      >
-        {plans.map((plan) => {
-          const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
-
-          return (
+      {activeTab === "monthly" ? (
+        /* 월 구독 카드 */
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          key="monthly"
+          className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+        >
+          {monthlyPlans.map((plan) => (
             <motion.div
               key={plan.name}
               variants={fadeInUp}
@@ -141,7 +128,6 @@ export function Pricing() {
                   : "border-border bg-card opacity-90 hover:opacity-100"
               )}
             >
-              {/* E: 추천 카드 상단 그래디언트 스트라이프 + 강화된 배지 */}
               {plan.recommended && (
                 <>
                   <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-indigo-500 to-violet-500" />
@@ -154,7 +140,6 @@ export function Pricing() {
                 </>
               )}
 
-              {/* B: 티어명 + 타겟 설명 */}
               <h3 className="text-h4 font-bold text-foreground mb-1">
                 {plan.name}
               </h3>
@@ -162,20 +147,11 @@ export function Pricing() {
                 {plan.description}
               </p>
 
-              {/* A: 가격 + 연간 할인 표시 */}
               <div className="flex items-baseline gap-2 mb-6">
                 <span className="text-5xl font-black text-primary tabular-nums">
-                  ${price}
+                  ${plan.price}
                 </span>
                 <span className="text-muted-foreground text-sm">/월</span>
-                <span
-                  className={cn(
-                    "text-sm text-muted-foreground line-through transition-opacity duration-200",
-                    isYearly ? "opacity-100" : "opacity-0"
-                  )}
-                >
-                  ${plan.monthlyPrice}
-                </span>
               </div>
 
               <ul className="flex-1 space-y-3 mb-8">
@@ -197,20 +173,41 @@ export function Pricing() {
                 시작하기
               </Link>
             </motion.div>
-          );
-        })}
-      </motion.div>
+          ))}
+        </motion.div>
+      ) : (
+        /* 단건구매 크레딧팩 */
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          key="onetime"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-4xl mx-auto"
+        >
+          {onetimePacks.map((pack) => (
+            <motion.div
+              key={pack.price}
+              variants={fadeInUp}
+              whileHover={{ y: -6 }}
+              className="flex flex-col items-center rounded-2xl border border-border bg-card p-6 opacity-90 hover:opacity-100 transition-all"
+            >
+              <p className="text-4xl font-black text-primary tabular-nums leading-tight mb-3">
+                ${pack.price}
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                {pack.credits} 크레딧
+              </p>
+              <Link
+                href="/pricing"
+                className="w-full text-center py-3 rounded-xl text-sm font-bold transition-all bg-gradient-to-r from-indigo-600 to-violet-500 text-white hover:brightness-110"
+              >
+                구매하기
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
 
-      {/* D: 신뢰 시그널 */}
-      <motion.div
-        variants={fadeInUp}
-        className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-muted-foreground"
-      >
-        <div className="flex items-center gap-1.5">
-          <RotateCcw className="w-4 h-4" />
-          <span>언제든 해지 가능</span>
-        </div>
-      </motion.div>
     </SectionWrapper>
   );
 }

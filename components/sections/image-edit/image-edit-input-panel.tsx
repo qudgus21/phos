@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, PenLine, X, GripVertical, Zap } from "lucide-react";
+import { Plus, PenLine, X, GripVertical, Zap, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
@@ -16,9 +16,11 @@ interface UploadedImage {
 }
 
 const MODEL_OPTIONS = [
+  { value: "seedream-5.0", label: "Seedream 5.0" },
   { value: "seedream-4.5", label: "Seedream 4.5" },
-  { value: "grok", label: "Grok (xAI) - 1K" },
-  { value: "nano-banana", label: "🍌 Nano Banana (Pro)" },
+  { value: "nano-banana", label: "🍌 Nano Banana Pro" },
+  { value: "grok", label: "Grok Imagine" },
+  { value: "flux-pro-1.1", label: "Flux Pro 1.1" },
 ];
 
 const SIZE_OPTIONS = [
@@ -53,7 +55,11 @@ export interface ImageEditInputPanelHandle {
   addImageFromUrl: (url: string) => Promise<void>;
 }
 
-export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle>(function ImageEditInputPanel(_props, ref) {
+interface ImageEditInputPanelProps {
+  onGenerate?: (outputUrls: string[]) => void;
+}
+
+export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ onGenerate }, ref) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const sampleId = searchParams.get("sample_id");
@@ -68,6 +74,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle>(functio
   const [scale, setScale] = useState(0);
   const [imageCount, setImageCount] = useState(1);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -495,22 +502,59 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle>(functio
             </button>
             <button
               type="button"
-              onClick={() => {
+              disabled={isGenerating}
+              onClick={async () => {
                 if (!prompt.trim()) {
                   toast("프롬프트를 입력해주세요", "warning");
                   return;
                 }
-                // TODO: 실행 로직
+                setIsGenerating(true);
+                try {
+                  const imageUrls = images
+                    .map((img) => img.previewUrl)
+                    .filter((url) => url.startsWith("http"));
+                  const res = await fetch("/api/image-edit/generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      modelId: model,
+                      prompt,
+                      images: imageUrls.length > 0 ? imageUrls : undefined,
+                      imageSize,
+                      ratio,
+                      width,
+                      height,
+                      scale,
+                      imageCount,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (!data.success) {
+                    throw new Error(data.error?.message ?? "생성에 실패했습니다");
+                  }
+                  onGenerate?.(data.data.outputUrls);
+                } catch (err) {
+                  toast(
+                    err instanceof Error ? err.message : "생성에 실패했습니다",
+                    "error"
+                  );
+                } finally {
+                  setIsGenerating(false);
+                }
               }}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
-                prompt.trim()
+                prompt.trim() && !isGenerating
                   ? "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110"
-                  : "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40"
+                  : "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
               )}
             >
-              <Zap className="w-3.5 h-3.5" />
-              실행 / {creditCost * imageCount} 크레딧
+              {isGenerating ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Zap className="w-3.5 h-3.5" />
+              )}
+              {isGenerating ? "생성 중..." : `실행 / ${creditCost * imageCount} 크레딧`}
             </button>
           </div>
         </div>

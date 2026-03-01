@@ -83,64 +83,17 @@ const monthlyPlans: Plan[] = [
   },
 ];
 
-const onetimePlans: Plan[] = [
-  {
-    name: "Starter",
-    price: 5,
-    features: [
-      "2,000 크레딧",
-      "크레딧 영구 보관",
-      "AI 업스케일링",
-      "피부보정(기본)",
-      "고해상도 변환",
-    ],
-    ctaText: "구매하기",
-  },
-  {
-    name: "Basic",
-    price: 15,
-    features: [
-      "7,000 크레딧",
-      "크레딧 영구 보관",
-      "AI 업스케일링",
-      "피부보정(기본)",
-      "고해상도 변환",
-      "실시간 처리",
-    ],
-    ctaText: "구매하기",
-  },
-  {
-    name: "Pro",
-    price: 29,
-    recommended: true,
-    features: [
-      "15,000 크레딧",
-      "크레딧 영구 보관",
-      "AI 업스케일링",
-      "피부보정(기본)",
-      "피부보정(메이크업)",
-      "고해상도 변환",
-      "실시간 처리",
-      "무제한 업로드",
-    ],
-    ctaText: "구매하기",
-  },
-  {
-    name: "Enterprise",
-    price: 49,
-    features: [
-      "30,000 크레딧",
-      "크레딧 영구 보관",
-      "AI 업스케일링",
-      "피부보정(기본)",
-      "피부보정(메이크업)",
-      "고해상도 변환",
-      "실시간 처리",
-      "무제한 업로드",
-      "베타기능(무료)",
-    ],
-    ctaText: "구매하기",
-  },
+interface CreditPack {
+  price: number;
+  credits: string;
+}
+
+const onetimePacks: CreditPack[] = [
+  { price: 5, credits: "1,500" },
+  { price: 10, credits: "3,000" },
+  { price: 15, credits: "4,800" },
+  { price: 20, credits: "6,450" },
+  { price: 30, credits: "9,750" },
 ];
 
 interface PricingCardsProps {
@@ -148,17 +101,45 @@ interface PricingCardsProps {
 }
 
 export function PricingCards({ activeTab }: PricingCardsProps) {
-  const plans = activeTab === "monthly" ? monthlyPlans : onetimePlans;
+  if (activeTab === "onetime") {
+    return (
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        key="onetime"
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-[1000px] mx-auto px-4"
+      >
+        {onetimePacks.map((pack) => (
+          <motion.div
+            key={pack.price}
+            variants={fadeInUp}
+            className="flex flex-col items-center rounded-2xl border border-border bg-card p-6 lg:p-7 opacity-90 hover:opacity-100 transition-opacity"
+          >
+            <p className="text-4xl font-black text-primary tabular-nums leading-tight mb-3">
+              ${pack.price}
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              {pack.credits} 크레딧
+            </p>
+            <button className="w-full py-3 rounded-xl text-base font-bold transition-all cursor-pointer bg-gradient-to-r from-indigo-600 to-violet-500 text-white hover:brightness-110 btn-glow">
+              구매하기
+            </button>
+          </motion.div>
+        ))}
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
       variants={staggerContainer}
       initial="hidden"
       animate="visible"
-      key={activeTab}
+      key="monthly"
       className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-[1200px] mx-auto px-4"
     >
-      {plans.map((plan) => (
+      {monthlyPlans.map((plan) => (
         <motion.div
           key={plan.name}
           variants={fadeInUp}
