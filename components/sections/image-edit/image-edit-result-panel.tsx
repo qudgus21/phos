@@ -9,6 +9,49 @@ import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SAMPLES } from "@/lib/constants/samples";
 
+/**
+ * 이미지를 PNG로 변환하여 다운로드한다.
+ * Canvas API를 사용해 클라이언트에서 처리 — 원본 해상도/비율 유지.
+ */
+async function downloadAsPng(src: string) {
+  const img = new window.Image();
+  img.crossOrigin = "anonymous";
+
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("이미지 로드 실패"));
+    img.src = src;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D 컨텍스트를 생성할 수 없습니다");
+
+  ctx.drawImage(img, 0, 0);
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/png")
+  );
+  if (!blob) throw new Error("PNG 변환 실패");
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+
+  // 원본 파일명에서 확장자를 .png로 교체
+  const originalName = src.split("/").pop()?.split("?")[0] || "image";
+  const baseName = originalName.replace(/\.[^.]+$/, "");
+  a.download = `${baseName}.png`;
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 const WORKFLOW_STEPS = [
   { icon: PenLine, label: "프롬프트 입력" },
   { icon: ImagePlus, label: "참조 이미지" },
@@ -18,6 +61,7 @@ const WORKFLOW_STEPS = [
 interface ImageEditResultPanelProps {
   onAddToInput?: (src: string) => void;
   generatedUrls?: string[];
+  isGenerating?: boolean;
 }
 
 /* ── 이미지 액션 버튼 오버레이 ── */
@@ -41,15 +85,14 @@ function ImageActionBar({
         >
           <ZoomIn className="w-4 h-4 text-white" />
         </button>
-        <a
-          href={src}
-          download
-          onClick={(e) => e.stopPropagation()}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); downloadAsPng(src); }}
           className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/20 transition-colors cursor-pointer"
           title="다운로드"
         >
           <Download className="w-4 h-4 text-white" />
-        </a>
+        </button>
         {onAddToInput && (
           <button
             type="button"
@@ -120,14 +163,14 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
           className="mt-4"
           onClick={(e) => e.stopPropagation()}
         >
-          <a
-            href={src}
-            download
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-sm text-white hover:bg-white/20 transition-colors"
+          <button
+            type="button"
+            onClick={() => downloadAsPng(src)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-sm text-white hover:bg-white/20 transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
-            {filename}
-          </a>
+            {filename.replace(/\.[^.]+$/, ".png")}
+          </button>
         </motion.div>
       </motion.div>
     </AnimatePresence>,
@@ -135,7 +178,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function ImageEditResultPanel({ onAddToInput, generatedUrls }: ImageEditResultPanelProps) {
+export function ImageEditResultPanel({ onAddToInput, generatedUrls, isGenerating }: ImageEditResultPanelProps) {
   const searchParams = useSearchParams();
   const sampleId = searchParams.get("sample_id");
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
@@ -155,7 +198,44 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls }: ImageEditR
         </h2>
       </div>
 
-      {outputs.length === 1 ? (
+      {isGenerating ? (
+        /* Loading State */
+        <div className="flex-1 flex flex-col items-center justify-center p-6 gap-5">
+          <div className="relative w-20 h-20">
+            {/* 외곽 회전 링 */}
+            <motion.div
+              className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary border-r-secondary"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+            />
+            {/* 내부 역회전 링 */}
+            <motion.div
+              className="absolute inset-2 rounded-full border-2 border-transparent border-b-primary/60 border-l-secondary/60"
+              animate={{ rotate: -360 }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
+            />
+            {/* 중앙 아이콘 */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Sparkles className="w-6 h-6 text-primary" />
+              </motion.div>
+            </div>
+          </div>
+          <div className="text-center space-y-1.5">
+            <p className="text-sm font-semibold text-foreground">이미지 생성 중</p>
+            <motion.p
+              className="text-[13px] text-muted-foreground"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              잠시만 기다려 주세요...
+            </motion.p>
+          </div>
+        </div>
+      ) : outputs.length === 1 ? (
         <div className="flex-1 p-4 min-h-0 flex items-center justify-center">
           <div className="relative group max-w-full max-h-full">
             <Image

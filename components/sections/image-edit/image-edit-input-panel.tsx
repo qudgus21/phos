@@ -9,6 +9,7 @@ import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { SAMPLES } from "@/lib/constants/samples";
+import { IMAGE_EDIT_MODELS } from "@/lib/services/ai/models";
 
 interface UploadedImage {
   file: File | null;
@@ -16,14 +17,15 @@ interface UploadedImage {
 }
 
 const MODEL_OPTIONS = [
+  { value: "nano-banana", label: "Nano Banana" },
+  { value: "nano-banana-pro", label: "Nano Banana Pro" },
   { value: "seedream-5.0", label: "Seedream 5.0" },
   { value: "seedream-4.5", label: "Seedream 4.5" },
-  { value: "nano-banana", label: "🍌 Nano Banana Pro" },
-  { value: "grok", label: "Grok Imagine" },
   { value: "flux-pro-1.1", label: "Flux Pro 1.1" },
+  { value: "grok", label: "Grok Imagine" },
 ];
 
-const SIZE_OPTIONS = [
+const ALL_SIZE_OPTIONS = [
   { value: "1K", label: "1K" },
   { value: "2K", label: "2K" },
   { value: "4K", label: "4K" },
@@ -41,7 +43,7 @@ const RATIO_OPTIONS = [
   { value: "9:16", label: "9:16" },
 ];
 
-const MAX_IMAGES = 14;
+const DEFAULT_maxImages = 14;
 
 /* ── 디자인 시스템 기반 공통 스타일 ── */
 const fieldBase =
@@ -57,9 +59,11 @@ export interface ImageEditInputPanelHandle {
 
 interface ImageEditInputPanelProps {
   onGenerate?: (outputUrls: string[]) => void;
+  onGenerateStart?: () => void;
+  onGenerateEnd?: () => void;
 }
 
-export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ onGenerate }, ref) {
+export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ onGenerate, onGenerateStart, onGenerateEnd }, ref) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const sampleId = searchParams.get("sample_id");
@@ -67,7 +71,23 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
   const [model, setModel] = useState("nano-banana");
   const [prompt, setPrompt] = useState("");
-  const [imageSize, setImageSize] = useState("2K");
+  const [imageSize, setImageSize] = useState("1K");
+
+  const currentModelDef = IMAGE_EDIT_MODELS.find((m) => m.id === model);
+  const maxImages = currentModelDef?.maxImages ?? DEFAULT_maxImages;
+  const sizeOptions = ALL_SIZE_OPTIONS.filter((s) =>
+    currentModelDef?.supportedSizes.includes(s.value)
+  );
+  // 모델 변경 시 지원하지 않는 사이즈면 첫 번째 지원 사이즈로 리셋 + 초과 이미지 제거
+  useEffect(() => {
+    if (currentModelDef && !currentModelDef.supportedSizes.includes(imageSize)) {
+      setImageSize(currentModelDef.supportedSizes[0]);
+    }
+    if (images.length > maxImages) {
+      setImages((prev) => prev.slice(0, maxImages));
+    }
+  }, [model]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [ratio, setRatio] = useState("AUTO");
   const [width, setWidth] = useState(2048);
   const [height, setHeight] = useState(2048);
@@ -149,7 +169,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       const validFiles = Array.from(files).filter((f) =>
         ACCEPTED_TYPES.includes(f.type)
       );
-      const remaining = MAX_IMAGES - images.length;
+      const remaining = maxImages - images.length;
       const toAdd = validFiles.slice(0, remaining).map((file) => ({
         file,
         previewUrl: URL.createObjectURL(file),
@@ -161,7 +181,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
   useImperativeHandle(ref, () => ({
     addImageFromUrl: async (url: string) => {
-      if (images.length >= MAX_IMAGES) return;
+      if (images.length >= maxImages) return;
       try {
         const res = await fetch(url);
         const blob = await res.blob();
@@ -283,7 +303,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       </div>
 
       {/* ── Form ── */}
-      <div className="flex-1 flex flex-col gap-4 px-4 py-4 min-h-0">
+      <div className="flex-1 flex flex-col gap-4 px-4 py-4 min-h-0 overflow-y-auto">
         {/* Prompt */}
         <div className="space-y-1.5 shrink-0">
           <label className="text-sm font-semibold text-foreground">
@@ -317,11 +337,11 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
           />
 
           <div className="flex items-center justify-between shrink-0">
-            <span className="text-sm text-card-foreground">참조 이미지 ({images.length}/{MAX_IMAGES})</span>
+            <span className="text-sm text-card-foreground">참조 이미지 ({images.length}/{maxImages})</span>
             <button
               type="button"
               onClick={openFilePicker}
-              disabled={images.length >= MAX_IMAGES}
+              disabled={images.length >= maxImages}
               className="px-3 py-1.5 text-xs font-semibold text-foreground rounded-lg border border-border bg-muted hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
             >
               이미지 추가
@@ -331,7 +351,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
           <div
             ref={scrollContainerRef}
             className={cn(
-              "flex-1 overflow-x-auto min-h-[60px] rounded-lg transition-colors",
+              "flex-1 overflow-x-auto min-h-[150px] rounded-lg transition-colors",
               isDragOver && "bg-[#A5B4FC]/10 ring-2 ring-[#818CF8] ring-dashed"
             )}
           >
@@ -402,8 +422,8 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
               )}
 
               {/* Empty slots */}
-              {images.length < MAX_IMAGES &&
-                Array.from({ length: MAX_IMAGES - images.length }).map((_, i) => (
+              {images.length < maxImages &&
+                Array.from({ length: maxImages - images.length }).map((_, i) => (
                   <button
                     key={`empty-${i}`}
                     type="button"
@@ -423,65 +443,86 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                 ))}
             </div>
           </div>
-
-          <p className="text-xs text-white/50 shrink-0">드래그 앤 드롭 또는 이미지 추가 버튼 클릭</p>
         </div>
 
         <hr className="border-border" />
 
         {/* Additional Settings */}
-        <div className="space-y-3">
+        <div className="space-y-3 shrink-0">
           <h3 className="text-base font-bold text-foreground">추가 설정</h3>
 
           <div className="space-y-3">
-            {/* Image Size */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-card-foreground">이미지 크기</label>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Dropdown options={SIZE_OPTIONS} value={imageSize} onChange={setImageSize} className="w-[70px]" />
-                  <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[80px]" />
-                  <input type="number" min={1} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[72px] px-2 py-1.5 text-center")} />
-                  <span className="text-sm text-white/50">×</span>
-                  <input type="number" min={1} max={4096} value={height} onChange={(e) => setHeight(Number(e.target.value))} className={cn(fieldBase, "w-[72px] px-2 py-1.5 text-center")} />
-                  <button
-                    type="button"
-                    disabled={images.length === 0}
-                    onClick={() => {
-                      const first = images[0];
-                      if (!first) return;
-                      const img = new window.Image();
-                      img.onload = () => {
-                        const w = img.naturalWidth;
-                        const h = img.naturalHeight;
-                        if (w && h) {
-                          const maxDim = imageSize === "4K" ? 4096 : imageSize === "2K" ? 2048 : 1024;
-                          const scale = Math.min(maxDim / Math.max(w, h), 1);
-                          setWidth(Math.round(w * scale));
-                          setHeight(Math.round(h * scale));
-                          setRatio("AUTO");
-                        }
-                      };
-                      img.src = first.previewUrl;
-                    }}
-                    className="p-1.5 text-sm rounded-lg border border-border bg-muted text-white/50 hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:bg-muted disabled:hover:text-white/50 transition-all duration-200 cursor-pointer"
-                    title="첫 번째 이미지 비율로 자동 설정"
-                  >📐</button>
+            {/* 전체 설정 (nano-banana 제외 모든 모델) */}
+            {currentModelDef?.ui.customSize ? (
+              <>
+                {/* Image Size — 원래 한 줄 레이아웃 */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-card-foreground">이미지 크기</label>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px]" />
+                    <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[80px]" />
+                    <input type="number" min={1} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[72px] px-2 py-1.5 text-center")} />
+                    <span className="text-sm text-white/50">×</span>
+                    <input type="number" min={1} max={4096} value={height} onChange={(e) => setHeight(Number(e.target.value))} className={cn(fieldBase, "w-[72px] px-2 py-1.5 text-center")} />
+                    <button
+                      type="button"
+                      disabled={images.length === 0}
+                      onClick={() => {
+                        const first = images[0];
+                        if (!first) return;
+                        const img = new window.Image();
+                        img.onload = () => {
+                          const w = img.naturalWidth;
+                          const h = img.naturalHeight;
+                          if (w && h) {
+                            const maxDim = imageSize === "4K" ? 4096 : imageSize === "2K" ? 2048 : 1024;
+                            const s = Math.min(maxDim / Math.max(w, h), 1);
+                            setWidth(Math.round(w * s));
+                            setHeight(Math.round(h * s));
+                            setRatio("AUTO");
+                          }
+                        };
+                        img.src = first.previewUrl;
+                      }}
+                      className="p-1.5 text-sm rounded-lg border border-border bg-muted text-white/50 hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:bg-muted disabled:hover:text-white/50 transition-all duration-200 cursor-pointer"
+                      title="첫 번째 이미지 비율로 자동 설정"
+                    >📐</button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Scale */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-card-foreground shrink-0 w-14">배율</span>
-                <input type="range" min={-2} max={2} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
-                <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{scaleDisplay}</span>
-              </div>
+                {/* Scale */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-card-foreground shrink-0 w-14">배율</span>
+                  <input type="range" min={-2} max={2} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
+                  <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{scaleDisplay}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Nano Banana 축소 설정 */}
+                <div className="flex items-center gap-4">
+                  {currentModelDef?.ui.imageSize && (
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-card-foreground">이미지 크기</label>
+                      <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px]" openDirection="above" />
+                    </div>
+                  )}
+                  {currentModelDef?.ui.ratio && (
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-card-foreground">비율</label>
+                      <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[100px]" openDirection="above" />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
-              {/* Image Count */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-card-foreground shrink-0 w-14">이미지 수</span>
-                <input type="range" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
-                <input type="number" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn(fieldBase, "w-12 px-2 py-1 text-center")} />
-              </div>
+            {/* Image Count (모든 모델 공통) */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-card-foreground shrink-0 w-14">이미지 수</span>
+              <input type="range" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
+              <input type="number" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn(fieldBase, "w-12 px-2 py-1 text-center")} />
+            </div>
           </div>
         </div>
       </div>
@@ -509,10 +550,31 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                   return;
                 }
                 setIsGenerating(true);
+                onGenerateStart?.();
                 try {
-                  const imageUrls = images
-                    .map((img) => img.previewUrl)
-                    .filter((url) => url.startsWith("http"));
+                  // 모든 이미지를 base64 data URI 또는 외부 http URL로 변환
+                  const toDataUri = async (blob: Blob): Promise<string> => {
+                    const buf = await blob.arrayBuffer();
+                    const base64 = btoa(
+                      new Uint8Array(buf).reduce((s, b) => s + String.fromCharCode(b), "")
+                    );
+                    return `data:${blob.type || "image/png"};base64,${base64}`;
+                  };
+                  const imageUrls = await Promise.all(
+                    images.map(async (img) => {
+                      const url = img.previewUrl;
+                      // 외부 http URL → 그대로 (AI 프로바이더가 직접 접근 가능)
+                      if (url.startsWith("http") && !url.includes(window.location.host)) return url;
+                      // 상대경로(/images/...) → fetch 후 base64 변환
+                      if (url.startsWith("/")) {
+                        const res = await fetch(url);
+                        return toDataUri(await res.blob());
+                      }
+                      // 로컬 파일 업로드 (blob: URL) → file에서 base64 변환
+                      if (img.file) return toDataUri(img.file);
+                      return null;
+                    })
+                  ).then((urls) => urls.filter((u): u is string => u !== null));
                   const res = await fetch("/api/image-edit/generate", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -540,6 +602,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                   );
                 } finally {
                   setIsGenerating(false);
+                  onGenerateEnd?.();
                 }
               }}
               className={cn(

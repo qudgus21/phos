@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 export default function ImageEditPage() {
   const [mobileTab, setMobileTab] = useState("input");
   const [generatedUrls, setGeneratedUrls] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const inputPanelRef = useRef<ImageEditInputPanelHandle>(null);
 
   const addOutputToInput = useCallback((src: string) => {
@@ -18,6 +20,13 @@ export default function ImageEditPage() {
   }, []);
 
   const handleGenerate = useCallback((urls: string[]) => {
+    setGeneratedUrls(urls);
+    setMobileTab("result");
+    // 생성 완료 후 히스토리 리프레시
+    setHistoryRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleHistorySelect = useCallback((urls: string[]) => {
     setGeneratedUrls(urls);
     setMobileTab("result");
   }, []);
@@ -39,16 +48,29 @@ export default function ImageEditPage() {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.4fr_1.6fr_200px] gap-2.5 min-h-0">
           <div className={cn("min-h-0 min-w-0", mobileTab !== "input" && "hidden lg:block")}>
             <Suspense>
-              <ImageEditInputPanel ref={inputPanelRef} onGenerate={handleGenerate} />
+              <ImageEditInputPanel
+                ref={inputPanelRef}
+                onGenerate={handleGenerate}
+                onGenerateStart={() => setIsGenerating(true)}
+                onGenerateEnd={() => setIsGenerating(false)}
+              />
             </Suspense>
           </div>
           <div className={cn("min-h-0", mobileTab !== "result" && "hidden lg:block")}>
             <Suspense>
-              <ImageEditResultPanel onAddToInput={addOutputToInput} generatedUrls={generatedUrls} />
+              <ImageEditResultPanel
+                onAddToInput={addOutputToInput}
+                generatedUrls={generatedUrls}
+                isGenerating={isGenerating}
+              />
             </Suspense>
           </div>
           <div className={cn("min-h-0", mobileTab !== "history" && "hidden lg:block")}>
-            <ImageEditHistoryPanel />
+            <ImageEditHistoryPanel
+              featureType="image-edit"
+              refreshKey={historyRefreshKey}
+              onSelect={handleHistorySelect}
+            />
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ interface DropdownProps {
   className?: string;
   placeholder?: string;
   variant?: "default" | "gradient";
+  openDirection?: "auto" | "above" | "below";
 }
 
 export function Dropdown({
@@ -26,6 +27,7 @@ export function Dropdown({
   className,
   placeholder = "선택",
   variant = "default",
+  openDirection = "auto",
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const [focusIndex, setFocusIndex] = useState(-1);
@@ -119,7 +121,9 @@ export function Dropdown({
     return spaceBelow < menuHeight && rect.top > menuHeight ? "above" : "below";
   };
 
-  const direction = open ? getMenuPosition() : "below";
+  const direction = open
+    ? openDirection === "auto" ? getMenuPosition() : openDirection
+    : "below";
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>

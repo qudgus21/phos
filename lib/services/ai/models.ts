@@ -1,5 +1,20 @@
 import type { AIProviderName } from "./types";
 
+export interface StandardInput {
+  prompt: string;
+  images?: string[];
+  width: number;
+  height: number;
+  ratio: string;
+  imageCount: number;
+}
+
+export interface ModelUiFeatures {
+  ratio: boolean;
+  customSize: boolean;
+  imageSize: boolean;
+}
+
 export interface ModelDef {
   id: string;
   label: string;
@@ -9,36 +24,80 @@ export interface ModelDef {
   maxImages: number;
   maxOutputs: number;
   supportedSizes: string[];
+  ui: ModelUiFeatures;
   defaults?: Record<string, unknown>;
+  buildInput: (params: StandardInput) => Record<string, unknown>;
 }
 
 export const IMAGE_EDIT_MODELS: ModelDef[] = [
   {
-    id: "nano-banana",
+    id: "nano-banana-pro",
     label: "Nano Banana Pro",
     provider: "replicate",
     modelId: "google/nano-banana-pro",
     maxImages: 4,
-    maxOutputs: 4,
+    maxOutputs: 1,
     supportedSizes: ["1K", "2K"],
+    ui: { ratio: true, customSize: true, imageSize: true },
+    buildInput: ({ prompt, images, ratio }) => ({
+      prompt,
+      aspect_ratio: ratio === "AUTO" ? "1:1" : ratio,
+      output_format: "png",
+      ...(images?.[0] && { image: images[0] }),
+    }),
+  },
+  {
+    id: "nano-banana",
+    label: "Nano Banana",
+    provider: "replicate",
+    modelId: "google/nano-banana",
+    maxImages: 4,
+    maxOutputs: 1,
+    supportedSizes: ["1K", "2K"],
+    ui: { ratio: true, customSize: false, imageSize: true },
+    buildInput: ({ prompt, images, ratio }) => ({
+      prompt,
+      aspect_ratio:
+        ratio === "AUTO"
+          ? images && images.length > 0
+            ? "match_input_image"
+            : "1:1"
+          : ratio,
+      output_format: "jpg",
+      ...(images && images.length > 0 && { image_input: images }),
+    }),
   },
   {
     id: "seedream-5.0",
     label: "Seedream 5.0",
-    provider: "byteplus",
-    modelId: "seedream-5.0",
+    provider: "replicate",
+    modelId: "bytedance/seedream-5-lite",
     maxImages: 14,
     maxOutputs: 4,
     supportedSizes: ["1K", "2K", "4K"],
+    ui: { ratio: true, customSize: true, imageSize: true },
+    buildInput: ({ prompt, images, width, height }) => ({
+      prompt,
+      width,
+      height,
+      ...(images?.[0] && { image: images[0] }),
+    }),
   },
   {
     id: "seedream-4.5",
     label: "Seedream 4.5",
-    provider: "byteplus",
-    modelId: "seedream-4.5",
+    provider: "replicate",
+    modelId: "bytedance/seedream-4.5",
     maxImages: 14,
     maxOutputs: 4,
     supportedSizes: ["1K", "2K", "4K"],
+    ui: { ratio: true, customSize: true, imageSize: true },
+    buildInput: ({ prompt, images, width, height }) => ({
+      prompt,
+      width,
+      height,
+      ...(images?.[0] && { image: images[0] }),
+    }),
   },
   {
     id: "flux-pro-1.1",
@@ -47,7 +106,14 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     modelId: "black-forest-labs/flux-1.1-pro",
     maxImages: 0,
     maxOutputs: 1,
-    supportedSizes: ["1K", "2K", "4K"],
+    supportedSizes: ["1K"],
+    ui: { ratio: true, customSize: true, imageSize: true },
+    buildInput: ({ prompt, ratio }) => ({
+      prompt,
+      aspect_ratio: ratio === "AUTO" ? "1:1" : ratio,
+      output_format: "png",
+      output_quality: 90,
+    }),
   },
   {
     id: "grok",
@@ -57,6 +123,12 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     maxImages: 3,
     maxOutputs: 4,
     supportedSizes: ["1K"],
+    ui: { ratio: true, customSize: true, imageSize: true },
+    buildInput: ({ prompt, images, imageCount }) => ({
+      prompt,
+      n: imageCount,
+      ...(images && images.length > 0 && { images }),
+    }),
   },
 ];
 

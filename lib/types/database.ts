@@ -86,6 +86,7 @@ export interface Database {
           monthly_credits: number;
           max_batch_size: number;
           cooldown_seconds: number;
+          retention_days: number | null;
           features: Record<string, boolean>;
           sort_order: number;
           created_at: string;
@@ -98,6 +99,7 @@ export interface Database {
           monthly_credits?: number;
           max_batch_size?: number;
           cooldown_seconds?: number;
+          retention_days?: number | null;
           features?: Record<string, boolean>;
           sort_order?: number;
           created_at?: string;
@@ -110,6 +112,7 @@ export interface Database {
           monthly_credits?: number;
           max_batch_size?: number;
           cooldown_seconds?: number;
+          retention_days?: number | null;
           features?: Record<string, boolean>;
           sort_order?: number;
           created_at?: string;
@@ -167,6 +170,53 @@ export interface Database {
             columns: ["plan_id"];
             isOneToOne: false;
             referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      generation_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          feature_type: string;
+          model_id: string;
+          prompt: string;
+          input_urls: string[];
+          output_urls: string[];
+          credits_used: number;
+          metadata: Record<string, unknown>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          feature_type?: string;
+          model_id: string;
+          prompt: string;
+          input_urls?: string[];
+          output_urls?: string[];
+          credits_used?: number;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          feature_type?: string;
+          model_id?: string;
+          prompt?: string;
+          input_urls?: string[];
+          output_urls?: string[];
+          credits_used?: number;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "generation_history_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];

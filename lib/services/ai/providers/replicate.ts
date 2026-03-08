@@ -7,7 +7,7 @@ import type {
 } from "../types";
 import { ApiError } from "@/lib/errors";
 
-const REPLICATE_API_URL = "https://api.replicate.com/v1/predictions";
+const REPLICATE_BASE_URL = "https://api.replicate.com/v1";
 
 interface ReplicatePrediction {
   id: string;
@@ -32,36 +32,39 @@ export class ReplicateProvider implements AIProvider {
       );
     }
 
+    // buildInput에서 이미 모델별 파라미터가 완성된 상태
     const modelInput: Record<string, unknown> = {
-      prompt: input.prompt ?? "",
       ...input.params,
     };
 
-    if (input.images && input.images.length > 0) {
-      modelInput.image = input.images[0];
-      if (input.images.length > 1) {
-        modelInput.images = input.images;
+    // buildInput을 사용하지 않는 레거시 호출 대응
+    if (!input.params || Object.keys(input.params).length === 0) {
+      modelInput.prompt = input.prompt ?? "";
+      if (input.images && input.images.length > 0) {
+        modelInput.image = input.images[0];
+      }
+      if (input.negativePrompt) {
+        modelInput.negative_prompt = input.negativePrompt;
       }
     }
 
-    if (input.negativePrompt) {
-      modelInput.negative_prompt = input.negativePrompt;
-    }
-
-    const body: Record<string, unknown> = {
-      model: model.modelId,
-      input: modelInput,
-    };
+    // 공식 모델: /v1/models/{owner}/{name}/predictions
+    // 버전 지정: /v1/predictions + version
+    let apiUrl: string;
+    let body: Record<string, unknown>;
 
     if (model.version) {
-      body.version = model.version;
-      delete body.model;
+      apiUrl = `${REPLICATE_BASE_URL}/predictions`;
+      body = { version: model.version, input: modelInput };
+    } else {
+      apiUrl = `${REPLICATE_BASE_URL}/models/${model.modelId}/predictions`;
+      body = { input: modelInput };
     }
 
     const start = Date.now();
 
     // Prefer: wait 헤더로 최대 60초 동기 대기
-    const res = await fetch(REPLICATE_API_URL, {
+    const res = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -18,6 +18,22 @@ const navItems = [
   { label: "가격", href: "/pricing" },
 ];
 
+const PLAN_BADGE: Record<string, { label: string; className: string }> = {
+  free: { label: "Free", className: "text-slate-400 bg-slate-500/15" },
+  basic: { label: "Basic", className: "text-blue-400 bg-blue-500/15" },
+  deluxe: { label: "Deluxe", className: "text-violet-400 bg-violet-500/15" },
+  premium: { label: "Premium", className: "text-amber-300 bg-amber-400/15 ring-1 ring-amber-400/30" },
+};
+
+function PlanBadge({ planId, planName }: { planId: string; planName: string }) {
+  const style = PLAN_BADGE[planId] ?? PLAN_BADGE.free;
+  return (
+    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide", style.className)}>
+      {style.label || planName}
+    </span>
+  );
+}
+
 /* ── D: 스크롤 프로그레스 + 컴팩트 모드 ── */
 function useNavScroll() {
   const [scrolled, setScrolled] = useState(false);
@@ -282,11 +298,12 @@ export function Navigation() {
                   >
                     <div className="px-4 py-3 border-b border-white/10">
                       <p className="text-sm font-semibold text-white truncate">{user.email}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {creditInfo
-                          ? `${creditInfo.plan.name} plan`
-                          : "Free plan"}
-                      </p>
+                      <div className="mt-1">
+                        <PlanBadge
+                          planId={creditInfo?.plan.id ?? "free"}
+                          planName={creditInfo?.plan.name ?? "Free"}
+                        />
+                      </div>
                     </div>
                     <div className="p-1.5">
                       <button
@@ -412,8 +429,11 @@ export function Navigation() {
                         )}
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm text-slate-300 font-medium truncate">{user.email}</span>
-                          <span className="text-xs text-slate-500 mt-0.5">
-                            {creditInfo ? `${creditInfo.plan.name} plan` : "Free plan"}
+                          <span className="mt-0.5">
+                            <PlanBadge
+                              planId={creditInfo?.plan.id ?? "free"}
+                              planName={creditInfo?.plan.name ?? "Free"}
+                            />
                           </span>
                         </div>
                       </div>

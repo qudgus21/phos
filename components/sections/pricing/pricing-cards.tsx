@@ -178,7 +178,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
             {plan.features.map((feature) => (
               <li
                 key={feature}
-                className="flex items-start gap-2 text-muted-foreground"
+                className="flex items-start gap-2 text-foreground"
               >
                 <Check className="w-4 h-4 mt-0.5 text-primary shrink-0" />
                 <span className="text-sm">{feature}</span>
