@@ -133,12 +133,14 @@ export const POST = withAuth(async (request, { user }) => {
     });
   };
 
-  const results = await Promise.all(
-    Array.from({ length: callCount }, (_, i) => {
-      const remaining = actualCount - i * perCallCount;
-      return generateOne(Math.min(perCallCount, remaining));
-    })
-  );
+  // stagger 방식: 요청 간 간격을 두고 발사 후 전체 대기
+  const resultPromises: ReturnType<typeof generateOne>[] = [];
+  for (let i = 0; i < callCount; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 5000));
+    const remaining = actualCount - i * perCallCount;
+    resultPromises.push(generateOne(Math.min(perCallCount, remaining)));
+  }
+  const results = await Promise.all(resultPromises);
 
   let allOutputUrls = results.flatMap((r) => r.outputUrls);
 
@@ -147,15 +149,14 @@ export const POST = withAuth(async (request, { user }) => {
     !modelDef.supportedSizes.includes(imageSize) || scale > 0;
 
   if (needsUpscale) {
-    // scale 범위: -2 ~ 2 → upscale factor: 2 or 4
-    // 모델 미지원 해상도: 1K→2K = x2, 1K→4K = x4, 2K→4K = x2
+    // imageSize 기준 목표 해상도 (width/height와 무관하게 정확한 배율 계산)
+    const targetPixels = imageSize === "4K" ? 4096 : imageSize === "2K" ? 2048 : 1024;
     const maxSupported = modelDef.supportedSizes.includes("4K")
       ? 4096
       : modelDef.supportedSizes.includes("2K")
         ? 2048
         : 1024;
-    const targetMax = Math.max(width, height);
-    const sizeRatio = targetMax / maxSupported;
+    const sizeRatio = targetPixels / maxSupported;
 
     // scale > 0이면 추가 배율, 아니면 해상도 보정만
     const scaleFactor = Math.max(

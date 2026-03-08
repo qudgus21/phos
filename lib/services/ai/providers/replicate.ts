@@ -63,8 +63,8 @@ export class ReplicateProvider implements AIProvider {
 
     const start = Date.now();
 
-    // Prefer: wait 헤더로 최대 60초 동기 대기
-    const res = await fetch(apiUrl, {
+    // Prefer: wait 헤더로 최대 60초 동기 대기 (429 시 자동 재시도)
+    const res = await this.fetchWithRetry(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,14 +73,6 @@ export class ReplicateProvider implements AIProvider {
       },
       body: JSON.stringify(body),
     });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new ApiError(
-        `Replicate API 오류 (${res.status}): ${text}`,
-        502
-      );
-    }
 
     let prediction = (await res.json()) as ReplicatePrediction;
 
@@ -110,6 +102,35 @@ export class ReplicateProvider implements AIProvider {
       modelId: model.modelId,
       durationMs: Date.now() - start,
     };
+  }
+
+  private async fetchWithRetry(
+    url: string,
+    init: RequestInit,
+    maxRetries = 5
+  ): Promise<Response> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const res = await fetch(url, init);
+
+      if (res.status === 429 && attempt < maxRetries) {
+        const retryAfter = Number(res.headers.get("retry-after")) || 10;
+        const waitMs = Math.min(retryAfter, 30) * 1000;
+        await new Promise((r) => setTimeout(r, waitMs));
+        continue;
+      }
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new ApiError(
+          `Replicate API 오류 (${res.status}): ${text}`,
+          502
+        );
+      }
+
+      return res;
+    }
+
+    throw new ApiError("Replicate API 재시도 횟수 초과 (429)", 502);
   }
 
   private async poll(

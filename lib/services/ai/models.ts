@@ -37,7 +37,7 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     modelId: "google/nano-banana-pro",
     maxImages: 4,
     maxOutputs: 1,
-    supportedSizes: ["1K", "2K"],
+    supportedSizes: ["1K"],
     ui: { ratio: true, customSize: true, imageSize: true },
     buildInput: ({ prompt, images, ratio }) => ({
       prompt,
@@ -53,7 +53,7 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     modelId: "google/nano-banana",
     maxImages: 4,
     maxOutputs: 1,
-    supportedSizes: ["1K", "2K"],
+    supportedSizes: ["1K"],
     ui: { ratio: true, customSize: false, imageSize: true },
     buildInput: ({ prompt, images, ratio }) => ({
       prompt,

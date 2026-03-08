@@ -58,8 +58,8 @@ export interface ImageEditInputPanelHandle {
 }
 
 interface ImageEditInputPanelProps {
-  onGenerate?: (outputUrls: string[]) => void;
-  onGenerateStart?: () => void;
+  onGenerate?: (outputUrls: string[], prompt: string) => void;
+  onGenerateStart?: (imageCount: number, firstImageUrl: string | null) => void;
   onGenerateEnd?: () => void;
 }
 
@@ -75,22 +75,18 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
   const currentModelDef = IMAGE_EDIT_MODELS.find((m) => m.id === model);
   const maxImages = currentModelDef?.maxImages ?? DEFAULT_maxImages;
-  const sizeOptions = ALL_SIZE_OPTIONS.filter((s) =>
-    currentModelDef?.supportedSizes.includes(s.value)
-  );
-  // 모델 변경 시 지원하지 않는 사이즈면 첫 번째 지원 사이즈로 리셋 + 초과 이미지 제거
+  // 모든 모델에서 1K/2K/4K 선택 가능 (미지원 크기는 업스케일러가 처리)
+  const sizeOptions = ALL_SIZE_OPTIONS;
+  // 모델 변경 시 초과 이미지 제거
   useEffect(() => {
-    if (currentModelDef && !currentModelDef.supportedSizes.includes(imageSize)) {
-      setImageSize(currentModelDef.supportedSizes[0]);
-    }
     if (images.length > maxImages) {
       setImages((prev) => prev.slice(0, maxImages));
     }
   }, [model]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [ratio, setRatio] = useState("AUTO");
-  const [width, setWidth] = useState(2048);
-  const [height, setHeight] = useState(2048);
+  const [width, setWidth] = useState(1024);
+  const [height, setHeight] = useState(1024);
   const [scale, setScale] = useState(0);
   const [imageCount, setImageCount] = useState(1);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -550,7 +546,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                   return;
                 }
                 setIsGenerating(true);
-                onGenerateStart?.();
+                onGenerateStart?.(imageCount, images[0]?.previewUrl ?? null);
                 try {
                   // 모든 이미지를 base64 data URI 또는 외부 http URL로 변환
                   const toDataUri = async (blob: Blob): Promise<string> => {
@@ -594,7 +590,15 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                   if (!data.success) {
                     throw new Error(data.error?.message ?? "생성에 실패했습니다");
                   }
-                  onGenerate?.(data.data.outputUrls);
+                  onGenerate?.(data.data.outputUrls, prompt);
+                  // 크레딧 잔액 낙관적 업데이트
+                  if (data.data.balanceAfter != null) {
+                    window.dispatchEvent(
+                      new CustomEvent("credits-updated", {
+                        detail: { total: data.data.balanceAfter },
+                      })
+                    );
+                  }
                 } catch (err) {
                   toast(
                     err instanceof Error ? err.message : "생성에 실패했습니다",

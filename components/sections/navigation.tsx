@@ -147,6 +147,18 @@ export function Navigation() {
       .catch(() => {});
   }, [user]);
 
+  /* 크레딧 변동 이벤트 수신 (낙관적 업데이트) */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { total } = (e as CustomEvent).detail;
+      setCreditInfo((prev) =>
+        prev ? { ...prev, balance: { ...prev.balance, total } } : prev
+      );
+    };
+    window.addEventListener("credits-updated", handler);
+    return () => window.removeEventListener("credits-updated", handler);
+  }, []);
+
   /* 드롭다운 외부 클릭 닫기 */
   useEffect(() => {
     if (!dropdownOpen) return;
