@@ -7,6 +7,7 @@ export interface StandardInput {
   height: number;
   ratio: string;
   imageCount: number;
+  imageSize: string;
 }
 
 export interface ModelUiFeatures {
@@ -35,15 +36,22 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     label: "Nano Banana Pro",
     provider: "replicate",
     modelId: "google/nano-banana-pro",
-    maxImages: 4,
+    maxImages: 14,
     maxOutputs: 1,
-    supportedSizes: ["1K"],
-    ui: { ratio: true, customSize: true, imageSize: true },
-    buildInput: ({ prompt, images, ratio }) => ({
+    supportedSizes: ["1K", "2K", "4K"],
+    ui: { ratio: true, customSize: false, imageSize: true },
+    buildInput: ({ prompt, images, ratio, imageSize }) => ({
       prompt,
-      aspect_ratio: ratio === "AUTO" ? "1:1" : ratio,
+      aspect_ratio:
+        ratio === "AUTO"
+          ? images && images.length > 0
+            ? "match_input_image"
+            : "1:1"
+          : ratio,
+      resolution: imageSize || "2K",
       output_format: "png",
-      ...(images?.[0] && { image: images[0] }),
+      safety_filter_level: "block_only_high",
+      ...(images && images.length > 0 && { image_input: images }),
     }),
   },
   {

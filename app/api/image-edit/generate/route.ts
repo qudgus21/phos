@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
-import { imageGenerationSchema } from "@/lib/validations/image-generation";
 import { getModelDef } from "@/lib/services/ai/models";
 import { resolveProvider } from "@/lib/services/ai/registry";
 import { buildImageEditPrompt } from "@/lib/services/ai/prompts";
@@ -10,6 +9,7 @@ import {
   checkCooldown,
 } from "@/lib/services/credits";
 import { upscaleImages } from "@/lib/services/ai/upscaler";
+import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ApiError, CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
@@ -21,21 +21,28 @@ interface GenerateResponse {
 }
 
 export const POST = withAuth(async (request, { user }) => {
-  // 1. Body 파싱 & 검증
-  const raw = await request.json();
-  const parsed = imageGenerationSchema.safeParse(raw);
+  // 1. FormData 파싱
+  const formData = await request.formData();
 
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string[]> = {};
-    for (const issue of parsed.error.issues) {
-      const key = issue.path.join(".");
-      if (!fieldErrors[key]) fieldErrors[key] = [];
-      fieldErrors[key].push(issue.message);
-    }
-    throw new ValidationError("입력값이 올바르지 않습니다", fieldErrors);
+  const modelId = formData.get("modelId") as string;
+  const prompt = formData.get("prompt") as string;
+  const imageSize = formData.get("imageSize") as string;
+  const ratio = formData.get("ratio") as string;
+  const width = Number(formData.get("width"));
+  const height = Number(formData.get("height"));
+  const scale = Number(formData.get("scale"));
+  const imageCount = Number(formData.get("imageCount"));
+
+  // 기본 검증
+  if (!modelId || !prompt || prompt.length < 1 || prompt.length > 2000) {
+    throw new ValidationError("입력값이 올바르지 않습니다");
   }
-
-  const { modelId, prompt, images, width, height, imageCount, ratio, imageSize, scale } = parsed.data;
+  if (!["1K", "2K", "4K"].includes(imageSize)) {
+    throw new ValidationError("이미지 크기가 올바르지 않습니다");
+  }
+  if (imageCount < 1 || imageCount > 4) {
+    throw new ValidationError("이미지 수는 1~4장이어야 합니다");
+  }
 
   // 2. 모델 설정 조회
   const modelDef = getModelDef(modelId);
@@ -43,8 +50,24 @@ export const POST = withAuth(async (request, { user }) => {
     throw new ApiError(`지원하지 않는 모델입니다: ${modelId}`, 400);
   }
 
+  // 3. 이미지 파일 처리 (Replicate Files 업로드 or data URI 변환)
+  const imageEntries = formData.getAll("images");
+  const images: string[] = await Promise.all(
+    imageEntries.map(async (entry) => {
+      if (entry instanceof File) {
+        if (modelDef.provider === "replicate") {
+          return uploadFileToReplicate(entry, entry.name);
+        }
+        // 비-Replicate 프로바이더: 서버에서 data URI 변환 (Node.js Buffer는 빠름)
+        const buffer = Buffer.from(await entry.arrayBuffer());
+        return `data:${entry.type || "image/png"};base64,${buffer.toString("base64")}`;
+      }
+      return entry as string;
+    })
+  );
+
   // 참조 이미지 수 검증
-  if (images && images.length > modelDef.maxImages) {
+  if (images.length > modelDef.maxImages) {
     throw new ValidationError(
       `${modelDef.label}은 최대 ${modelDef.maxImages}개의 참조 이미지를 지원합니다`
     );
@@ -53,7 +76,7 @@ export const POST = withAuth(async (request, { user }) => {
   // 이미지 생성 수 (maxOutputs 제한 없이 요청 수 그대로 사용)
   const actualCount = imageCount;
 
-  // 3. 크레딧 + 플랜 정보 조회
+  // 4. 크레딧 + 플랜 정보 조회
   const creditInfo = await getUserCreditInfo(user.id);
   const creditCost =
     (Math.max(width, height) > 2048 ? 150 : 75) * actualCount;
@@ -85,7 +108,7 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 4. AI 생성 호출 — 개발 환경 dry-run 모드
+  // 5. AI 생성 호출 — 개발 환경 dry-run 모드
   const isDryRun = process.env.DRY_RUN === "true";
   if (isDryRun) {
     const body: ApiResponse<GenerateResponse> = {
@@ -121,11 +144,12 @@ export const POST = withAuth(async (request, { user }) => {
   const generateOne = (count: number) => {
     const modelInput = modelDef.buildInput({
       prompt: buildImageEditPrompt(prompt),
-      images: images && images.length > 0 ? images : undefined,
+      images: images.length > 0 ? images : undefined,
       width,
       height,
       ratio,
       imageCount: count,
+      imageSize,
     });
     return provider.generate(modelConfig, {
       prompt: modelInput.prompt as string,
@@ -133,10 +157,10 @@ export const POST = withAuth(async (request, { user }) => {
     });
   };
 
-  // stagger 방식: 요청 간 간격을 두고 발사 후 전체 대기
+  // stagger 방식: 요청 간 1초 간격으로 발사 후 전체 대기
   const resultPromises: ReturnType<typeof generateOne>[] = [];
   for (let i = 0; i < callCount; i++) {
-    if (i > 0) await new Promise((r) => setTimeout(r, 5000));
+    if (i > 0) await new Promise((r) => setTimeout(r, 1000));
     const remaining = actualCount - i * perCallCount;
     resultPromises.push(generateOne(Math.min(perCallCount, remaining)));
   }
@@ -144,7 +168,7 @@ export const POST = withAuth(async (request, { user }) => {
 
   let allOutputUrls = results.flatMap((r) => r.outputUrls);
 
-  // 5. 필요 시 업스케일 (모델이 지원하지 않는 해상도이거나 scale > 0)
+  // 6. 필요 시 업스케일 (모델이 지원하지 않는 해상도이거나 scale > 0)
   const needsUpscale =
     !modelDef.supportedSizes.includes(imageSize) || scale > 0;
 
@@ -172,7 +196,7 @@ export const POST = withAuth(async (request, { user }) => {
     }
   }
 
-  // 6. 원자적 크레딧 차감 (성공 후)
+  // 7. 원자적 크레딧 차감 (성공 후)
   const deductResult = await deductCredits(
     user.id,
     creditCost,
@@ -188,7 +212,7 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 7. Storage에 결과 이미지 업로드 + 히스토리 저장 (비동기)
+  // 8. Storage에 결과 이미지 업로드 + 히스토리 저장 (비동기)
   const supabaseAdmin = createAdminClient();
   const storageBaseUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/generation-outputs`;
 
@@ -228,7 +252,7 @@ export const POST = withAuth(async (request, { user }) => {
           feature_type: "image-edit",
           model_id: modelId,
           prompt,
-          input_urls: images?.filter((s) => s.startsWith("http")) ?? [],
+          input_urls: images.filter((s) => s.startsWith("http")) ?? [],
           output_urls: permanentUrls,
           credits_used: creditCost,
           metadata: { width, height, ratio, imageSize, scale, imageCount },
@@ -238,7 +262,7 @@ export const POST = withAuth(async (request, { user }) => {
     }
   })();
 
-  // 8. 응답 (Storage 업로드 완료를 기다리지 않음)
+  // 9. 응답 (Storage 업로드 완료를 기다리지 않음)
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {

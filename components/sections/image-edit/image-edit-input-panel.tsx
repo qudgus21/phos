@@ -548,43 +548,35 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                 setIsGenerating(true);
                 onGenerateStart?.(imageCount, images[0]?.previewUrl ?? null);
                 try {
-                  // 모든 이미지를 base64 data URI 또는 외부 http URL로 변환
-                  const toDataUri = async (blob: Blob): Promise<string> => {
-                    const buf = await blob.arrayBuffer();
-                    const base64 = btoa(
-                      new Uint8Array(buf).reduce((s, b) => s + String.fromCharCode(b), "")
-                    );
-                    return `data:${blob.type || "image/png"};base64,${base64}`;
-                  };
-                  const imageUrls = await Promise.all(
-                    images.map(async (img) => {
-                      const url = img.previewUrl;
-                      // 외부 http URL → 그대로 (AI 프로바이더가 직접 접근 가능)
-                      if (url.startsWith("http") && !url.includes(window.location.host)) return url;
-                      // 상대경로(/images/...) → fetch 후 base64 변환
-                      if (url.startsWith("/")) {
-                        const res = await fetch(url);
-                        return toDataUri(await res.blob());
-                      }
-                      // 로컬 파일 업로드 (blob: URL) → file에서 base64 변환
-                      if (img.file) return toDataUri(img.file);
-                      return null;
-                    })
-                  ).then((urls) => urls.filter((u): u is string => u !== null));
+                  // FormData로 바이너리 전송 (base64 변환 없음)
+                  const fd = new FormData();
+                  fd.append("modelId", model);
+                  fd.append("prompt", prompt);
+                  fd.append("imageSize", imageSize);
+                  fd.append("ratio", ratio);
+                  fd.append("width", String(width));
+                  fd.append("height", String(height));
+                  fd.append("scale", String(scale));
+                  fd.append("imageCount", String(imageCount));
+
+                  // 이미지: File 객체는 바이너리 그대로, 외부 URL은 문자열로 전송
+                  for (const img of images) {
+                    if (img.file) {
+                      fd.append("images", img.file);
+                    } else if (img.previewUrl.startsWith("http")) {
+                      fd.append("images", img.previewUrl);
+                    } else if (img.previewUrl.startsWith("/")) {
+                      // 상대경로 (샘플 이미지) → fetch 후 File로 변환
+                      const r = await fetch(img.previewUrl);
+                      const blob = await r.blob();
+                      const ext = blob.type.split("/")[1] || "png";
+                      fd.append("images", new File([blob], `sample.${ext}`, { type: blob.type }));
+                    }
+                  }
+
                   const res = await fetch("/api/image-edit/generate", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      modelId: model,
-                      prompt,
-                      images: imageUrls.length > 0 ? imageUrls : undefined,
-                      imageSize,
-                      ratio,
-                      width,
-                      height,
-                      scale,
-                      imageCount,
-                    }),
+                    body: fd,
                   });
                   const data = await res.json();
                   if (!data.success) {

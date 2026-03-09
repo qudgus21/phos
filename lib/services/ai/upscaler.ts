@@ -104,7 +104,7 @@ export async function upscaleImages(
 ): Promise<string[]> {
   const results: Promise<string>[] = [];
   for (let i = 0; i < imageUrls.length; i++) {
-    if (i > 0) await new Promise((r) => setTimeout(r, 5000));
+    if (i > 0) await new Promise((r) => setTimeout(r, 1000));
     results.push(upscaleImage(imageUrls[i], scaleFactor));
   }
   return Promise.all(results);
