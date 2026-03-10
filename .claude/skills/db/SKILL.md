@@ -31,6 +31,14 @@ Supabase 원격 DB에 자주 쓰는 쿼리를 빠르게 실행합니다.
 | `/db 크레딧 설정 <email> <amount>` | 특정 유저 크레딧 금액 설정 |
 | `/db 크레딧 추가 <email> <amount>` | 특정 유저 크레딧 증가 |
 
+### 히스토리 관련
+
+| 명령 | 설명 |
+|------|------|
+| `/db 히스토리 목록` | generation_history 최근 50건 조회 |
+| `/db 히스토리 삭제` | 전체 히스토리 삭제 (DB 레코드 + Storage 파일) |
+| `/db 히스토리 삭제 <user_id>` | 특정 유저 히스토리만 삭제 |
+
 ### 일반
 
 | 명령 | 설명 |
@@ -49,6 +57,7 @@ Supabase 원격 DB에 자주 쓰는 쿼리를 빠르게 실행합니다.
 - options:
   - "유저 관리" — 유저 조회/삭제
   - "크레딧 관리" — 크레딧 조회/설정/추가
+  - "히스토리 관리" — 생성 히스토리 조회/삭제
   - "테이블 목록" — public 스키마 테이블 확인
   - "SQL 직접 실행" — 임의 쿼리 입력
 
@@ -64,6 +73,11 @@ Supabase 원격 DB에 자주 쓰는 쿼리를 빠르게 실행합니다.
 - "크레딧 조회" — 특정 유저 잔액 확인
 - "크레딧 설정" — 특정 유저 잔액 변경
 - "크레딧 추가" — 특정 유저 잔액 증가
+
+히스토리 관리 선택 시:
+- "히스토리 목록" — 최근 생성 기록 조회
+- "히스토리 삭제" — 전체 삭제 (DB + Storage)
+- "히스토리 삭제 (유저별)" — 특정 유저만 삭제
 
 **3차** — 이메일/금액 등 추가 입력이 필요하면 `AskUserQuestion`으로 입력받는다.
 
@@ -124,6 +138,51 @@ WHERE user_id = (SELECT id FROM public.users WHERE email = '<email>');
 UPDATE public.user_credits SET balance = balance + <amount>, updated_at = now()
 WHERE user_id = (SELECT id FROM public.users WHERE email = '<email>');
 ```
+
+**히스토리 목록**:
+```sql
+SELECT id, user_id, feature_type, model_id, prompt, credits_used, created_at
+FROM public.generation_history
+ORDER BY created_at DESC
+LIMIT 50;
+```
+
+**히스토리 삭제** (전체 또는 특정 유저):
+- 삭제 전 반드시 사용자에게 확인을 받는다
+- 3단계로 실행한다:
+
+1단계: Storage 파일 목록 조회
+```sql
+SELECT name FROM storage.objects
+WHERE bucket_id = 'generation-outputs'
+-- 유저별 삭제 시: AND name LIKE '<user_id>/%'
+ORDER BY name;
+```
+
+2단계: Storage 파일 삭제 (Bash로 실행)
+```bash
+export $(grep -E '^(NEXT_PUBLIC_SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY)=' .env.local | xargs) && node -e '
+const { createClient } = require("@supabase/supabase-js");
+async function main() {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const files = [/* 1단계에서 조회한 파일명 배열 */];
+  if (files.length === 0) { console.log("No files to delete"); return; }
+  const { data, error } = await supabase.storage.from("generation-outputs").remove(files);
+  if (error) console.error("Error:", error);
+  else console.log("Deleted", data.length, "files from storage");
+}
+main().catch(console.error);
+'
+```
+
+3단계: DB 레코드 삭제
+```sql
+DELETE FROM public.generation_history;
+-- 유저별 삭제 시: DELETE FROM public.generation_history WHERE user_id = '<user_id>';
+```
+
+- Storage 파일은 `execute_sql`로 삭제 불가 (Supabase `storage.protect_delete()` 트리거 차단)
+- 반드시 Supabase JS SDK의 `storage.remove()` API를 사용해야 한다
 
 **테이블 목록**:
 `list_tables` MCP 도구를 사용한다 (schemas: ["public"]).

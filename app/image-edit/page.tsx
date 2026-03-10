@@ -4,34 +4,36 @@ import { useState, useRef, useCallback, Suspense } from "react";
 import { ImageEditSampleSidebar } from "@/components/sections/image-edit/image-edit-sample-sidebar";
 import { ImageEditInputPanel, type ImageEditInputPanelHandle } from "@/components/sections/image-edit/image-edit-input-panel";
 import { ImageEditResultPanel } from "@/components/sections/image-edit/image-edit-result-panel";
-import { ImageEditHistoryPanel, type PendingHistoryItem } from "@/components/sections/image-edit/image-edit-history-panel";
+import { ImageEditHistoryPanel } from "@/components/sections/image-edit/image-edit-history-panel";
 import { ImageEditMobileTabs } from "@/components/sections/image-edit/image-edit-mobile-tabs";
 import { cn } from "@/lib/utils";
 
 export default function ImageEditPage() {
   const [mobileTab, setMobileTab] = useState("input");
   const [generatedUrls, setGeneratedUrls] = useState<string[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingCount, setGeneratingCount] = useState(1);
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
+  const [generatingScale, setGeneratingScale] = useState(0);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
-  const [pendingItem, setPendingItem] = useState<PendingHistoryItem | null>(null);
   const inputPanelRef = useRef<ImageEditInputPanelHandle>(null);
 
   const addOutputToInput = useCallback((src: string) => {
     inputPanelRef.current?.addImageFromUrl(src);
   }, []);
 
-  const handleGenerate = useCallback((urls: string[], prompt: string) => {
+  const handleGenerate = useCallback((urls: string[], previews?: string[]) => {
     setGeneratedUrls(urls);
+    setPreviewUrls(previews ?? []);
     setMobileTab("result");
-    // 낙관적 업데이트: 즉시 히스토리에 pending 항목 추가
-    setPendingItem({ prompt, outputUrls: urls });
+    // 서버에서 즉시 INSERT하므로 히스토리 1회 refresh
     setHistoryRefreshKey((k) => k + 1);
   }, []);
 
-  const handleHistorySelect = useCallback((urls: string[]) => {
+  const handleHistorySelect = useCallback((urls: string[], previews?: string[]) => {
     setGeneratedUrls(urls);
+    setPreviewUrls(previews ?? []);
     setMobileTab("result");
   }, []);
 
@@ -55,20 +57,14 @@ export default function ImageEditPage() {
               <ImageEditInputPanel
                 ref={inputPanelRef}
                 onGenerate={handleGenerate}
-                onGenerateStart={(count, firstImageUrl) => {
+                onGenerateStart={(count, firstImageUrl, scale) => {
                   setIsGenerating(true);
                   setGeneratingCount(count);
                   setGeneratingInputImage(firstImageUrl);
+                  setGeneratingScale(scale ?? 0);
                 }}
                 onGenerateEnd={() => {
                   setIsGenerating(false);
-                  // Storage 업로드는 비동기 — 2초 간격으로 최대 5회 폴링
-                  let attempts = 0;
-                  const poll = setInterval(() => {
-                    attempts++;
-                    setHistoryRefreshKey((k) => k + 1);
-                    if (attempts >= 5) clearInterval(poll);
-                  }, 2000);
                 }}
               />
             </Suspense>
@@ -78,9 +74,11 @@ export default function ImageEditPage() {
               <ImageEditResultPanel
                 onAddToInput={addOutputToInput}
                 generatedUrls={generatedUrls}
+                previewUrls={previewUrls}
                 isGenerating={isGenerating}
                 generatingCount={generatingCount}
                 generatingInputImage={generatingInputImage}
+                generatingScale={generatingScale}
               />
             </Suspense>
           </div>
@@ -88,8 +86,6 @@ export default function ImageEditPage() {
             <ImageEditHistoryPanel
               featureType="image-edit"
               refreshKey={historyRefreshKey}
-              pendingItem={pendingItem}
-              onPendingResolved={() => setPendingItem(null)}
               onSelect={handleHistorySelect}
             />
           </div>

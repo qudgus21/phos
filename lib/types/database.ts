@@ -183,6 +183,7 @@ export interface Database {
           prompt: string;
           input_urls: string[];
           output_urls: string[];
+          preview_urls: string[];
           credits_used: number;
           metadata: Record<string, unknown>;
           created_at: string;
@@ -195,6 +196,7 @@ export interface Database {
           prompt: string;
           input_urls?: string[];
           output_urls?: string[];
+          preview_urls?: string[];
           credits_used?: number;
           metadata?: Record<string, unknown>;
           created_at?: string;
@@ -207,6 +209,7 @@ export interface Database {
           prompt?: string;
           input_urls?: string[];
           output_urls?: string[];
+          preview_urls?: string[];
           credits_used?: number;
           metadata?: Record<string, unknown>;
           created_at?: string;

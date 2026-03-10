@@ -13,38 +13,16 @@ import { SAMPLES } from "@/lib/constants/samples";
  * 이미지를 PNG로 변환하여 다운로드한다.
  * Canvas API를 사용해 클라이언트에서 처리 — 원본 해상도/비율 유지.
  */
-async function downloadAsPng(src: string) {
-  const img = new window.Image();
-  img.crossOrigin = "anonymous";
-
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("이미지 로드 실패"));
-    img.src = src;
-  });
-
-  const canvas = document.createElement("canvas");
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas 2D 컨텍스트를 생성할 수 없습니다");
-
-  ctx.drawImage(img, 0, 0);
-
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/png")
-  );
-  if (!blob) throw new Error("PNG 변환 실패");
+async function downloadImage(src: string) {
+  const res = await fetch(src);
+  const blob = await res.blob();
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
 
-  // 원본 파일명에서 확장자를 .png로 교체
   const originalName = src.split("/").pop()?.split("?")[0] || "image";
-  const baseName = originalName.replace(/\.[^.]+$/, "");
-  a.download = `${baseName}.png`;
+  a.download = originalName;
 
   document.body.appendChild(a);
   a.click();
@@ -62,9 +40,11 @@ const WORKFLOW_STEPS = [
 interface ImageEditResultPanelProps {
   onAddToInput?: (src: string) => void;
   generatedUrls?: string[];
+  previewUrls?: string[];
   isGenerating?: boolean;
   generatingCount?: number;
   generatingInputImage?: string | null;
+  generatingScale?: number;
 }
 
 /* ── 툴팁 액션 버튼 ── */
@@ -102,7 +82,7 @@ function DownloadButton({ src }: { src: string }) {
     if (isDownloading) return;
     setIsDownloading(true);
     try {
-      await downloadAsPng(src);
+      await downloadImage(src);
     } finally {
       setIsDownloading(false);
     }
@@ -123,7 +103,7 @@ function DownloadButton({ src }: { src: string }) {
         )}
       </button>
       <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[11px] text-white bg-black/80 rounded-md whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity">
-        {isDownloading ? "변환 중..." : "다운로드"}
+        {isDownloading ? "다운로드 중..." : "다운로드"}
       </span>
     </div>
   );
@@ -140,7 +120,7 @@ function ImageActionBar({
   onAddToInput?: (src: string) => void;
 }) {
   return (
-    <div className="absolute inset-x-0 bottom-0 flex justify-center p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+    <div className="absolute inset-x-0 bottom-0 flex justify-center p-6 opacity-0 group-hover:opacity-100 transition-opacity z-10">
       <div className="flex items-center gap-2 px-3 py-2 bg-black/70 backdrop-blur-md rounded-xl">
         <ActionButton icon={ZoomIn} label="확대" onClick={(e) => { e.stopPropagation(); onZoom(); }} />
         <DownloadButton src={src} />
@@ -153,8 +133,9 @@ function ImageActionBar({
 }
 
 /* ── 프로그레시브 블러 플레이스홀더 ── */
-function GeneratingPlaceholder({ count, inputImage }: { count: number; inputImage?: string | null }) {
+function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase = "generating" }: { count: number; inputImage?: string | null; willUpscale?: boolean; phase?: "generating" | "loading" }) {
   const [progress, setProgress] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
@@ -162,9 +143,10 @@ function GeneratingPlaceholder({ count, inputImage }: { count: number; inputImag
     setProgress(0);
 
     const interval = setInterval(() => {
-      const elapsed = (Date.now() - startTimeRef.current) / 1000;
-      const p = Math.min(95, 100 * (1 - Math.exp(-elapsed / 60)));
+      const sec = (Date.now() - startTimeRef.current) / 1000;
+      const p = Math.min(95, 100 * (1 - Math.exp(-sec / 60)));
       setProgress(p);
+      setElapsed(sec);
     }, 200);
 
     return () => clearInterval(interval);
@@ -234,13 +216,23 @@ function GeneratingPlaceholder({ count, inputImage }: { count: number; inputImag
         </div>
       </div>
       <div className="text-center space-y-1.5">
-        <p className="text-base font-bold text-foreground">이미지 생성 중</p>
+        <p className="text-base font-bold text-foreground">
+          {phase === "loading"
+            ? "저장 중"
+            : willUpscale && elapsed > 25
+              ? "업스케일 중"
+              : "이미지 생성 중"}
+        </p>
         <motion.p
           className="text-sm font-medium text-foreground/70"
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
-          잠시만 기다려 주세요...
+          {phase === "loading"
+            ? "결과를 불러오고 있습니다..."
+            : willUpscale && elapsed > 25
+              ? "고해상도로 변환하고 있습니다..."
+              : "잠시만 기다려 주세요..."}
         </motion.p>
       </div>
     </div>
@@ -260,8 +252,8 @@ function GeneratingPlaceholder({ count, inputImage }: { count: number; inputImag
         </div>
       ) : (
         <div className="absolute inset-0 p-4 flex items-center justify-center">
-          <div className="grid grid-cols-2 grid-rows-2 gap-2 w-full">
-            {Array.from({ length: 4 }).map((_, i) => (
+          <div className={cn("grid gap-2 w-full", count <= 2 ? "grid-cols-2 grid-rows-1" : "grid-cols-2 grid-rows-2")}>
+            {Array.from({ length: count }).map((_, i) => (
               <div
                 key={i}
                 className="relative aspect-square rounded-lg border border-white/10 overflow-hidden"
@@ -288,7 +280,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
     if (isDownloading) return;
     setIsDownloading(true);
     try {
-      await downloadAsPng(src);
+      await downloadImage(src);
     } finally {
       setIsDownloading(false);
     }
@@ -358,7 +350,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
             ) : (
               <Download className="w-4 h-4" />
             )}
-            {isDownloading ? "변환 중..." : filename.replace(/\.[^.]+$/, ".png")}
+            {isDownloading ? "다운로드 중..." : filename}
           </button>
         </motion.div>
       </motion.div>
@@ -367,25 +359,69 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function ImageEditResultPanel({ onAddToInput, generatedUrls, isGenerating, generatingCount = 1, generatingInputImage }: ImageEditResultPanelProps) {
+export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls, isGenerating, generatingCount = 1, generatingInputImage, generatingScale = 0 }: ImageEditResultPanelProps) {
   const searchParams = useSearchParams();
   const sampleId = searchParams.get("sample_id");
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
-  const outputs = generatedUrls && generatedUrls.length > 0
+  const fullOutputs = generatedUrls && generatedUrls.length > 0
     ? generatedUrls
     : activeSample?.outputs ?? [];
 
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const wasGeneratingRef = useRef(false);
+  const prevUrlsRef = useRef<string[] | undefined>(undefined);
 
-  // outputs가 바뀌면 로드 상태 초기화
+  // previewUrls가 있으면 프리뷰 먼저, 4K 로드 완료 시 교체
+  const hasPreview = previewUrls && previewUrls.length > 0;
+  const outputs = fullOutputs.map((fullUrl, i) => {
+    if (hasPreview && previewUrls[i] && previewUrls[i] !== fullUrl && !loadedUrls.has(fullUrl)) {
+      return previewUrls[i];
+    }
+    return fullUrl;
+  });
+
+  // outputs가 실제로 바뀌었을 때만 로드 상태 초기화
   useEffect(() => {
-    setLoadedUrls(new Set());
+    const prev = prevUrlsRef.current;
+    const isSame = prev && generatedUrls &&
+      prev.length === generatedUrls.length &&
+      prev.every((u, i) => u === generatedUrls[i]);
+    if (!isSame) {
+      setLoadedUrls(new Set());
+      prevUrlsRef.current = generatedUrls;
+    }
   }, [generatedUrls]);
+
+  // 생성 완료 직후(isGenerating true→false)에만 이미지 로딩 상태 시작
+  useEffect(() => {
+    if (isGenerating) {
+      wasGeneratingRef.current = true;
+    } else if (wasGeneratingRef.current) {
+      wasGeneratingRef.current = false;
+      if (generatedUrls && generatedUrls.length > 0) {
+        setIsImageLoading(true);
+      }
+    }
+  }, [isGenerating]); // generatedUrls 제거 — isGenerating 전환만 감지
+
+  // 첫 번째 프리뷰 이미지가 로드되면 이미지 로딩 상태 해제
+  useEffect(() => {
+    if (!generatedUrls || generatedUrls.length === 0) return;
+    // 프리뷰가 있으면 프리뷰 로드로 해제, 없으면 풀 이미지 로드로 해제
+    const firstCheckUrl = hasPreview ? previewUrls[0] : generatedUrls[0];
+    if (loadedUrls.has(firstCheckUrl)) {
+      setIsImageLoading(false);
+    }
+  }, [loadedUrls, generatedUrls, previewUrls, hasPreview]);
 
   const handleImageLoad = useCallback((url: string) => {
     setLoadedUrls((prev) => new Set(prev).add(url));
   }, []);
+
+  // 스피너 표시: API 호출 중이거나 이미지가 아직 로딩 중일 때
+  const showPlaceholder = isGenerating || isImageLoading;
 
   return (
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col overflow-hidden">
@@ -397,8 +433,28 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, isGenerating
         </h2>
       </div>
 
-      {isGenerating ? (
-        <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} />
+      {/* 이미지 로딩 중일 때 숨겨진 img로 프리로드 (onLoad 트리거용) */}
+      {isImageLoading && !isGenerating && fullOutputs.length > 0 && (
+        <>
+          {/* 프리뷰가 있으면 프리뷰 먼저 프리로드 */}
+          <img
+            src={hasPreview ? previewUrls[0] : fullOutputs[0]}
+            alt=""
+            className="hidden"
+            onLoad={() => handleImageLoad(hasPreview ? previewUrls[0] : fullOutputs[0])}
+          />
+        </>
+      )}
+
+      {/* 프리뷰 표시 중일 때 4K 원본을 백그라운드 프리로드 */}
+      {hasPreview && !isGenerating && fullOutputs.map((fullUrl, i) => (
+        previewUrls[i] !== fullUrl && !loadedUrls.has(fullUrl) ? (
+          <img key={fullUrl} src={fullUrl} alt="" className="hidden" onLoad={() => handleImageLoad(fullUrl)} />
+        ) : null
+      ))}
+
+      {showPlaceholder ? (
+        <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} willUpscale={generatingScale > 1} phase={isImageLoading ? "loading" : "generating"} />
       ) : outputs.length === 1 ? (
         <div className="relative flex-1 min-h-0 p-4 group">
           {!loadedUrls.has(outputs[0]) && (
@@ -414,8 +470,8 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, isGenerating
           />
           {loadedUrls.has(outputs[0]) && (
             <ImageActionBar
-              src={outputs[0]}
-              onZoom={() => setLightboxSrc(outputs[0])}
+              src={fullOutputs[0]}
+              onZoom={() => setLightboxSrc(fullOutputs[0])}
               onAddToInput={onAddToInput}
             />
           )}
@@ -446,8 +502,8 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, isGenerating
                     />
                     {loadedUrls.has(outputs[i]) && (
                       <ImageActionBar
-                        src={outputs[i]}
-                        onZoom={() => setLightboxSrc(outputs[i])}
+                        src={fullOutputs[i]}
+                        onZoom={() => setLightboxSrc(fullOutputs[i])}
                         onAddToInput={onAddToInput}
                       />
                     )}

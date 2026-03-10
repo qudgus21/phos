@@ -95,7 +95,8 @@
       "WebFetch(domain:replicate.com)",
       "WebFetch(domain:docs.byteplus.com)",
       "mcp__supabase__get_advisors",
-      "Bash(source /Applications/hbh/dev/revoa/.env.local)"
+      "Bash(source /Applications/hbh/dev/revoa/.env.local)",
+      "Bash(source .env.local)"
     ]
   },
   "enableAllProjectMcpServers": true,

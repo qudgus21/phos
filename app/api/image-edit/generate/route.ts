@@ -16,6 +16,7 @@ import type { ApiResponse } from "@/lib/types/api";
 
 interface GenerateResponse {
   outputUrls: string[];
+  previewUrls?: string[];
   creditsUsed: number;
   balanceAfter: number;
 }
@@ -37,7 +38,7 @@ export const POST = withAuth(async (request, { user }) => {
   if (!modelId || !prompt || prompt.length < 1 || prompt.length > 2000) {
     throw new ValidationError("입력값이 올바르지 않습니다");
   }
-  if (!["1K", "2K", "4K"].includes(imageSize)) {
+  if (!["1K", "2K", "3K", "4K", "custom"].includes(imageSize)) {
     throw new ValidationError("이미지 크기가 올바르지 않습니다");
   }
   if (imageCount < 1 || imageCount > 4) {
@@ -167,25 +168,28 @@ export const POST = withAuth(async (request, { user }) => {
   const results = await Promise.all(resultPromises);
 
   let allOutputUrls = results.flatMap((r) => r.outputUrls);
+  const preUpscaleUrls = [...allOutputUrls];
 
-  // 6. 필요 시 업스케일 (모델이 지원하지 않는 해상도이거나 scale > 0)
+  // 6. 필요 시 업스케일 (모델이 지원하지 않는 해상도이거나 scale > 1)
   const needsUpscale =
-    !modelDef.supportedSizes.includes(imageSize) || scale > 0;
+    !modelDef.supportedSizes.includes(imageSize) || scale > 1;
 
   if (needsUpscale) {
-    // imageSize 기준 목표 해상도 (width/height와 무관하게 정확한 배율 계산)
-    const targetPixels = imageSize === "4K" ? 4096 : imageSize === "2K" ? 2048 : 1024;
+    // imageSize 기준 목표 해상도
+    const targetPixels = imageSize === "4K" ? 4096 : imageSize === "3K" ? 3072 : imageSize === "2K" ? 2048 : 1024;
     const maxSupported = modelDef.supportedSizes.includes("4K")
       ? 4096
-      : modelDef.supportedSizes.includes("2K")
-        ? 2048
-        : 1024;
+      : modelDef.supportedSizes.includes("3K")
+        ? 3072
+        : modelDef.supportedSizes.includes("2K")
+          ? 2048
+          : 1024;
     const sizeRatio = targetPixels / maxSupported;
 
-    // scale > 0이면 추가 배율, 아니면 해상도 보정만
+    // scale은 직접 배율 (1~4)
     const scaleFactor = Math.max(
       sizeRatio > 1 ? Math.ceil(sizeRatio) : 1,
-      scale > 0 ? 2 : 1
+      scale > 1 ? Math.round(scale) : 1
     );
 
     if (scaleFactor >= 2) {
@@ -212,61 +216,86 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 8. Storage에 결과 이미지 업로드 + 히스토리 저장 (비동기)
+  // 8. 히스토리 즉시 저장 (임시 URL) → 백그라운드로 Storage 업로드 후 영구 URL로 UPDATE
   const supabaseAdmin = createAdminClient();
   const storageBaseUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/generation-outputs`;
+  const hasUpscaled = allOutputUrls.some((url, i) => url !== preUpscaleUrls[i]);
+  const historyPayload = {
+    user_id: user.id,
+    feature_type: "image-edit" as const,
+    model_id: modelId,
+    prompt,
+    input_urls: images.filter((s) => s.startsWith("http")) ?? [],
+    output_urls: allOutputUrls,
+    preview_urls: hasUpscaled ? preUpscaleUrls : [],
+    credits_used: creditCost,
+    metadata: { width, height, ratio, imageSize, scale, imageCount },
+  };
 
-  (async () => {
-    try {
-      // AI 프로바이더 임시 URL → Supabase Storage 영구 URL
-      const permanentUrls = await Promise.all(
-        allOutputUrls.map(async (url, i) => {
-          try {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
-            const path = `${user.id}/${Date.now()}-${i}.${ext}`;
+  const { data: historyRow } = await supabaseAdmin
+    .from("generation_history")
+    .insert(historyPayload)
+    .select("id")
+    .single();
 
-            const { error } = await supabaseAdmin.storage
-              .from("generation-outputs")
-              .upload(path, blob, {
-                contentType: blob.type,
-                upsert: false,
-              });
+  // 백그라운드: Storage 업로드 후 영구 URL로 교체 (output + preview)
+  if (historyRow) {
+    const uploadToStorage = async (url: string, suffix: string) => {
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
+        const path = `${user.id}/${Date.now()}-${suffix}.${ext}`;
 
-            if (error) {
-              console.error("[storage] upload failed:", error);
-              return url; // 실패 시 원본 URL 유지
-            }
-            return `${storageBaseUrl}/${path}`;
-          } catch {
-            return url; // fetch 실패 시 원본 URL 유지
-          }
-        })
-      );
+        const { error } = await supabaseAdmin.storage
+          .from("generation-outputs")
+          .upload(path, blob, {
+            contentType: blob.type,
+            upsert: false,
+          });
 
-      await supabaseAdmin
-        .from("generation_history")
-        .insert({
-          user_id: user.id,
-          feature_type: "image-edit",
-          model_id: modelId,
-          prompt,
-          input_urls: images.filter((s) => s.startsWith("http")) ?? [],
-          output_urls: permanentUrls,
-          credits_used: creditCost,
-          metadata: { width, height, ratio, imageSize, scale, imageCount },
-        });
-    } catch (err) {
-      console.error("[generation_history] save failed:", err);
-    }
-  })();
+        if (error) {
+          console.error("[storage] upload failed:", error);
+          return url;
+        }
+        return `${storageBaseUrl}/${path}`;
+      } catch {
+        return url;
+      }
+    };
+
+    (async () => {
+      try {
+        const permanentUrls = await Promise.all(
+          allOutputUrls.map((url, i) => uploadToStorage(url, `out-${i}`))
+        );
+
+        const updatePayload: Record<string, unknown> = { output_urls: permanentUrls };
+
+        // 업스케일된 경우 1K preview도 영구 저장
+        if (hasUpscaled) {
+          const permanentPreviews = await Promise.all(
+            preUpscaleUrls.map((url, i) => uploadToStorage(url, `preview-${i}`))
+          );
+          updatePayload.preview_urls = permanentPreviews;
+        }
+
+        await supabaseAdmin
+          .from("generation_history")
+          .update(updatePayload)
+          .eq("id", historyRow.id);
+      } catch (err) {
+        console.error("[storage] background upload failed:", err);
+      }
+    })();
+  }
 
   // 9. 응답 (Storage 업로드 완료를 기다리지 않음)
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {
       outputUrls: allOutputUrls,
+      ...(hasUpscaled && { previewUrls: preUpscaleUrls }),
       creditsUsed: creditCost,
       balanceAfter: deductResult.totalBalance ?? 0,
     },

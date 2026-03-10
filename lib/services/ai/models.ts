@@ -71,7 +71,7 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
             ? "match_input_image"
             : "1:1"
           : ratio,
-      output_format: "jpg",
+      output_format: "png",
       ...(images && images.length > 0 && { image_input: images }),
     }),
   },
@@ -81,14 +81,21 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     provider: "replicate",
     modelId: "bytedance/seedream-5-lite",
     maxImages: 14,
-    maxOutputs: 4,
-    supportedSizes: ["1K", "2K", "4K"],
-    ui: { ratio: true, customSize: true, imageSize: true },
-    buildInput: ({ prompt, images, width, height }) => ({
+    maxOutputs: 1,
+    supportedSizes: ["2K", "3K"],
+    ui: { ratio: true, customSize: false, imageSize: true },
+    buildInput: ({ prompt, images, ratio, imageSize }) => ({
       prompt,
-      width,
-      height,
-      ...(images?.[0] && { image: images[0] }),
+      size: imageSize === "4K" ? "3K" : "2K",
+      aspect_ratio:
+        ratio === "AUTO"
+          ? images && images.length > 0
+            ? "match_input_image"
+            : "1:1"
+          : ratio,
+      output_format: "png",
+      sequential_image_generation: "disabled",
+      ...(images && images.length > 0 && { image_input: images }),
     }),
   },
   {
@@ -97,15 +104,33 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     provider: "replicate",
     modelId: "bytedance/seedream-4.5",
     maxImages: 14,
-    maxOutputs: 4,
-    supportedSizes: ["1K", "2K", "4K"],
+    maxOutputs: 1,
+    supportedSizes: ["2K", "4K", "custom"],
     ui: { ratio: true, customSize: true, imageSize: true },
-    buildInput: ({ prompt, images, width, height }) => ({
-      prompt,
-      width,
-      height,
-      ...(images?.[0] && { image: images[0] }),
-    }),
+    buildInput: ({ prompt, images, ratio, imageSize, width, height }) => {
+      const useCustom = imageSize === "custom";
+      return {
+        prompt,
+        size: useCustom
+          ? "custom"
+          : imageSize === "4K"
+            ? "4K"
+            : "2K",
+        aspect_ratio:
+          ratio === "AUTO"
+            ? images && images.length > 0
+              ? "match_input_image"
+              : "1:1"
+            : ratio,
+        output_format: "png",
+        sequential_image_generation: "disabled",
+        ...(useCustom && {
+          width: Math.max(1024, Math.min(4096, width)),
+          height: Math.max(1024, Math.min(4096, height)),
+        }),
+        ...(images && images.length > 0 && { image_input: images }),
+      };
+    },
   },
   {
     id: "flux-pro-1.1",

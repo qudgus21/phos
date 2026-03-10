@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, PenLine, X, GripVertical, Zap, Loader2 } from "lucide-react";
+import { Plus, PenLine, X, GripVertical, Zap, Loader2, RotateCcw, Ruler } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
@@ -28,7 +28,9 @@ const MODEL_OPTIONS = [
 const ALL_SIZE_OPTIONS = [
   { value: "1K", label: "1K" },
   { value: "2K", label: "2K" },
+  { value: "3K", label: "3K" },
   { value: "4K", label: "4K" },
+  { value: "custom", label: "커스텀" },
 ];
 
 const RATIO_OPTIONS = [
@@ -58,8 +60,8 @@ export interface ImageEditInputPanelHandle {
 }
 
 interface ImageEditInputPanelProps {
-  onGenerate?: (outputUrls: string[], prompt: string) => void;
-  onGenerateStart?: (imageCount: number, firstImageUrl: string | null) => void;
+  onGenerate?: (outputUrls: string[], previewUrls?: string[]) => void;
+  onGenerateStart?: (imageCount: number, firstImageUrl: string | null, scale?: number) => void;
   onGenerateEnd?: () => void;
 }
 
@@ -75,10 +77,17 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
   const currentModelDef = IMAGE_EDIT_MODELS.find((m) => m.id === model);
   const maxImages = currentModelDef?.maxImages ?? DEFAULT_maxImages;
-  // 모든 모델에서 1K/2K/4K 선택 가능 (미지원 크기는 업스케일러가 처리)
-  const sizeOptions = ALL_SIZE_OPTIONS;
-  // 모델 변경 시 초과 이미지 제거
+  // 모델이 네이티브 지원하는 크기만 표시 (배율은 Real-ESRGAN으로 별도 처리)
+  const sizeOptions = ALL_SIZE_OPTIONS.filter(
+    (opt) => currentModelDef?.supportedSizes.includes(opt.value)
+  );
+  // 모델 변경 시 초과 이미지 제거 + 미지원 사이즈 리셋
   useEffect(() => {
+    const validSizes = currentModelDef?.supportedSizes ?? [];
+    if (!validSizes.includes(imageSize)) {
+      setImageSize(validSizes[0] ?? "1K");
+    }
+    setRatio("AUTO");
     if (images.length > maxImages) {
       setImages((prev) => prev.slice(0, maxImages));
     }
@@ -87,7 +96,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const [ratio, setRatio] = useState("AUTO");
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
-  const [scale, setScale] = useState(0);
+  const [scale, setScale] = useState(1);
   const [imageCount, setImageCount] = useState(1);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -100,7 +109,6 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const autoScrollRef = useRef<number | null>(null);
   const lastClientXRef = useRef(0);
   const prevSampleIdRef = useRef<string | null>(null);
-
   // 샘플 변경 시 images 상태에 샘플 input 주입
   useEffect(() => {
     if (sampleId === prevSampleIdRef.current) return;
@@ -157,8 +165,10 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
   useEffect(() => stopAutoScroll, [stopAutoScroll]);
 
-  const scaleDisplay = `×${Math.pow(2, scale).toFixed(2)}`;
+  const scaleDisplay = `×${scale.toFixed(1)}`;
   const creditCost = imageSize === "4K" ? 150 : 75;
+
+  const isCustomSize = imageSize === "custom";
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
@@ -445,79 +455,67 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
         {/* Additional Settings */}
         <div className="space-y-3 shrink-0">
-          <h3 className="text-base font-bold text-foreground">추가 설정</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-foreground">추가 설정</h3>
+            <button
+              type="button"
+              onClick={() => {
+                setImageSize(sizeOptions[0]?.value ?? "2K");
+                setRatio("AUTO");
+                setWidth(1024);
+                setHeight(1024);
+                setScale(1);
+                setImageCount(1);
+              }}
+              className="p-1 text-white/30 hover:text-white/70 transition-colors cursor-pointer"
+              title="추가 설정 초기화"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           <div className="space-y-3">
-            {/* 전체 설정 (nano-banana 제외 모든 모델) */}
-            {currentModelDef?.ui.customSize ? (
-              <>
-                {/* Image Size — 원래 한 줄 레이아웃 */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-card-foreground">이미지 크기</label>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px]" />
-                    <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[80px]" />
-                    <input type="number" min={1} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[72px] px-2 py-1.5 text-center")} />
-                    <span className="text-sm text-white/50">×</span>
-                    <input type="number" min={1} max={4096} value={height} onChange={(e) => setHeight(Number(e.target.value))} className={cn(fieldBase, "w-[72px] px-2 py-1.5 text-center")} />
+            {/* 해상도 · 비율 (+ 크기: custom일 때만) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <label className="text-sm font-semibold text-card-foreground w-[70px]">해상도</label>
+                <label className="text-sm font-semibold text-card-foreground w-[80px] ml-1">비율</label>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px]" openDirection="above" />
+                <div className="ml-1"><Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[80px]" openDirection="above" /></div>
+                {isCustomSize && (
+                  <>
+                    <input type="number" min={1024} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[62px] px-1.5 py-1.5 text-center text-sm ml-1")} />
+                    <span className="text-sm text-white/40">×</span>
+                    <input type="number" min={1024} max={4096} value={height} onChange={(e) => setHeight(Number(e.target.value))} className={cn(fieldBase, "w-[62px] px-1.5 py-1.5 text-center text-sm")} />
                     <button
                       type="button"
-                      disabled={images.length === 0}
-                      onClick={() => {
-                        const first = images[0];
-                        if (!first) return;
-                        const img = new window.Image();
-                        img.onload = () => {
-                          const w = img.naturalWidth;
-                          const h = img.naturalHeight;
-                          if (w && h) {
-                            const maxDim = imageSize === "4K" ? 4096 : imageSize === "2K" ? 2048 : 1024;
-                            const s = Math.min(maxDim / Math.max(w, h), 1);
-                            setWidth(Math.round(w * s));
-                            setHeight(Math.round(h * s));
-                            setRatio("AUTO");
-                          }
-                        };
-                        img.src = first.previewUrl;
-                      }}
-                      className="p-1.5 text-sm rounded-lg border border-border bg-muted text-white/50 hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:bg-muted disabled:hover:text-white/50 transition-all duration-200 cursor-pointer"
-                      title="첫 번째 이미지 비율로 자동 설정"
-                    >📐</button>
-                  </div>
-                </div>
+                      onClick={() => { setWidth(1024); setHeight(1024); }}
+                      className="relative w-7 h-7 rounded border border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center"
+                      title="크기 초기화"
+                    >
+                      <Ruler className="w-3 h-3 text-white/40" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
 
-                {/* Scale */}
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-card-foreground shrink-0 w-14">배율</span>
-                  <input type="range" min={-2} max={2} step={0.05} value={scale} onChange={(e) => setScale(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
-                  <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{scaleDisplay}</span>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Nano Banana 축소 설정 */}
-                <div className="flex items-center gap-4">
-                  {currentModelDef?.ui.imageSize && (
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-card-foreground">이미지 크기</label>
-                      <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px]" openDirection="above" />
-                    </div>
-                  )}
-                  {currentModelDef?.ui.ratio && (
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-card-foreground">비율</label>
-                      <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[100px]" openDirection="above" />
-                    </div>
-                  )}
-                </div>
-              </>
+            {/* 배율 */}
+            {imageSize !== "custom" && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-card-foreground shrink-0 w-14">배율</span>
+                <input type="range" min={1} max={4} step={0.2} value={scale} onChange={(e) => setScale(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
+                <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{scaleDisplay}</span>
+              </div>
             )}
 
-            {/* Image Count (모든 모델 공통) */}
+            {/* 수량 */}
             <div className="flex items-center gap-3">
-              <span className="text-sm text-card-foreground shrink-0 w-14">이미지 수</span>
+              <span className="text-sm text-card-foreground shrink-0 w-14">수량</span>
               <input type="range" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
-              <input type="number" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn(fieldBase, "w-12 px-2 py-1 text-center")} />
+              <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{imageCount}장</span>
             </div>
           </div>
         </div>
@@ -527,7 +525,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       <div className="px-4 py-2.5 border-t border-border">
         <div className="flex items-center justify-between">
           <span className="text-xs text-white/50">
-            {imageSize === "4K" ? "4K: 150 크레딧/장" : "1K/2K: 75 크레딧/장"}
+            4K: 이미지당 80 크레딧 (≈ $0.16)
           </span>
           <div className="flex items-center gap-3">
             <button
@@ -546,7 +544,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                   return;
                 }
                 setIsGenerating(true);
-                onGenerateStart?.(imageCount, images[0]?.previewUrl ?? null);
+                onGenerateStart?.(imageCount, images[0]?.previewUrl ?? null, scale);
                 try {
                   // FormData로 바이너리 전송 (base64 변환 없음)
                   const fd = new FormData();
@@ -582,7 +580,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                   if (!data.success) {
                     throw new Error(data.error?.message ?? "생성에 실패했습니다");
                   }
-                  onGenerate?.(data.data.outputUrls, prompt);
+                  onGenerate?.(data.data.outputUrls, data.data.previewUrls);
                   // 크레딧 잔액 낙관적 업데이트
                   if (data.data.balanceAfter != null) {
                     window.dispatchEvent(
