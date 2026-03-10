@@ -34,15 +34,17 @@ const ALL_SIZE_OPTIONS = [
 ];
 
 const RATIO_OPTIONS = [
-  { value: "AUTO", label: "AUTO" },
-  { value: "21:9", label: "21:9" },
-  { value: "16:9", label: "16:9" },
+  // 1행: 덜 쓰이는 비율 (트리거에서 먼 쪽)
+  { value: "2:3", label: "2:3" },
   { value: "3:2", label: "3:2" },
-  { value: "4:3", label: "4:3" },
+  { value: "9:16", label: "9:16" },
+  { value: "16:9", label: "16:9" },
+  { value: "21:9", label: "21:9" },
+  // 2행: 자주 쓰는 비율 (트리거에 가까운 쪽)
+  { value: "AUTO", label: "AUTO" },
   { value: "1:1", label: "1:1" },
   { value: "3:4", label: "3:4" },
-  { value: "2:3", label: "2:3" },
-  { value: "9:16", label: "9:16" },
+  { value: "4:3", label: "4:3" },
 ];
 
 const DEFAULT_maxImages = 14;
@@ -483,7 +485,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
               </div>
               <div className="flex items-center gap-1.5">
                 <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px]" openDirection="above" />
-                <div className="ml-1"><Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[80px]" openDirection="above" /></div>
+                <div className="ml-1"><Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[72px]" openDirection="above" columns={5} /></div>
                 {isCustomSize && (
                   <>
                     <input type="number" min={1024} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[62px] px-1.5 py-1.5 text-center text-sm ml-1")} />

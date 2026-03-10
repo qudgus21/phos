@@ -105,8 +105,8 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     modelId: "bytedance/seedream-4.5",
     maxImages: 14,
     maxOutputs: 1,
-    supportedSizes: ["2K", "4K", "custom"],
-    ui: { ratio: true, customSize: true, imageSize: true },
+    supportedSizes: ["2K", "4K"],
+    ui: { ratio: true, customSize: false, imageSize: true },
     buildInput: ({ prompt, images, ratio, imageSize, width, height }) => {
       const useCustom = imageSize === "custom";
       return {

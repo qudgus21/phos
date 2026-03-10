@@ -18,6 +18,7 @@ interface DropdownProps {
   placeholder?: string;
   variant?: "default" | "gradient";
   openDirection?: "auto" | "above" | "below";
+  columns?: number;
 }
 
 export function Dropdown({
@@ -28,6 +29,7 @@ export function Dropdown({
   placeholder = "선택",
   variant = "default",
   openDirection = "auto",
+  columns = 1,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const [focusIndex, setFocusIndex] = useState(-1);
@@ -176,9 +178,11 @@ export function Dropdown({
             exit={{ opacity: 0, y: direction === "above" ? 4 : -4, scale: 0.97 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             className={cn(
-              "absolute z-[9999] w-full min-w-[100px] max-h-52 overflow-y-auto rounded-lg border border-white/[0.14] bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
+              "absolute z-[9999] min-w-[100px] rounded-lg border border-white/[0.14] bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
+              columns === 1 ? "w-full max-h-52 overflow-y-auto" : "w-max",
               direction === "above" ? "bottom-full mb-1" : "top-full mt-1"
             )}
+            style={columns > 1 ? { display: "grid", gridTemplateColumns: `repeat(${columns}, 1fr)` } : undefined}
           >
             {options.map((opt, i) => (
               <li
