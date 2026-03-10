@@ -458,12 +458,15 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
       ) : outputs.length === 1 ? (
         <div className="relative flex-1 min-h-0 p-4 group">
           {!loadedUrls.has(outputs[0]) && (
-            <div className="absolute inset-4 rounded-lg bg-muted/40 animate-pulse" />
+            <div className="absolute inset-4 rounded-lg bg-muted/40 animate-pulse flex items-center justify-center">
+              <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+            </div>
           )}
           <Image
             src={outputs[0]}
             alt="결과"
             fill
+            unoptimized
             sizes="(max-width: 1024px) 100vw, 50vw"
             className={cn("object-contain !p-4 transition-opacity duration-300", loadedUrls.has(outputs[0]) ? "opacity-100" : "opacity-0")}
             onLoad={() => handleImageLoad(outputs[0])}
@@ -490,13 +493,16 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
                 {outputs[i] ? (
                   <>
                     {!loadedUrls.has(outputs[i]) && (
-                      <div className="absolute inset-0 rounded-lg bg-muted/40 animate-pulse" />
+                      <div className="absolute inset-0 rounded-lg bg-muted/40 animate-pulse flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                      </div>
                     )}
                     <Image
                       src={outputs[i]}
                       alt={`결과 ${i + 1}`}
                       width={800}
                       height={800}
+                      unoptimized
                       className={cn("max-w-full max-h-full object-contain transition-opacity duration-300", loadedUrls.has(outputs[i]) ? "opacity-100" : "opacity-0")}
                       onLoad={() => handleImageLoad(outputs[i])}
                     />
