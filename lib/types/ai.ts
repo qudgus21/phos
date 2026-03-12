@@ -1,4 +1,4 @@
-export type AIProviderName = "replicate" | "stability" | "byteplus" | "xai";
+export type AIProviderName = "replicate" | "stability" | "byteplus";
 
 export interface ModelConfig {
   provider: AIProviderName;

@@ -2,13 +2,10 @@ import type { AIProvider, AIProviderName, ModelConfig } from "./types";
 import { ReplicateProvider } from "./providers/replicate";
 import { StabilityProvider } from "./providers/stability";
 import { BytePlusProvider } from "./providers/byteplus";
-import { XAIProvider } from "./providers/xai";
-
 const providerFactories: Record<AIProviderName, () => AIProvider> = {
   replicate: () => new ReplicateProvider(),
   stability: () => new StabilityProvider(),
   byteplus: () => new BytePlusProvider(),
-  xai: () => new XAIProvider(),
 };
 
 const providerCache = new Map<AIProviderName, AIProvider>();

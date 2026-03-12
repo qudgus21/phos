@@ -17,13 +17,15 @@ interface UploadedImage {
 }
 
 const MODEL_OPTIONS = [
-  { value: "nano-banana", label: "Nano Banana" },
-  { value: "nano-banana-pro", label: "Nano Banana Pro" },
   { value: "seedream-5.0", label: "Seedream 5.0" },
   { value: "seedream-4.5", label: "Seedream 4.5" },
-  { value: "flux-pro-1.1", label: "Flux Pro 1.1" },
-  { value: "grok", label: "Grok Imagine" },
+  { value: "seedream-4.0", label: "Seedream 4.0" },
+  { value: "nano-banana-2", label: "Nano Banana 2" },
+  { value: "nano-banana-pro", label: "Nano Banana Pro" },
+  { value: "nano-banana", label: "Nano Banana" },
 ];
+
+const MODEL_STORAGE_KEY = "phos:last-model";
 
 const ALL_SIZE_OPTIONS = [
   { value: "1K", label: "1K" },
@@ -73,7 +75,18 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const sampleId = searchParams.get("sample_id");
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
 
-  const [model, setModel] = useState("nano-banana");
+  const [model, setModelRaw] = useState(MODEL_OPTIONS[0].value);
+  const setModel = useCallback((id: string) => {
+    setModelRaw(id);
+    localStorage.setItem(MODEL_STORAGE_KEY, id);
+  }, []);
+  // hydration 후 localStorage에서 마지막 사용 모델 복원
+  useEffect(() => {
+    const saved = localStorage.getItem(MODEL_STORAGE_KEY);
+    if (saved && MODEL_OPTIONS.some((o) => o.value === saved)) {
+      setModelRaw(saved);
+    }
+  }, []);
   const [prompt, setPrompt] = useState("");
   const [imageSize, setImageSize] = useState("1K");
 
@@ -83,13 +96,13 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const sizeOptions = ALL_SIZE_OPTIONS.filter(
     (opt) => currentModelDef?.supportedSizes.includes(opt.value)
   );
-  // 모델 변경 시 초과 이미지 제거 + 미지원 사이즈 리셋
+  // 모델 변경 시 설정 초기화
   useEffect(() => {
     const validSizes = currentModelDef?.supportedSizes ?? [];
-    if (!validSizes.includes(imageSize)) {
-      setImageSize(validSizes[0] ?? "1K");
-    }
+    setImageSize(validSizes[0] ?? "1K");
     setRatio("AUTO");
+    setScale(1);
+    setImageCount(1);
     if (images.length > maxImages) {
       setImages((prev) => prev.slice(0, maxImages));
     }

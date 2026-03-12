@@ -383,6 +383,7 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
   });
 
   // outputs가 실제로 바뀌었을 때만 로드 상태 초기화
+  // 히스토리 선택 시(생성 중 아닐 때) previewUrls가 있으면 미리 로드된 것으로 간주
   useEffect(() => {
     const prev = prevUrlsRef.current;
     const isSame = prev && generatedUrls &&
@@ -392,7 +393,7 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
       setLoadedUrls(new Set());
       prevUrlsRef.current = generatedUrls;
     }
-  }, [generatedUrls]);
+  }, [generatedUrls]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 생성 완료 직후(isGenerating true→false)에만 이미지 로딩 상태 시작
   useEffect(() => {
@@ -457,11 +458,15 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
         <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} willUpscale={generatingScale > 1} phase={isImageLoading ? "loading" : "generating"} />
       ) : outputs.length === 1 ? (
         <div className="relative flex-1 min-h-0 p-4 group">
-          {!loadedUrls.has(outputs[0]) && (
-            <div className="absolute inset-4 rounded-lg bg-muted/40 animate-pulse flex items-center justify-center">
-              <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-            </div>
-          )}
+          {/* 최적화된 프리뷰 (즉시 표시) */}
+          <Image
+            src={outputs[0]}
+            alt="결과"
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className={cn("object-contain !p-4", loadedUrls.has(outputs[0]) ? "opacity-0 pointer-events-none" : "opacity-100")}
+          />
+          {/* 원본 이미지 (백그라운드 로드 후 교체) */}
           <Image
             src={outputs[0]}
             alt="결과"
@@ -471,13 +476,11 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
             className={cn("object-contain !p-4 transition-opacity duration-300", loadedUrls.has(outputs[0]) ? "opacity-100" : "opacity-0")}
             onLoad={() => handleImageLoad(outputs[0])}
           />
-          {loadedUrls.has(outputs[0]) && (
-            <ImageActionBar
-              src={fullOutputs[0]}
-              onZoom={() => setLightboxSrc(fullOutputs[0])}
-              onAddToInput={onAddToInput}
-            />
-          )}
+          <ImageActionBar
+            src={fullOutputs[0]}
+            onZoom={() => setLightboxSrc(fullOutputs[0])}
+            onAddToInput={onAddToInput}
+          />
         </div>
       ) : outputs.length > 1 ? (
         <div className="flex-1 p-4 min-h-0 flex items-center justify-center overflow-y-auto">
@@ -492,27 +495,29 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
               >
                 {outputs[i] ? (
                   <>
-                    {!loadedUrls.has(outputs[i]) && (
-                      <div className="absolute inset-0 rounded-lg bg-muted/40 animate-pulse flex items-center justify-center">
-                        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
-                      </div>
-                    )}
+                    {/* 최적화된 프리뷰 (즉시 표시) */}
                     <Image
                       src={outputs[i]}
                       alt={`결과 ${i + 1}`}
-                      width={800}
-                      height={800}
+                      fill
+                      sizes="25vw"
+                      className={cn("object-contain", loadedUrls.has(outputs[i]) ? "opacity-0 pointer-events-none" : "opacity-100")}
+                    />
+                    {/* 원본 이미지 (백그라운드 로드 후 교체) */}
+                    <Image
+                      src={outputs[i]}
+                      alt={`결과 ${i + 1}`}
+                      fill
+                      sizes="25vw"
                       unoptimized
-                      className={cn("max-w-full max-h-full object-contain transition-opacity duration-300", loadedUrls.has(outputs[i]) ? "opacity-100" : "opacity-0")}
+                      className={cn("object-contain transition-opacity duration-300", loadedUrls.has(outputs[i]) ? "opacity-100" : "opacity-0")}
                       onLoad={() => handleImageLoad(outputs[i])}
                     />
-                    {loadedUrls.has(outputs[i]) && (
-                      <ImageActionBar
-                        src={fullOutputs[i]}
-                        onZoom={() => setLightboxSrc(fullOutputs[i])}
-                        onAddToInput={onAddToInput}
-                      />
-                    )}
+                    <ImageActionBar
+                      src={fullOutputs[i]}
+                      onZoom={() => setLightboxSrc(fullOutputs[i])}
+                      onAddToInput={onAddToInput}
+                    />
                   </>
                 ) : null}
               </div>

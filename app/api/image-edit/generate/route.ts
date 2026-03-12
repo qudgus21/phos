@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
 import { getModelDef } from "@/lib/services/ai/models";
 import { resolveProvider } from "@/lib/services/ai/registry";
-import { buildImageEditPrompt } from "@/lib/services/ai/prompts";
+import { buildImageEditPrompt, buildSeedreamPrompt } from "@/lib/services/ai/prompts";
 import {
   getUserCreditInfo,
   deductCredits,
@@ -142,9 +142,13 @@ export const POST = withAuth(async (request, { user }) => {
   const perCallCount = Math.min(actualCount, modelDef.maxOutputs);
   const callCount = Math.ceil(actualCount / perCallCount);
 
+  const isSeedream = modelId.startsWith("seedream");
   const generateOne = (count: number) => {
+    const builtPrompt = isSeedream
+      ? buildSeedreamPrompt(prompt, images.length > 0)
+      : buildImageEditPrompt(prompt);
     const modelInput = modelDef.buildInput({
-      prompt: buildImageEditPrompt(prompt),
+      prompt: builtPrompt,
       images: images.length > 0 ? images : undefined,
       width,
       height,
