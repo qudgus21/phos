@@ -10,6 +10,7 @@ import type { Database } from "@/lib/types/database";
 
 function HistoryThumbnail({ src }: { src: string }) {
   const [loaded, setLoaded] = useState(false);
+  const optimized = src?.includes("supabase.co/storage/") ?? false;
 
   return (
     <>
@@ -18,6 +19,7 @@ function HistoryThumbnail({ src }: { src: string }) {
         src={src}
         alt=""
         fill
+        unoptimized={optimized}
         sizes="48px"
         className={cn("object-cover transition-opacity duration-200", loaded ? "opacity-100" : "opacity-0")}
         onLoad={() => setLoaded(true)}
@@ -31,7 +33,7 @@ type HistoryRow = Database["public"]["Tables"]["generation_history"]["Row"];
 interface ImageEditHistoryPanelProps {
   featureType?: string;
   refreshKey?: number;
-  onSelect?: (urls: string[], previewUrls?: string[]) => void;
+  onSelect?: (displayUrls: string[], originalUrls: string[]) => void;
 }
 
 export function ImageEditHistoryPanel({
@@ -71,7 +73,7 @@ export function ImageEditHistoryPanel({
 
   const handleSelect = (item: HistoryRow) => {
     setSelectedId(item.id);
-    onSelect?.(item.output_urls, item.preview_urls.length > 0 ? item.preview_urls : undefined);
+    onSelect?.(item.display_urls, item.original_urls);
   };
 
   const formatTime = (dateStr: string) => {
@@ -128,10 +130,16 @@ export function ImageEditHistoryPanel({
                 >
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 shrink-0 rounded-md overflow-hidden bg-muted/30">
-                    <HistoryThumbnail src={item.preview_urls[0] || item.output_urls[0]} />
-                    {item.output_urls.length > 1 && (
+                    {(item.thumb_urls?.[0] || item.display_urls?.[0]) ? (
+                      <HistoryThumbnail src={item.thumb_urls[0] || item.display_urls[0]} />
+                    ) : (
+                      <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
+                        <Loader2 className="w-3 h-3 text-muted-foreground/50 animate-spin" />
+                      </div>
+                    )}
+                    {(item.display_urls?.length ?? 0) > 1 && (
                       <span className="absolute bottom-0.5 right-0.5 text-[9px] font-bold bg-black/60 text-white px-1 rounded">
-                        +{item.output_urls.length - 1}
+                        +{item.display_urls.length - 1}
                       </span>
                     )}
                   </div>

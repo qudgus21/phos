@@ -64,7 +64,7 @@ export interface ImageEditInputPanelHandle {
 }
 
 interface ImageEditInputPanelProps {
-  onGenerate?: (outputUrls: string[], previewUrls?: string[]) => void;
+  onGenerate?: (outputUrls: string[]) => void;
   onGenerateStart?: (imageCount: number, firstImageUrl: string | null, scale?: number) => void;
   onGenerateEnd?: () => void;
 }
@@ -595,7 +595,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                   if (!data.success) {
                     throw new Error(data.error?.message ?? "생성에 실패했습니다");
                   }
-                  onGenerate?.(data.data.outputUrls, data.data.previewUrls);
+                  onGenerate?.(data.data.outputUrls);
                   // 크레딧 잔액 낙관적 업데이트
                   if (data.data.balanceAfter != null) {
                     window.dispatchEvent(

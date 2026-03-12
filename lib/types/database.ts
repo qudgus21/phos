@@ -182,8 +182,9 @@ export interface Database {
           model_id: string;
           prompt: string;
           input_urls: string[];
-          output_urls: string[];
-          preview_urls: string[];
+          thumb_urls: string[];
+          display_urls: string[];
+          original_urls: string[];
           credits_used: number;
           metadata: Record<string, unknown>;
           created_at: string;
@@ -195,8 +196,9 @@ export interface Database {
           model_id: string;
           prompt: string;
           input_urls?: string[];
-          output_urls?: string[];
-          preview_urls?: string[];
+          thumb_urls?: string[];
+          display_urls?: string[];
+          original_urls?: string[];
           credits_used?: number;
           metadata?: Record<string, unknown>;
           created_at?: string;
@@ -208,8 +210,9 @@ export interface Database {
           model_id?: string;
           prompt?: string;
           input_urls?: string[];
-          output_urls?: string[];
-          preview_urls?: string[];
+          thumb_urls?: string[];
+          display_urls?: string[];
+          original_urls?: string[];
           credits_used?: number;
           metadata?: Record<string, unknown>;
           created_at?: string;

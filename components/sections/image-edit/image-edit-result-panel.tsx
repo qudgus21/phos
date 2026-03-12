@@ -13,17 +13,36 @@ import { SAMPLES } from "@/lib/constants/samples";
  * 이미지를 PNG로 변환하여 다운로드한다.
  * Canvas API를 사용해 클라이언트에서 처리 — 원본 해상도/비율 유지.
  */
+/** 이미지 최적화 우회 모드 (A/B 비교용) — 원본 그대로 unoptimized 표시 */
+const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
+
+/** Supabase Storage URL이면 이미 최적화된 WebP → unoptimized 가능 */
+const isOptimizedUrl = (url: string) =>
+  SKIP_OPTIMIZER || url.includes("supabase.co/storage/");
+
 async function downloadImage(src: string) {
   const res = await fetch(src);
   const blob = await res.blob();
 
-  const url = URL.createObjectURL(blob);
+  // createImageBitmap — layout 트리거 없이 빠른 디코딩
+  const bitmap = await createImageBitmap(blob);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+
+  const pngBlob = await new Promise<Blob>((resolve) =>
+    canvas.toBlob((b) => resolve(b!), "image/png")
+  );
+
+  const url = URL.createObjectURL(pngBlob);
   const a = document.createElement("a");
   a.href = url;
-
-  const originalName = src.split("/").pop()?.split("?")[0] || "image";
-  a.download = originalName;
-
+  const baseName = src.split("/").pop()?.split("?")[0]?.replace(/\.\w+$/, "") || "image";
+  a.download = `${baseName}.png`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -39,8 +58,10 @@ const WORKFLOW_STEPS = [
 
 interface ImageEditResultPanelProps {
   onAddToInput?: (src: string) => void;
-  generatedUrls?: string[];
-  previewUrls?: string[];
+  /** display_urls (1200px WebP) — 결과 표시용 */
+  displayUrls?: string[];
+  /** original_urls (원본 해상도 WebP) — 확대/다운로드용 */
+  originalUrls?: string[];
   isGenerating?: boolean;
   generatingCount?: number;
   generatingInputImage?: string | null;
@@ -359,41 +380,24 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls, isGenerating, generatingCount = 1, generatingInputImage, generatingScale = 0 }: ImageEditResultPanelProps) {
+export function ImageEditResultPanel({ onAddToInput, displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, generatingScale = 0 }: ImageEditResultPanelProps) {
   const searchParams = useSearchParams();
   const sampleId = searchParams.get("sample_id");
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
-  const fullOutputs = generatedUrls && generatedUrls.length > 0
-    ? generatedUrls
+
+  // display_urls가 있으면 사용, 없으면 샘플 fallback
+  const outputs = displayUrls && displayUrls.length > 0
+    ? displayUrls
     : activeSample?.outputs ?? [];
 
+  // 확대/다운로드용 원본 URL (없으면 display로 fallback)
+  const originals = originalUrls && originalUrls.length > 0
+    ? originalUrls
+    : outputs;
+
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [loadedUrls, setLoadedUrls] = useState<Set<string>>(new Set());
   const [isImageLoading, setIsImageLoading] = useState(false);
   const wasGeneratingRef = useRef(false);
-  const prevUrlsRef = useRef<string[] | undefined>(undefined);
-
-  // previewUrls가 있으면 프리뷰 먼저, 4K 로드 완료 시 교체
-  const hasPreview = previewUrls && previewUrls.length > 0;
-  const outputs = fullOutputs.map((fullUrl, i) => {
-    if (hasPreview && previewUrls[i] && previewUrls[i] !== fullUrl && !loadedUrls.has(fullUrl)) {
-      return previewUrls[i];
-    }
-    return fullUrl;
-  });
-
-  // outputs가 실제로 바뀌었을 때만 로드 상태 초기화
-  // 히스토리 선택 시(생성 중 아닐 때) previewUrls가 있으면 미리 로드된 것으로 간주
-  useEffect(() => {
-    const prev = prevUrlsRef.current;
-    const isSame = prev && generatedUrls &&
-      prev.length === generatedUrls.length &&
-      prev.every((u, i) => u === generatedUrls[i]);
-    if (!isSame) {
-      setLoadedUrls(new Set());
-      prevUrlsRef.current = generatedUrls;
-    }
-  }, [generatedUrls]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 생성 완료 직후(isGenerating true→false)에만 이미지 로딩 상태 시작
   useEffect(() => {
@@ -401,27 +405,16 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
       wasGeneratingRef.current = true;
     } else if (wasGeneratingRef.current) {
       wasGeneratingRef.current = false;
-      if (generatedUrls && generatedUrls.length > 0) {
+      if (displayUrls && displayUrls.length > 0) {
         setIsImageLoading(true);
       }
     }
-  }, [isGenerating]); // generatedUrls 제거 — isGenerating 전환만 감지
+  }, [isGenerating]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 첫 번째 프리뷰 이미지가 로드되면 이미지 로딩 상태 해제
-  useEffect(() => {
-    if (!generatedUrls || generatedUrls.length === 0) return;
-    // 프리뷰가 있으면 프리뷰 로드로 해제, 없으면 풀 이미지 로드로 해제
-    const firstCheckUrl = hasPreview ? previewUrls[0] : generatedUrls[0];
-    if (loadedUrls.has(firstCheckUrl)) {
-      setIsImageLoading(false);
-    }
-  }, [loadedUrls, generatedUrls, previewUrls, hasPreview]);
-
-  const handleImageLoad = useCallback((url: string) => {
-    setLoadedUrls((prev) => new Set(prev).add(url));
+  const handleImageLoad = useCallback(() => {
+    setIsImageLoading(false);
   }, []);
 
-  // 스피너 표시: API 호출 중이거나 이미지가 아직 로딩 중일 때
   const showPlaceholder = isGenerating || isImageLoading;
 
   return (
@@ -434,51 +427,27 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
         </h2>
       </div>
 
-      {/* 이미지 로딩 중일 때 숨겨진 img로 프리로드 (onLoad 트리거용) */}
-      {isImageLoading && !isGenerating && fullOutputs.length > 0 && (
-        <>
-          {/* 프리뷰가 있으면 프리뷰 먼저 프리로드 */}
-          <img
-            src={hasPreview ? previewUrls[0] : fullOutputs[0]}
-            alt=""
-            className="hidden"
-            onLoad={() => handleImageLoad(hasPreview ? previewUrls[0] : fullOutputs[0])}
-          />
-        </>
+      {/* 이미지 로딩 중일 때 숨겨진 img로 프리로드 */}
+      {isImageLoading && !isGenerating && outputs.length > 0 && (
+        <img src={outputs[0]} alt="" className="hidden" onLoad={handleImageLoad} />
       )}
-
-      {/* 프리뷰 표시 중일 때 4K 원본을 백그라운드 프리로드 */}
-      {hasPreview && !isGenerating && fullOutputs.map((fullUrl, i) => (
-        previewUrls[i] !== fullUrl && !loadedUrls.has(fullUrl) ? (
-          <img key={fullUrl} src={fullUrl} alt="" className="hidden" onLoad={() => handleImageLoad(fullUrl)} />
-        ) : null
-      ))}
 
       {showPlaceholder ? (
         <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} willUpscale={generatingScale > 1} phase={isImageLoading ? "loading" : "generating"} />
       ) : outputs.length === 1 ? (
         <div className="relative flex-1 min-h-0 p-4 group">
-          {/* 최적화된 프리뷰 (즉시 표시) */}
           <Image
             src={outputs[0]}
             alt="결과"
             fill
+            priority
+            unoptimized={isOptimizedUrl(outputs[0])}
             sizes="(max-width: 1024px) 100vw, 50vw"
-            className={cn("object-contain !p-4", loadedUrls.has(outputs[0]) ? "opacity-0 pointer-events-none" : "opacity-100")}
-          />
-          {/* 원본 이미지 (백그라운드 로드 후 교체) */}
-          <Image
-            src={outputs[0]}
-            alt="결과"
-            fill
-            unoptimized
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className={cn("object-contain !p-4 transition-opacity duration-300", loadedUrls.has(outputs[0]) ? "opacity-100" : "opacity-0")}
-            onLoad={() => handleImageLoad(outputs[0])}
+            className="object-contain !p-4"
           />
           <ImageActionBar
-            src={fullOutputs[0]}
-            onZoom={() => setLightboxSrc(fullOutputs[0])}
+            src={originals[0]}
+            onZoom={() => setLightboxSrc(originals[0])}
             onAddToInput={onAddToInput}
           />
         </div>
@@ -495,27 +464,18 @@ export function ImageEditResultPanel({ onAddToInput, generatedUrls, previewUrls,
               >
                 {outputs[i] ? (
                   <>
-                    {/* 최적화된 프리뷰 (즉시 표시) */}
                     <Image
                       src={outputs[i]}
                       alt={`결과 ${i + 1}`}
                       fill
+                      priority={i === 0}
+                      unoptimized={isOptimizedUrl(outputs[i])}
                       sizes="25vw"
-                      className={cn("object-contain", loadedUrls.has(outputs[i]) ? "opacity-0 pointer-events-none" : "opacity-100")}
-                    />
-                    {/* 원본 이미지 (백그라운드 로드 후 교체) */}
-                    <Image
-                      src={outputs[i]}
-                      alt={`결과 ${i + 1}`}
-                      fill
-                      sizes="25vw"
-                      unoptimized
-                      className={cn("object-contain transition-opacity duration-300", loadedUrls.has(outputs[i]) ? "opacity-100" : "opacity-0")}
-                      onLoad={() => handleImageLoad(outputs[i])}
+                      className="object-contain"
                     />
                     <ImageActionBar
-                      src={fullOutputs[i]}
-                      onZoom={() => setLightboxSrc(fullOutputs[i])}
+                      src={originals[i]}
+                      onZoom={() => setLightboxSrc(originals[i])}
                       onAddToInput={onAddToInput}
                     />
                   </>

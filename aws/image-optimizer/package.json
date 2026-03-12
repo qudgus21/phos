@@ -1,0 +1,10 @@
+{
+  "name": "phos-image-optimizer",
+  "version": "1.0.0",
+  "description": "Lambda function for WebP image optimization (thumb/display/original)",
+  "type": "module",
+  "dependencies": {
+    "sharp": "^0.33.2",
+    "@supabase/supabase-js": "^2.49.1"
+  }
+}

@@ -2,6 +2,10 @@
 
 # dependencies
 /node_modules
+aws/*/node_modules
+
+# aws lambda build artifacts
+aws/*/function.zip
 /.pnp
 .pnp.js
 .yarn/install-state.gz

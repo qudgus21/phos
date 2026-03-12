@@ -11,12 +11,14 @@ import {
 import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { ApiError, CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
 
+const lambda = new LambdaClient({ region: "us-east-2" });
+
 interface GenerateResponse {
   outputUrls: string[];
-  previewUrls?: string[];
   creditsUsed: number;
   balanceAfter: number;
 }
@@ -172,35 +174,24 @@ export const POST = withAuth(async (request, { user }) => {
   const results = await Promise.all(resultPromises);
 
   let allOutputUrls = results.flatMap((r) => r.outputUrls);
-  const preUpscaleUrls = [...allOutputUrls];
 
-  // 6. 필요 시 업스케일 (모델이 지원하지 않는 해상도이거나 scale > 1)
-  const needsUpscale =
-    !modelDef.supportedSizes.includes(imageSize) || scale > 1;
+  // 6. 필요 시 업스케일 (GPU 메모리 한계에 따른 해상도별 제한)
+  // - 4K/3K: 업스케일 불가 (이미 고해상도)
+  // - 2K: 최대 2x까지만
+  // - 1K: 최대 4x까지
+  {
+    const maxScale =
+      imageSize === "4K" || imageSize === "3K" ? 1
+        : imageSize === "2K" ? 2
+        : 4;
 
-  if (needsUpscale) {
-    // imageSize 기준 목표 해상도
-    const targetPixels = imageSize === "4K" ? 4096 : imageSize === "3K" ? 3072 : imageSize === "2K" ? 2048 : 1024;
-    const maxSupported = modelDef.supportedSizes.includes("4K")
-      ? 4096
-      : modelDef.supportedSizes.includes("3K")
-        ? 3072
-        : modelDef.supportedSizes.includes("2K")
-          ? 2048
-          : 1024;
-    const sizeRatio = targetPixels / maxSupported;
-
-    // scale은 직접 배율 (1~4)
-    const scaleFactor = Math.max(
-      sizeRatio > 1 ? Math.ceil(sizeRatio) : 1,
-      scale > 1 ? Math.round(scale) : 1
+    const effectiveScale = Math.min(
+      scale > 1 ? Math.round(scale) : 1,
+      maxScale
     );
 
-    if (scaleFactor >= 2) {
-      allOutputUrls = await upscaleImages(
-        allOutputUrls,
-        Math.min(scaleFactor, 4)
-      );
+    if (effectiveScale >= 2) {
+      allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
     }
   }
 
@@ -220,18 +211,16 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 8. 히스토리 즉시 저장 (임시 URL) → 백그라운드로 Storage 업로드 후 영구 URL로 UPDATE
+  // 8. 히스토리 저장
   const supabaseAdmin = createAdminClient();
-  const storageBaseUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/generation-outputs`;
-  const hasUpscaled = allOutputUrls.some((url, i) => url !== preUpscaleUrls[i]);
   const historyPayload = {
     user_id: user.id,
     feature_type: "image-edit" as const,
     model_id: modelId,
     prompt,
     input_urls: images.filter((s) => s.startsWith("http")) ?? [],
-    output_urls: allOutputUrls,
-    preview_urls: hasUpscaled ? preUpscaleUrls : [],
+    display_urls: allOutputUrls,
+    original_urls: allOutputUrls,
     credits_used: creditCost,
     metadata: { width, height, ratio, imageSize, scale, imageCount },
   };
@@ -242,64 +231,27 @@ export const POST = withAuth(async (request, { user }) => {
     .select("id")
     .single();
 
-  // 백그라운드: Storage 업로드 후 영구 URL로 교체 (output + preview)
-  if (historyRow) {
-    const uploadToStorage = async (url: string, suffix: string) => {
-      try {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
-        const path = `${user.id}/${Date.now()}-${suffix}.${ext}`;
-
-        const { error } = await supabaseAdmin.storage
-          .from("generation-outputs")
-          .upload(path, blob, {
-            contentType: blob.type,
-            upsert: false,
-          });
-
-        if (error) {
-          console.error("[storage] upload failed:", error);
-          return url;
-        }
-        return `${storageBaseUrl}/${path}`;
-      } catch {
-        return url;
-      }
-    };
-
-    (async () => {
-      try {
-        const permanentUrls = await Promise.all(
-          allOutputUrls.map((url, i) => uploadToStorage(url, `out-${i}`))
-        );
-
-        const updatePayload: Record<string, unknown> = { output_urls: permanentUrls };
-
-        // 업스케일된 경우 1K preview도 영구 저장
-        if (hasUpscaled) {
-          const permanentPreviews = await Promise.all(
-            preUpscaleUrls.map((url, i) => uploadToStorage(url, `preview-${i}`))
-          );
-          updatePayload.preview_urls = permanentPreviews;
-        }
-
-        await supabaseAdmin
-          .from("generation_history")
-          .update(updatePayload)
-          .eq("id", historyRow.id);
-      } catch (err) {
-        console.error("[storage] background upload failed:", err);
-      }
-    })();
+  // 9. Lambda에 이미지 최적화 요청 (fire-and-forget, AWS SDK 직접 호출)
+  const skipOptimizer = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
+  if (historyRow && !skipOptimizer) {
+    lambda.send(new InvokeCommand({
+      FunctionName: "ai-image-optimizer",
+      InvocationType: "Event", // 비동기 — 즉시 202 반환, Lambda는 백그라운드 실행
+      Payload: JSON.stringify({
+        historyId: historyRow.id,
+        userId: user.id,
+        outputUrls: allOutputUrls,
+      }),
+    })).catch((err) => {
+      console.error("[lambda] invoke failed:", err);
+    });
   }
 
-  // 9. 응답 (Storage 업로드 완료를 기다리지 않음)
+  // 10. 응답 (Lambda 완료를 기다리지 않음)
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {
       outputUrls: allOutputUrls,
-      ...(hasUpscaled && { previewUrls: preUpscaleUrls }),
       creditsUsed: creditCost,
       balanceAfter: deductResult.totalBalance ?? 0,
     },

@@ -99,40 +99,6 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     }),
   },
   {
-    id: "seedream-4.5",
-    label: "Seedream 4.5",
-    provider: "replicate",
-    modelId: "bytedance/seedream-4.5",
-    maxImages: 14,
-    maxOutputs: 1,
-    supportedSizes: ["2K", "4K"],
-    ui: { ratio: true, customSize: false, imageSize: true },
-    buildInput: ({ prompt, images, ratio, imageSize, width, height }) => {
-      const useCustom = imageSize === "custom";
-      return {
-        prompt,
-        size: useCustom
-          ? "custom"
-          : imageSize === "4K"
-            ? "4K"
-            : "2K",
-        aspect_ratio:
-          ratio === "AUTO"
-            ? images && images.length > 0
-              ? "match_input_image"
-              : "1:1"
-            : ratio,
-        output_format: "png",
-        sequential_image_generation: "disabled",
-        ...(useCustom && {
-          width: Math.max(1024, Math.min(4096, width)),
-          height: Math.max(1024, Math.min(4096, height)),
-        }),
-        ...(images && images.length > 0 && { image_input: images }),
-      };
-    },
-  },
-  {
     id: "nano-banana-2",
     label: "Nano Banana 2",
     provider: "replicate",
@@ -155,6 +121,29 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     }),
   },
   {
+    id: "seedream-4.5",
+    label: "Seedream 4.5",
+    provider: "replicate",
+    modelId: "bytedance/seedream-4.5",
+    maxImages: 14,
+    maxOutputs: 1,
+    supportedSizes: ["2K", "4K"],
+    ui: { ratio: true, customSize: false, imageSize: true },
+    buildInput: ({ prompt, images, ratio, imageSize }) => ({
+      prompt,
+      size: imageSize === "4K" ? "4K" : "2K",
+      aspect_ratio:
+        ratio === "AUTO"
+          ? images && images.length > 0
+            ? "match_input_image"
+            : "1:1"
+          : ratio,
+      output_format: "png",
+      sequential_image_generation: "disabled",
+      ...(images && images.length > 0 && { image_input: images }),
+    }),
+  },
+  {
     id: "seedream-4.0",
     label: "Seedream 4.0",
     provider: "replicate",
@@ -163,33 +152,24 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
     maxOutputs: 1,
     supportedSizes: ["1K", "2K", "4K"],
     ui: { ratio: true, customSize: false, imageSize: true },
-    buildInput: ({ prompt, images, ratio, imageSize, width, height }) => {
-      const useCustom = imageSize === "custom";
-      return {
-        prompt,
-        size: useCustom
-          ? "custom"
-          : imageSize === "4K"
-            ? "4K"
-            : imageSize === "1K"
-              ? "1K"
-              : "2K",
-        aspect_ratio:
-          ratio === "AUTO"
-            ? images && images.length > 0
-              ? "match_input_image"
-              : "1:1"
-            : ratio,
-        output_format: "png",
-        enhance_prompt: true,
-        sequential_image_generation: "disabled",
-        ...(useCustom && {
-          width: Math.max(1024, Math.min(4096, width)),
-          height: Math.max(1024, Math.min(4096, height)),
-        }),
-        ...(images && images.length > 0 && { image_input: images }),
-      };
-    },
+    buildInput: ({ prompt, images, ratio, imageSize }) => ({
+      prompt,
+      size: imageSize === "4K"
+        ? "4K"
+        : imageSize === "1K"
+          ? "1K"
+          : "2K",
+      aspect_ratio:
+        ratio === "AUTO"
+          ? images && images.length > 0
+            ? "match_input_image"
+            : "1:1"
+          : ratio,
+      output_format: "png",
+      enhance_prompt: true,
+      sequential_image_generation: "disabled",
+      ...(images && images.length > 0 && { image_input: images }),
+    }),
   },
 ];
 

@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 
 export default function ImageEditPage() {
   const [mobileTab, setMobileTab] = useState("input");
-  const [generatedUrls, setGeneratedUrls] = useState<string[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [displayUrls, setDisplayUrls] = useState<string[]>([]);
+  const [originalUrls, setOriginalUrls] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingCount, setGeneratingCount] = useState(1);
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
@@ -23,17 +23,17 @@ export default function ImageEditPage() {
     inputPanelRef.current?.addImageFromUrl(src);
   }, []);
 
-  const handleGenerate = useCallback((urls: string[], previews?: string[]) => {
-    setGeneratedUrls(urls);
-    setPreviewUrls(previews ?? []);
+  const handleGenerate = useCallback((outputUrls: string[]) => {
+    // 생성 직후에는 임시 URL을 display로 표시 (Lambda가 WebP 처리 완료하면 히스토리에서 갱신됨)
+    setDisplayUrls(outputUrls);
+    setOriginalUrls(outputUrls);
     setMobileTab("result");
-    // 서버에서 즉시 INSERT하므로 히스토리 1회 refresh
     setHistoryRefreshKey((k) => k + 1);
   }, []);
 
-  const handleHistorySelect = useCallback((urls: string[], previews?: string[]) => {
-    setGeneratedUrls(urls);
-    setPreviewUrls(previews ?? []);
+  const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[]) => {
+    setDisplayUrls(histDisplayUrls);
+    setOriginalUrls(histOriginalUrls);
     setMobileTab("result");
   }, []);
 
@@ -73,8 +73,8 @@ export default function ImageEditPage() {
             <Suspense>
               <ImageEditResultPanel
                 onAddToInput={addOutputToInput}
-                generatedUrls={generatedUrls}
-                previewUrls={previewUrls}
+                displayUrls={displayUrls}
+                originalUrls={originalUrls}
                 isGenerating={isGenerating}
                 generatingCount={generatingCount}
                 generatingInputImage={generatingInputImage}
