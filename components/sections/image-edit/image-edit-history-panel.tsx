@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import { Clock, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,6 +26,30 @@ function HistoryThumbnail({ src }: { src: string }) {
       />
     </>
   );
+}
+
+/** 화면에 보이면 display URL을 프리로드하는 래퍼 */
+function PreloadOnVisible({ url, children }: { url?: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!url || !ref.current) return;
+    const el = ref.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          const img = new window.Image();
+          img.src = url;
+          observer.disconnect();
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [url]);
+
+  return <div ref={ref}>{children}</div>;
 }
 
 type HistoryRow = Database["public"]["Tables"]["generation_history"]["Row"];
@@ -114,8 +138,8 @@ export function ImageEditHistoryPanel({
           <AnimatePresence mode="popLayout">
             <div className="flex flex-col gap-1.5">
               {history.map((item, i) => (
+                <PreloadOnVisible key={item.id} url={item.display_urls?.[0]}>
                 <motion.button
-                  key={item.id}
                   type="button"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -155,6 +179,7 @@ export function ImageEditHistoryPanel({
                     </p>
                   </div>
                 </motion.button>
+                </PreloadOnVisible>
               ))}
             </div>
           </AnimatePresence>

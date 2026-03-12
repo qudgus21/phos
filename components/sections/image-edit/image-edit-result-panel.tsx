@@ -399,7 +399,8 @@ export function ImageEditResultPanel({ onAddToInput, displayUrls, originalUrls, 
   const [isImageLoading, setIsImageLoading] = useState(false);
   const wasGeneratingRef = useRef(false);
 
-  // 생성 완료 직후(isGenerating true→false)에만 이미지 로딩 상태 시작
+  // 생성 완료 직후(isGenerating true→false)에만 로딩 플레이스홀더 표시
+  // 히스토리 클릭 시에는 isGenerating이 변하지 않으므로 트리거되지 않음
   useEffect(() => {
     if (isGenerating) {
       wasGeneratingRef.current = true;
