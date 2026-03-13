@@ -227,6 +227,65 @@ export interface Database {
           },
         ];
       };
+      favorites: {
+        Row: {
+          id: string;
+          user_id: string;
+          feature_type: string;
+          name: string;
+          prompt: string;
+          reference_image_urls: string[];
+          model_id: string;
+          ratio: string;
+          image_size: string;
+          scale: number;
+          image_count: number;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          feature_type?: string;
+          name: string;
+          prompt: string;
+          reference_image_urls?: string[];
+          model_id: string;
+          ratio?: string;
+          image_size?: string;
+          scale?: number;
+          image_count?: number;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          feature_type?: string;
+          name?: string;
+          prompt?: string;
+          reference_image_urls?: string[];
+          model_id?: string;
+          ratio?: string;
+          image_size?: string;
+          scale?: number;
+          image_count?: number;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "favorites_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       credit_transactions: {
         Row: {
           id: string;

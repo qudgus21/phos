@@ -61,6 +61,8 @@ const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export interface ImageEditInputPanelHandle {
   addImageFromUrl: (url: string) => Promise<void>;
+  loadFavorite: (fav: { model_id: string; prompt: string; image_size: string; ratio: string; scale: number; image_count: number; reference_image_urls: string[] }) => void;
+  getCurrentSettings: () => { model: string; prompt: string; imageSize: string; ratio: string; scale: number; imageCount: number; images: (File | string)[] };
 }
 
 interface ImageEditInputPanelProps {
@@ -96,8 +98,15 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const sizeOptions = ALL_SIZE_OPTIONS.filter(
     (opt) => currentModelDef?.supportedSizes.includes(opt.value)
   );
-  // 모델 변경 시 설정 초기화
+
+  const skipModelResetRef = useRef(false);
+
+  // 모델 변경 시 설정 초기화 (즐겨찾기 로드 시에는 건너뜀)
   useEffect(() => {
+    if (skipModelResetRef.current) {
+      skipModelResetRef.current = false;
+      return;
+    }
     const validSizes = currentModelDef?.supportedSizes ?? [];
     setImageSize(validSizes[0] ?? "1K");
     setRatio("AUTO");
@@ -124,6 +133,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const autoScrollRef = useRef<number | null>(null);
   const lastClientXRef = useRef(0);
   const prevSampleIdRef = useRef<string | null>(null);
+
   // 샘플 변경 시 images 상태에 샘플 input 주입
   useEffect(() => {
     if (sampleId === prevSampleIdRef.current) return;
@@ -214,7 +224,34 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
         setImages((prev) => [...prev, { file: null, previewUrl: url }]);
       }
     },
-  }), [images.length, addFiles]);
+    loadFavorite: (fav) => {
+      skipModelResetRef.current = true;
+      const validModel = MODEL_OPTIONS.some((o) => o.value === fav.model_id) ? fav.model_id : MODEL_OPTIONS[0].value;
+      setModel(validModel);
+      setPrompt(fav.prompt);
+      setImageSize(fav.image_size);
+      setRatio(fav.ratio);
+      setScale(Number(fav.scale));
+      setImageCount(fav.image_count);
+      // 참조이미지 복원
+      images.forEach((img) => { if (img.file) URL.revokeObjectURL(img.previewUrl); });
+      if (fav.reference_image_urls.length > 0) {
+        setImages(fav.reference_image_urls.map((url) => ({ file: null, previewUrl: url })));
+      } else {
+        setImages([]);
+      }
+      toast("즐겨찾기를 불러왔습니다", "success");
+    },
+    getCurrentSettings: () => ({
+      model,
+      prompt,
+      imageSize,
+      ratio,
+      scale,
+      imageCount,
+      images: images.map((img) => img.file ?? img.previewUrl).filter(Boolean) as (File | string)[],
+    }),
+  }), [images, images.length, addFiles, model, prompt, imageSize, ratio, scale, imageCount, setModel, toast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const removeImage = useCallback((index: number) => {
     setImages((prev) => {

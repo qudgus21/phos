@@ -48,7 +48,7 @@ export default function ImageEditPage() {
       {/* Main Editor */}
       <div className="flex-1 flex gap-2.5 p-2.5 min-h-0">
         <Suspense>
-          <ImageEditSampleSidebar />
+          <ImageEditSampleSidebar inputPanelRef={inputPanelRef} />
         </Suspense>
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.4fr_1.6fr_200px] gap-2.5 min-h-0">
