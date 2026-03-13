@@ -18,10 +18,16 @@ export async function GET(request: Request) {
   }
 
   // Implicit flow — token_hash로 직접 인증
+  const allowedOtpTypes = ["signup", "email"] as const;
+  type AllowedOtpType = (typeof allowedOtpTypes)[number];
+
   if (tokenHash && type) {
+    if (!allowedOtpTypes.includes(type as AllowedOtpType)) {
+      return NextResponse.redirect(`${origin}/?error=auth`);
+    }
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
-      type: type as "signup" | "email",
+      type: type as AllowedOtpType,
     });
     if (!error) {
       return NextResponse.redirect(origin);

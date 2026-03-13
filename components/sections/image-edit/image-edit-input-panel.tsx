@@ -207,7 +207,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       }));
       if (toAdd.length > 0) setImages((prev) => [...prev, ...toAdd]);
     },
-    [images.length]
+    [images.length, maxImages]
   );
 
   useImperativeHandle(ref, () => ({

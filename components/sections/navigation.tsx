@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -108,7 +108,7 @@ export function Navigation() {
     setClickedHref(null);
   }, [pathname]);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   /* Auth state listener */
   useEffect(() => {

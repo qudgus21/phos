@@ -15,7 +15,9 @@ import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { ApiError, CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
 
-const lambda = new LambdaClient({ region: "us-east-2" });
+const lambda: LambdaClient =
+  (globalThis as Record<string, unknown>).__lambdaClient as LambdaClient ??
+  ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
 
 interface GenerateResponse {
   outputUrls: string[];
@@ -54,10 +56,16 @@ export const POST = withAuth(async (request, { user }) => {
   }
 
   // 3. 이미지 파일 처리 (Replicate Files 업로드 or data URI 변환)
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
   const imageEntries = formData.getAll("images");
   const images: string[] = await Promise.all(
     imageEntries.map(async (entry) => {
       if (entry instanceof File) {
+        if (entry.size > MAX_FILE_SIZE) {
+          throw new ValidationError(
+            `파일 크기는 최대 ${MAX_FILE_SIZE / 1024 / 1024}MB까지 허용됩니다`
+          );
+        }
         if (modelDef.provider === "replicate") {
           return uploadFileToReplicate(entry, entry.name);
         }
@@ -76,13 +84,14 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 이미지 생성 수 (maxOutputs 제한 없이 요청 수 그대로 사용)
-  const actualCount = imageCount;
-
   // 4. 크레딧 + 플랜 정보 조회
+  const CREDIT_HIGH_RES = 150;
+  const CREDIT_STANDARD = 75;
+  const HIGH_RES_THRESHOLD = 2048;
+
   const creditInfo = await getUserCreditInfo(user.id);
   const creditCost =
-    (Math.max(width, height) > 2048 ? 150 : 75) * actualCount;
+    (Math.max(width, height) > HIGH_RES_THRESHOLD ? CREDIT_HIGH_RES : CREDIT_STANDARD) * imageCount;
 
   // 쿨다운 검증
   const cooldownRemaining = checkCooldown(
@@ -96,7 +105,7 @@ export const POST = withAuth(async (request, { user }) => {
   }
 
   // 배치 크기 검증
-  if (actualCount > creditInfo.plan.maxBatchSize) {
+  if (imageCount > creditInfo.plan.maxBatchSize) {
     throw new ValidationError(
       `${creditInfo.plan.name} 플랜은 한 번에 최대 ${creditInfo.plan.maxBatchSize}장까지 생성할 수 있습니다`
     );
@@ -117,7 +126,7 @@ export const POST = withAuth(async (request, { user }) => {
     const body: ApiResponse<GenerateResponse> = {
       success: true,
       data: {
-        outputUrls: Array(actualCount).fill(
+        outputUrls: Array(imageCount).fill(
           "https://placehold.co/1024x1024/1a1a2e/white?text=DRY+RUN"
         ),
         creditsUsed: 0,
@@ -141,8 +150,8 @@ export const POST = withAuth(async (request, { user }) => {
   };
 
   // 모델이 N장 동시 생성 가능하면 한 번에, 아니면 병렬 호출
-  const perCallCount = Math.min(actualCount, modelDef.maxOutputs);
-  const callCount = Math.ceil(actualCount / perCallCount);
+  const perCallCount = Math.min(imageCount, modelDef.maxOutputs);
+  const callCount = Math.ceil(imageCount / perCallCount);
 
   const isSeedream = modelId.startsWith("seedream");
   const generateOne = (count: number) => {
@@ -168,7 +177,7 @@ export const POST = withAuth(async (request, { user }) => {
   const resultPromises: ReturnType<typeof generateOne>[] = [];
   for (let i = 0; i < callCount; i++) {
     if (i > 0) await new Promise((r) => setTimeout(r, 1000));
-    const remaining = actualCount - i * perCallCount;
+    const remaining = imageCount - i * perCallCount;
     resultPromises.push(generateOne(Math.min(perCallCount, remaining)));
   }
   const results = await Promise.all(resultPromises);
@@ -199,8 +208,8 @@ export const POST = withAuth(async (request, { user }) => {
   const deductResult = await deductCredits(
     user.id,
     creditCost,
-    `이미지 생성 (${modelDef.label}, ${actualCount}장)`,
-    { modelId, imageCount: actualCount, width, height }
+    `이미지 생성 (${modelDef.label}, ${imageCount}장)`,
+    { modelId, imageCount, width, height }
   );
 
   if (!deductResult.success) {
@@ -225,14 +234,18 @@ export const POST = withAuth(async (request, { user }) => {
     metadata: { width, height, ratio, imageSize, scale, imageCount },
   };
 
-  const { data: historyRow } = await supabaseAdmin
+  const { data: historyRow, error: historyError } = await supabaseAdmin
     .from("generation_history")
     .insert(historyPayload)
     .select("id")
     .single();
 
+  if (historyError) {
+    console.error("[generate] history insert failed:", historyError);
+  }
+
   // 9. Lambda에 이미지 최적화 요청 (fire-and-forget, AWS SDK 직접 호출)
-  const skipOptimizer = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
+  const skipOptimizer = process.env.SKIP_IMAGE_OPTIMIZER === "true";
   if (historyRow && !skipOptimizer) {
     lambda.send(new InvokeCommand({
       FunctionName: "ai-image-optimizer",

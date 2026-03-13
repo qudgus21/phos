@@ -29,6 +29,9 @@ export async function uploadFileToReplicate(
     throw new ApiError(`Replicate Files 업로드 실패 (${res.status}): ${text}`, 502);
   }
 
-  const data = await res.json();
+  const data = (await res.json()) as { urls?: { get?: string } };
+  if (!data.urls?.get) {
+    throw new ApiError("Replicate Files 응답에 URL이 없습니다", 502);
+  }
   return data.urls.get;
 }
