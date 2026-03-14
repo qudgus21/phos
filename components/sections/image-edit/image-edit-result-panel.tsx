@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { Sparkles, PenLine, ImagePlus, Zap, ZoomIn, Download, Plus, X, Loader2 } from "lucide-react";
@@ -57,6 +56,7 @@ const WORKFLOW_STEPS = [
 
 
 interface ImageEditResultPanelProps {
+  sampleId?: string | null;
   onAddToInput?: (src: string) => void;
   /** display_urls (1200px WebP) — 결과 표시용 */
   displayUrls?: string[];
@@ -380,9 +380,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function ImageEditResultPanel({ onAddToInput, displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, generatingScale = 0 }: ImageEditResultPanelProps) {
-  const searchParams = useSearchParams();
-  const sampleId = searchParams.get("sample_id");
+export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, generatingScale = 0 }: ImageEditResultPanelProps) {
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
 
   // display_urls가 있으면 사용, 없으면 샘플 fallback

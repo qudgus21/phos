@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, type RefObject } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Star, Loader2, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,13 +18,13 @@ const TABS = [
 
 interface ImageEditSampleSidebarProps {
   inputPanelRef: RefObject<ImageEditInputPanelHandle | null>;
+  selectedSampleId: string | null;
+  onSelectSample: (id: string | null) => void;
 }
 
-export function ImageEditSampleSidebar({ inputPanelRef }: ImageEditSampleSidebarProps) {
+export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelectSample }: ImageEditSampleSidebarProps) {
   const [activeTab, setActiveTab] = useState("samples");
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedId = searchParams.get("sample_id");
+  const selectedId = selectedSampleId;
   const { toast } = useToast();
 
   const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("image-edit");
@@ -34,16 +33,9 @@ export function ImageEditSampleSidebar({ inputPanelRef }: ImageEditSampleSidebar
 
   const handleSelect = useCallback(
     (id: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (selectedId === id) {
-        params.delete("sample_id");
-      } else {
-        params.set("sample_id", id);
-      }
-      const qs = params.toString();
-      router.replace(qs ? `?${qs}` : "/image-edit", { scroll: false });
+      onSelectSample(selectedId === id ? null : id);
     },
-    [router, searchParams, selectedId]
+    [onSelectSample, selectedId]
   );
 
   const handleSaveFavorite = useCallback(async (name: string) => {

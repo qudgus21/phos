@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, Suspense } from "react";
+import { useState, useRef, useCallback } from "react";
 import { ImageEditSampleSidebar } from "@/components/sections/image-edit/image-edit-sample-sidebar";
 import { ImageEditInputPanel, type ImageEditInputPanelHandle } from "@/components/sections/image-edit/image-edit-input-panel";
 import { ImageEditResultPanel } from "@/components/sections/image-edit/image-edit-result-panel";
@@ -9,6 +9,7 @@ import { ImageEditMobileTabs } from "@/components/sections/image-edit/image-edit
 import { cn } from "@/lib/utils";
 
 export default function ImageEditPage() {
+  const [sampleId, setSampleId] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState("input");
   const [displayUrls, setDisplayUrls] = useState<string[]>([]);
   const [originalUrls, setOriginalUrls] = useState<string[]>([]);
@@ -47,40 +48,40 @@ export default function ImageEditPage() {
 
       {/* Main Editor */}
       <div className="flex-1 flex gap-2.5 p-2.5 min-h-0">
-        <Suspense>
-          <ImageEditSampleSidebar inputPanelRef={inputPanelRef} />
-        </Suspense>
+        <ImageEditSampleSidebar
+          inputPanelRef={inputPanelRef}
+          selectedSampleId={sampleId}
+          onSelectSample={setSampleId}
+        />
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.4fr_1.6fr_200px] gap-2.5 min-h-0">
           <div className={cn("min-h-0 min-w-0", mobileTab !== "input" && "hidden lg:block")}>
-            <Suspense>
-              <ImageEditInputPanel
-                ref={inputPanelRef}
-                onGenerate={handleGenerate}
-                onGenerateStart={(count, firstImageUrl, scale) => {
-                  setIsGenerating(true);
-                  setGeneratingCount(count);
-                  setGeneratingInputImage(firstImageUrl);
-                  setGeneratingScale(scale ?? 0);
-                }}
-                onGenerateEnd={() => {
-                  setIsGenerating(false);
-                }}
-              />
-            </Suspense>
+            <ImageEditInputPanel
+              ref={inputPanelRef}
+              sampleId={sampleId}
+              onGenerate={handleGenerate}
+              onGenerateStart={(count, firstImageUrl, scale) => {
+                setIsGenerating(true);
+                setGeneratingCount(count);
+                setGeneratingInputImage(firstImageUrl);
+                setGeneratingScale(scale ?? 0);
+              }}
+              onGenerateEnd={() => {
+                setIsGenerating(false);
+              }}
+            />
           </div>
           <div className={cn("min-h-0", mobileTab !== "result" && "hidden lg:block")}>
-            <Suspense>
-              <ImageEditResultPanel
-                onAddToInput={addOutputToInput}
-                displayUrls={displayUrls}
-                originalUrls={originalUrls}
-                isGenerating={isGenerating}
-                generatingCount={generatingCount}
-                generatingInputImage={generatingInputImage}
-                generatingScale={generatingScale}
-              />
-            </Suspense>
+            <ImageEditResultPanel
+              sampleId={sampleId}
+              onAddToInput={addOutputToInput}
+              displayUrls={displayUrls}
+              originalUrls={originalUrls}
+              isGenerating={isGenerating}
+              generatingCount={generatingCount}
+              generatingInputImage={generatingInputImage}
+              generatingScale={generatingScale}
+            />
           </div>
           <div className={cn("min-h-0", mobileTab !== "history" && "hidden lg:block")}>
             <ImageEditHistoryPanel

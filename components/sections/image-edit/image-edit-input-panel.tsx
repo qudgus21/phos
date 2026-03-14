@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
-import { useSearchParams } from "next/navigation";
 import { Plus, PenLine, X, GripVertical, Zap, Loader2, RotateCcw, Ruler } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -66,15 +65,14 @@ export interface ImageEditInputPanelHandle {
 }
 
 interface ImageEditInputPanelProps {
+  sampleId?: string | null;
   onGenerate?: (outputUrls: string[]) => void;
   onGenerateStart?: (imageCount: number, firstImageUrl: string | null, scale?: number) => void;
   onGenerateEnd?: () => void;
 }
 
-export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ onGenerate, onGenerateStart, onGenerateEnd }, ref) {
+export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd }, ref) {
   const { toast } = useToast();
-  const searchParams = useSearchParams();
-  const sampleId = searchParams.get("sample_id");
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
 
   const [model, setModelRaw] = useState(MODEL_OPTIONS[0].value);
@@ -132,7 +130,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef<number | null>(null);
   const lastClientXRef = useRef(0);
-  const prevSampleIdRef = useRef<string | null>(null);
+  const prevSampleIdRef = useRef<string | null | undefined>(null);
 
   // 샘플 변경 시 images 상태에 샘플 input 주입
   useEffect(() => {
@@ -145,9 +143,16 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
     });
 
     if (activeSample && activeSample.inputs.length > 0) {
+      skipModelResetRef.current = true;
       setImages(
         activeSample.inputs.map((src) => ({ file: null, previewUrl: src }))
       );
+      if (activeSample.model) setModel(activeSample.model);
+      if (activeSample.prompt) setPrompt(activeSample.prompt);
+      if (activeSample.imageSize) setImageSize(activeSample.imageSize);
+      if (activeSample.ratio) setRatio(activeSample.ratio);
+      if (activeSample.scale != null) setScale(activeSample.scale);
+      if (activeSample.imageCount != null) setImageCount(activeSample.imageCount);
     } else {
       setImages([]);
     }
