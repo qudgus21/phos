@@ -195,10 +195,101 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
   useEffect(() => stopAutoScroll, [stopAutoScroll]);
 
+  // 2-4: 생성 중 페이지 이탈 경고
+  useEffect(() => {
+    if (!isGenerating) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isGenerating]);
+
   const scaleDisplay = `×${scale.toFixed(1)}`;
   const creditCost = imageSize === "4K" ? 150 : 75;
 
   const isCustomSize = imageSize === "custom";
+
+  // 3-1: 생성 핸들러 추출 + 2-5: Cmd+Enter 단축키
+  const handleGenerate = useCallback(async () => {
+    if (!prompt.trim()) {
+      toast("프롬프트를 입력해주세요", "warning");
+      return;
+    }
+    if (isGenerating) return;
+    setIsGenerating(true);
+    onGenerateStart?.(imageCount, images[0]?.previewUrl ?? null, scale);
+    window.dispatchEvent(
+      new CustomEvent("credits-updated", {
+        detail: { delta: -(creditCost * imageCount) },
+      })
+    );
+    try {
+      const fd = new FormData();
+      fd.append("modelId", model);
+      fd.append("prompt", prompt);
+      fd.append("imageSize", imageSize);
+      fd.append("ratio", ratio);
+      fd.append("width", String(width));
+      fd.append("height", String(height));
+      fd.append("scale", String(scale));
+      fd.append("imageCount", String(imageCount));
+
+      for (const img of images) {
+        if (img.file) {
+          fd.append("images", img.file);
+        } else if (img.previewUrl.startsWith("http")) {
+          fd.append("images", img.previewUrl);
+        } else if (img.previewUrl.startsWith("/")) {
+          const r = await fetch(img.previewUrl);
+          const blob = await r.blob();
+          const ext = blob.type.split("/")[1] || "png";
+          fd.append("images", new File([blob], `sample.${ext}`, { type: blob.type }));
+        }
+      }
+
+      const res = await fetch("/api/image-edit/generate", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error?.message ?? "생성에 실패했습니다");
+      }
+      onGenerate?.(data.data.outputUrls);
+      if (data.data.balanceAfter != null) {
+        window.dispatchEvent(
+          new CustomEvent("credits-updated", {
+            detail: { total: data.data.balanceAfter },
+          })
+        );
+      }
+    } catch (err) {
+      window.dispatchEvent(
+        new CustomEvent("credits-updated", {
+          detail: { delta: creditCost * imageCount },
+        })
+      );
+      toast(
+        err instanceof Error ? err.message : "생성에 실패했습니다",
+        "error"
+      );
+    } finally {
+      setIsGenerating(false);
+      onGenerateEnd?.();
+    }
+  }, [prompt, isGenerating, imageCount, images, creditCost, model, imageSize, ratio, width, height, scale, onGenerateStart, onGenerate, onGenerateEnd, toast]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleGenerate();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleGenerate]);
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
@@ -256,7 +347,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       imageCount,
       images: images.map((img) => img.file ?? img.previewUrl).filter(Boolean) as (File | string)[],
     }),
-  }), [images, images.length, addFiles, model, prompt, imageSize, ratio, scale, imageCount, setModel, toast]); // eslint-disable-line react-hooks/exhaustive-deps
+  }), [images, addFiles, model, prompt, imageSize, ratio, scale, imageCount, setModel, toast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const removeImage = useCallback((index: number) => {
     setImages((prev) => {
@@ -595,67 +686,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             <button
               type="button"
               disabled={isGenerating}
-              onClick={async () => {
-                if (!prompt.trim()) {
-                  toast("프롬프트를 입력해주세요", "warning");
-                  return;
-                }
-                setIsGenerating(true);
-                onGenerateStart?.(imageCount, images[0]?.previewUrl ?? null, scale);
-                try {
-                  // FormData로 바이너리 전송 (base64 변환 없음)
-                  const fd = new FormData();
-                  fd.append("modelId", model);
-                  fd.append("prompt", prompt);
-                  fd.append("imageSize", imageSize);
-                  fd.append("ratio", ratio);
-                  fd.append("width", String(width));
-                  fd.append("height", String(height));
-                  fd.append("scale", String(scale));
-                  fd.append("imageCount", String(imageCount));
-
-                  // 이미지: File 객체는 바이너리 그대로, 외부 URL은 문자열로 전송
-                  for (const img of images) {
-                    if (img.file) {
-                      fd.append("images", img.file);
-                    } else if (img.previewUrl.startsWith("http")) {
-                      fd.append("images", img.previewUrl);
-                    } else if (img.previewUrl.startsWith("/")) {
-                      // 상대경로 (샘플 이미지) → fetch 후 File로 변환
-                      const r = await fetch(img.previewUrl);
-                      const blob = await r.blob();
-                      const ext = blob.type.split("/")[1] || "png";
-                      fd.append("images", new File([blob], `sample.${ext}`, { type: blob.type }));
-                    }
-                  }
-
-                  const res = await fetch("/api/image-edit/generate", {
-                    method: "POST",
-                    body: fd,
-                  });
-                  const data = await res.json();
-                  if (!data.success) {
-                    throw new Error(data.error?.message ?? "생성에 실패했습니다");
-                  }
-                  onGenerate?.(data.data.outputUrls);
-                  // 크레딧 잔액 낙관적 업데이트
-                  if (data.data.balanceAfter != null) {
-                    window.dispatchEvent(
-                      new CustomEvent("credits-updated", {
-                        detail: { total: data.data.balanceAfter },
-                      })
-                    );
-                  }
-                } catch (err) {
-                  toast(
-                    err instanceof Error ? err.message : "생성에 실패했습니다",
-                    "error"
-                  );
-                } finally {
-                  setIsGenerating(false);
-                  onGenerateEnd?.();
-                }
-              }}
+              onClick={handleGenerate}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
                 prompt.trim() && !isGenerating
@@ -682,11 +713,12 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
           setPrompt("");
           images.forEach((img) => { if (img.file) URL.revokeObjectURL(img.previewUrl); });
           setImages([]);
-          setImageSize("4K");
+          const validSizes = currentModelDef?.supportedSizes ?? [];
+          setImageSize(validSizes[0] ?? "1K");
           setRatio("AUTO");
-          setWidth(2048);
-          setHeight(2048);
-          setScale(0);
+          setWidth(1024);
+          setHeight(1024);
+          setScale(1);
           setImageCount(1);
         }}
         title="초기화"

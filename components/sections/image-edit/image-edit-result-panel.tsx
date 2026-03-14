@@ -7,6 +7,7 @@ import { Sparkles, PenLine, ImagePlus, Zap, ZoomIn, Download, Plus, X, Loader2 }
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SAMPLES } from "@/lib/constants/samples";
+import { useToast } from "@/components/ui/toast";
 
 /**
  * 이미지를 PNG로 변환하여 다운로드한다.
@@ -33,8 +34,8 @@ async function downloadImage(src: string) {
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
 
-  const pngBlob = await new Promise<Blob>((resolve) =>
-    canvas.toBlob((b) => resolve(b!), "image/png")
+  const pngBlob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => b ? resolve(b) : reject(new Error("이미지 변환에 실패했습니다")), "image/png")
   );
 
   const url = URL.createObjectURL(pngBlob);
@@ -97,6 +98,7 @@ function ActionButton({
 /* ── 다운로드 버튼 (로딩 상태 포함) ── */
 function DownloadButton({ src }: { src: string }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { toast } = useToast();
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -104,6 +106,8 @@ function DownloadButton({ src }: { src: string }) {
     setIsDownloading(true);
     try {
       await downloadImage(src);
+    } catch {
+      toast("다운로드에 실패했습니다", "error");
     } finally {
       setIsDownloading(false);
     }
@@ -296,12 +300,15 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
 /* ── 확대 모달 (라이트박스) ── */
 function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { toast } = useToast();
 
   const handleDownload = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
     try {
       await downloadImage(src);
+    } catch {
+      toast("다운로드에 실패했습니다", "error");
     } finally {
       setIsDownloading(false);
     }

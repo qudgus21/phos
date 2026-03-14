@@ -6,6 +6,7 @@ import { buildImageEditPrompt, buildSeedreamPrompt } from "@/lib/services/ai/pro
 import {
   getUserCreditInfo,
   deductCredits,
+  refundCredits,
   checkCooldown,
 } from "@/lib/services/credits";
 import { upscaleImages } from "@/lib/services/ai/upscaler";
@@ -111,15 +112,6 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 잔액 사전확인 (fast-fail)
-  if (creditInfo.balance.total < creditCost) {
-    throw new CreditError(
-      "크레딧이 부족합니다",
-      creditCost,
-      creditInfo.balance.total
-    );
-  }
-
   // 5. AI 생성 호출 — 개발 환경 dry-run 모드
   const isDryRun = process.env.DRY_RUN === "true";
   if (isDryRun) {
@@ -136,75 +128,7 @@ export const POST = withAuth(async (request, { user }) => {
     return NextResponse.json(body);
   }
 
-  const provider = resolveProvider({
-    provider: modelDef.provider,
-    modelId: modelDef.modelId,
-    version: modelDef.version,
-  });
-
-  const modelConfig = {
-    provider: modelDef.provider,
-    modelId: modelDef.modelId,
-    version: modelDef.version,
-    defaults: modelDef.defaults,
-  };
-
-  // 모델이 N장 동시 생성 가능하면 한 번에, 아니면 병렬 호출
-  const perCallCount = Math.min(imageCount, modelDef.maxOutputs);
-  const callCount = Math.ceil(imageCount / perCallCount);
-
-  const isSeedream = modelId.startsWith("seedream");
-  const generateOne = (count: number) => {
-    const builtPrompt = isSeedream
-      ? buildSeedreamPrompt(prompt, images.length > 0)
-      : buildImageEditPrompt(prompt);
-    const modelInput = modelDef.buildInput({
-      prompt: builtPrompt,
-      images: images.length > 0 ? images : undefined,
-      width,
-      height,
-      ratio,
-      imageCount: count,
-      imageSize,
-    });
-    return provider.generate(modelConfig, {
-      prompt: modelInput.prompt as string,
-      params: modelInput,
-    });
-  };
-
-  // stagger 방식: 요청 간 1초 간격으로 발사 후 전체 대기
-  const resultPromises: ReturnType<typeof generateOne>[] = [];
-  for (let i = 0; i < callCount; i++) {
-    if (i > 0) await new Promise((r) => setTimeout(r, 1000));
-    const remaining = imageCount - i * perCallCount;
-    resultPromises.push(generateOne(Math.min(perCallCount, remaining)));
-  }
-  const results = await Promise.all(resultPromises);
-
-  let allOutputUrls = results.flatMap((r) => r.outputUrls);
-
-  // 6. 필요 시 업스케일 (GPU 메모리 한계에 따른 해상도별 제한)
-  // - 4K/3K: 업스케일 불가 (이미 고해상도)
-  // - 2K: 최대 2x까지만
-  // - 1K: 최대 4x까지
-  {
-    const maxScale =
-      imageSize === "4K" || imageSize === "3K" ? 1
-        : imageSize === "2K" ? 2
-        : 4;
-
-    const effectiveScale = Math.min(
-      scale > 1 ? Math.round(scale) : 1,
-      maxScale
-    );
-
-    if (effectiveScale >= 2) {
-      allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
-    }
-  }
-
-  // 7. 원자적 크레딧 차감 (성공 후)
+  // 5-1. 선차감: AI 호출 전에 크레딧을 먼저 차감 (동시 요청 race condition 방지)
   const deductResult = await deductCredits(
     user.id,
     creditCost,
@@ -220,7 +144,90 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 8. 히스토리 저장
+  // 5-2. AI 생성 (실패 시 환불)
+  let allOutputUrls: string[];
+  try {
+    const provider = resolveProvider({
+      provider: modelDef.provider,
+      modelId: modelDef.modelId,
+      version: modelDef.version,
+    });
+
+    const modelConfig = {
+      provider: modelDef.provider,
+      modelId: modelDef.modelId,
+      version: modelDef.version,
+      defaults: modelDef.defaults,
+    };
+
+    // 모델이 N장 동시 생성 가능하면 한 번에, 아니면 병렬 호출
+    const perCallCount = Math.min(imageCount, modelDef.maxOutputs);
+    const callCount = Math.ceil(imageCount / perCallCount);
+
+    const isSeedream = modelId.startsWith("seedream");
+    const generateOne = (count: number) => {
+      const builtPrompt = isSeedream
+        ? buildSeedreamPrompt(prompt, images.length > 0)
+        : buildImageEditPrompt(prompt);
+      const modelInput = modelDef.buildInput({
+        prompt: builtPrompt,
+        images: images.length > 0 ? images : undefined,
+        width,
+        height,
+        ratio,
+        imageCount: count,
+        imageSize,
+      });
+      return provider.generate(modelConfig, {
+        prompt: modelInput.prompt as string,
+        params: modelInput,
+      });
+    };
+
+    // stagger 방식: 요청 간 1초 간격으로 발사 후 전체 대기
+    const resultPromises: ReturnType<typeof generateOne>[] = [];
+    for (let i = 0; i < callCount; i++) {
+      if (i > 0) await new Promise((r) => setTimeout(r, 1000));
+      const remaining = imageCount - i * perCallCount;
+      resultPromises.push(generateOne(Math.min(perCallCount, remaining)));
+    }
+    const results = await Promise.all(resultPromises);
+
+    allOutputUrls = results.flatMap((r) => r.outputUrls);
+
+    // 필요 시 업스케일 (GPU 메모리 한계에 따른 해상도별 제한)
+    // - 4K/3K: 업스케일 불가 (이미 고해상도)
+    // - 2K: 최대 2x까지만
+    // - 1K: 최대 4x까지
+    {
+      const maxScale =
+        imageSize === "4K" || imageSize === "3K" ? 1
+          : imageSize === "2K" ? 2
+          : 4;
+
+      const effectiveScale = Math.min(
+        scale > 1 ? Math.round(scale) : 1,
+        maxScale
+      );
+
+      if (effectiveScale >= 2) {
+        allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
+      }
+    }
+  } catch (err) {
+    // AI 생성 실패 → 선차감 크레딧 환불
+    console.error("[generate] AI generation failed, refunding credits:", err);
+    await refundCredits(
+      user.id,
+      deductResult.onetimeDeducted ?? 0,
+      deductResult.subscriptionDeducted ?? 0,
+      `생성 실패 환불 (${modelDef.label}, ${imageCount}장)`,
+      { modelId, imageCount, reason: err instanceof Error ? err.message : "unknown" }
+    );
+    throw err;
+  }
+
+  // 6. 히스토리 저장
   const supabaseAdmin = createAdminClient();
   const historyPayload = {
     user_id: user.id,
@@ -244,7 +251,7 @@ export const POST = withAuth(async (request, { user }) => {
     console.error("[generate] history insert failed:", historyError);
   }
 
-  // 9. Lambda에 이미지 최적화 요청 (fire-and-forget, AWS SDK 직접 호출)
+  // 7. Lambda에 이미지 최적화 요청 (fire-and-forget, AWS SDK 직접 호출)
   const skipOptimizer = process.env.SKIP_IMAGE_OPTIMIZER === "true";
   if (historyRow && !skipOptimizer) {
     lambda.send(new InvokeCommand({
@@ -260,7 +267,7 @@ export const POST = withAuth(async (request, { user }) => {
     });
   }
 
-  // 10. 응답 (Lambda 완료를 기다리지 않음)
+  // 8. 응답 (Lambda 완료를 기다리지 않음)
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {

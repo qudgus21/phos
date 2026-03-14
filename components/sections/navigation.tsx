@@ -150,10 +150,14 @@ export function Navigation() {
   /* 크레딧 변동 이벤트 수신 (낙관적 업데이트) */
   useEffect(() => {
     const handler = (e: Event) => {
-      const { total } = (e as CustomEvent).detail;
-      setCreditInfo((prev) =>
-        prev ? { ...prev, balance: { ...prev.balance, total } } : prev
-      );
+      const { total, delta } = (e as CustomEvent).detail;
+      setCreditInfo((prev) => {
+        if (!prev) return prev;
+        const newTotal = delta != null
+          ? Math.max(0, prev.balance.total + delta)
+          : total;
+        return { ...prev, balance: { ...prev.balance, total: newTotal } };
+      });
     };
     window.addEventListener("credits-updated", handler);
     return () => window.removeEventListener("credits-updated", handler);

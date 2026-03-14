@@ -95,6 +95,13 @@ export function ImageEditHistoryPanel({
     if (refreshKey > 0) fetchHistory(false);
   }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 상대 시간 텍스트 갱신 (1분마다 re-render — 네트워크 호출 없음)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const handleSelect = (item: HistoryRow) => {
     setSelectedId(item.id);
     onSelect?.(item.display_urls, item.original_urls);
@@ -155,7 +162,7 @@ export function ImageEditHistoryPanel({
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 shrink-0 rounded-md overflow-hidden bg-muted/30">
                     {(item.thumb_urls?.[0] || item.display_urls?.[0]) ? (
-                      <HistoryThumbnail src={item.thumb_urls[0] || item.display_urls[0]} />
+                      <HistoryThumbnail src={item.thumb_urls?.[0] || item.display_urls?.[0]} />
                     ) : (
                       <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
                         <Loader2 className="w-3 h-3 text-muted-foreground/50 animate-spin" />

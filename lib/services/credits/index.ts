@@ -108,6 +108,42 @@ export async function deductCredits(
 }
 
 /**
+ * 크레딧 환불 (생성 실패 시 선차감분 복구)
+ * deduct_credits가 차감한 비율(onetime/subscription)을 그대로 복원한다.
+ */
+export async function refundCredits(
+  userId: string,
+  onetimeAmount: number,
+  subscriptionAmount: number,
+  description?: string,
+  metadata?: Record<string, unknown>
+): Promise<void> {
+  const admin = createAdminClient();
+
+  if (onetimeAmount > 0) {
+    await admin.rpc("add_credits", {
+      p_user_id: userId,
+      p_amount: onetimeAmount,
+      p_credit_type: "onetime",
+      p_transaction_type: "refund",
+      p_description: description ?? "생성 실패 환불 (onetime)",
+      p_metadata: metadata ?? {},
+    });
+  }
+
+  if (subscriptionAmount > 0) {
+    await admin.rpc("add_credits", {
+      p_user_id: userId,
+      p_amount: subscriptionAmount,
+      p_credit_type: "subscription",
+      p_transaction_type: "refund",
+      p_description: description ?? "생성 실패 환불 (subscription)",
+      p_metadata: metadata ?? {},
+    });
+  }
+}
+
+/**
  * 쿨다운 잔여 시간 (초) 계산. 0이면 쿨다운 없음.
  */
 export function checkCooldown(

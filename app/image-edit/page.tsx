@@ -44,7 +44,7 @@ export default function ImageEditPage() {
       <div className="h-[74px] shrink-0" />
 
       {/* Mobile Tabs */}
-      <ImageEditMobileTabs activeTab={mobileTab} onTabChange={setMobileTab} />
+      <ImageEditMobileTabs activeTab={mobileTab} onTabChange={setMobileTab} isGenerating={isGenerating} />
 
       {/* Main Editor */}
       <div className="flex-1 flex gap-2.5 p-2.5 min-h-0">
