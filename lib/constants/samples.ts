@@ -42,7 +42,7 @@ export const SAMPLES: Sample[] = [
   },
   {
     id: "4",
-    thumbnail: "/images/image-edit/sample4/smaple4.jpg",
+    thumbnail: "/images/image-edit/sample4/smaple4.png",
     alt: "뷰티 모델 광고",
     inputs: ["/images/image-edit/sample4/input1.png"],
     outputs: [
@@ -54,12 +54,11 @@ export const SAMPLES: Sample[] = [
   },
   {
     id: "5",
-    thumbnail: "/images/image-edit/sample5/smaple5.png",
+    thumbnail: "/images/image-edit/sample5/smaple5.jpg",
     alt: "핸드크림 플랫레이",
     inputs: ["/images/image-edit/sample5/input1.jpg"],
     outputs: [
       "/images/image-edit/sample5/output1.jpg",
-      "/images/image-edit/sample5/output2.jpg",
     ],
   },
   {

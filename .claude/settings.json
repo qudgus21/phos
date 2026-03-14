@@ -4,6 +4,9 @@
       "Bash(aws lambda get-function-url-config --function-name ai-image-optimizer --region us-east-2)",
       "Bash(aws lambda invoke --function-name ai-image-optimizer --region us-east-2 --invocation-type Event --cli-binary-format raw-in-base64-out --payload '{\"\"historyId\"\":\"\"62fb610d-6cd1-4d51-956a-8d36232ce6dc\"\",\"\"userId\"\":\"\"test\"\",\"\"outputUrls\"\":[\"\"https://placehold.co/200x200/1a1a2e/white?text=TEST\"\"]}' /tmp/lambda-async-out.json)",
       "WebFetch(domain:www.eachlabs.ai)"
+    ],
+    "additionalDirectories": [
+      "/Applications/hbh/dev/revoa/public/images/image-edit"
     ]
   }
 }
