@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   Upload,
   X,
@@ -42,7 +42,13 @@ const MODE_OPTIONS = [
   { value: "glow", label: "물광보정" },
 ];
 
-export function RetouchingInputPanel() {
+interface RetouchingInputPanelProps {
+  onGenerate?: (outputUrls: string[]) => void;
+  onGenerateStart?: (count: number) => void;
+  onGenerateEnd?: () => void;
+}
+
+export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEnd }: RetouchingInputPanelProps) {
   /* Image upload */
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
