@@ -19,6 +19,7 @@ interface DropdownProps {
   variant?: "default" | "gradient";
   openDirection?: "auto" | "above" | "below";
   columns?: number;
+  align?: "left" | "right";
 }
 
 export function Dropdown({
@@ -30,6 +31,7 @@ export function Dropdown({
   variant = "default",
   openDirection = "auto",
   columns = 1,
+  align = "left",
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const [focusIndex, setFocusIndex] = useState(-1);
@@ -180,7 +182,8 @@ export function Dropdown({
             className={cn(
               "absolute z-[9999] min-w-[100px] rounded-lg border border-white/[0.14] bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
               columns === 1 ? "w-full max-h-52 overflow-y-auto" : "w-max",
-              direction === "above" ? "bottom-full mb-1" : "top-full mt-1"
+              direction === "above" ? "bottom-full mb-1" : "top-full mt-1",
+              align === "right" ? "right-0" : "left-0"
             )}
             style={columns > 1 ? { display: "grid", gridTemplateColumns: `repeat(${columns}, 1fr)` } : undefined}
           >
@@ -190,13 +193,13 @@ export function Dropdown({
                 role="option"
                 aria-selected={opt.value === value}
                 onMouseEnter={() => setFocusIndex(i)}
+                onMouseLeave={() => setFocusIndex(-1)}
                 onClick={() => select(opt.value)}
                 className={cn(
-                  "px-2.5 py-1.5 text-sm cursor-pointer transition-colors",
+                  "px-2.5 py-1.5 text-sm cursor-pointer transition-colors hover:bg-white/[0.08]",
                   opt.value === value
                     ? "bg-muted text-foreground font-medium"
-                    : "text-card-foreground",
-                  i === focusIndex && opt.value !== value && "bg-muted/60"
+                    : "text-card-foreground"
                 )}
               >
                 {opt.label}

@@ -13,7 +13,8 @@ import { Dropdown } from "@/components/ui/dropdown";
 const FILTERS = [
   { id: "none", label: "없음" },
   { id: "studio", label: "스튜디오" },
-  { id: "whiteskin", label: "흰피부" },
+  { id: "brightening", label: "브라이트닝" },
+  { id: "soft-light", label: "소프트라이트" },
 ];
 
 /* ── Retouching Area Chips ── */
@@ -27,19 +28,33 @@ const RETOUCH_AREAS = [
 ];
 
 /* ── Dropdown options ── */
+const SIZE_OPTIONS = [
+  { value: "1K", label: "1K" },
+  { value: "2K", label: "2K" },
+  { value: "3K", label: "3K" },
+  { value: "4K", label: "4K" },
+];
+const RATIO_OPTIONS = [
+  // 1행: 덜 쓰이는 비율 (트리거에서 먼 쪽)
+  { value: "2:3", label: "2:3" },
+  { value: "3:2", label: "3:2" },
+  { value: "9:16", label: "9:16" },
+  { value: "16:9", label: "16:9" },
+  { value: "21:9", label: "21:9" },
+  // 2행: 자주 쓰는 비율 (트리거에 가까운 쪽)
+  { value: "AUTO", label: "AUTO" },
+  { value: "1:1", label: "1:1" },
+  { value: "3:4", label: "3:4" },
+  { value: "4:3", label: "4:3" },
+];
 const GENDER_OPTIONS = [
   { value: "female", label: "여성" },
   { value: "male", label: "남성" },
 ];
-const ETHNICITY_OPTIONS = [
-  { value: "asian", label: "동양인" },
-  { value: "western", label: "서양인" },
-];
 const MODE_OPTIONS = [
-  { value: "basic", label: "보정(기본)" },
-  { value: "makeup", label: "보정(메이크업)" },
+  { value: "natural", label: "보정(기본)" },
+  { value: "soft-makeup", label: "보정(메이크업)" },
   { value: "matte", label: "보정(매트메이크업)" },
-  { value: "glow", label: "물광보정" },
 ];
 
 interface RetouchingInputPanelProps {
@@ -55,13 +70,13 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* Settings */
-  const [imageScale, setImageScale] = useState(1.0);
+  const [outputSize, setOutputSize] = useState("1K");
+  const [ratio, setRatio] = useState("AUTO");
   const [activeFilter, setActiveFilter] = useState("none");
   const [filterIntensity, setFilterIntensity] = useState(0.5);
   const [excludedAreas, setExcludedAreas] = useState<string[]>([]);
   const [gender, setGender] = useState("female");
-  const [ethnicity, setEthnicity] = useState("asian");
-  const [mode, setMode] = useState("basic");
+  const [mode, setMode] = useState("natural");
   const [showGuide, setShowGuide] = useState(false);
 
   const hasImage = !!uploadedImage;
@@ -117,7 +132,7 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
 
   return (
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col">
-      {/* Settings — flex-1로 자연스럽게 공간 채움, 스크롤 없음 */}
+      {/* Settings */}
       <div className="flex-1 flex flex-col p-3 gap-3 min-h-0">
         {/* ── Image Upload Area — flex-1로 남은 공간 흡수 ── */}
         <div
@@ -163,6 +178,16 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
               <p className="text-xs text-muted-foreground">
                 JPG, PNG, WebP
               </p>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowGuide(true);
+                }}
+                className="text-[12px] font-semibold text-primary hover:text-[#818CF8] transition-colors cursor-pointer mt-1"
+              >
+                생성 이미지 가이드 →
+              </button>
             </>
           )}
         </div>
@@ -175,33 +200,6 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
           className="hidden"
           aria-label="이미지 파일 선택"
         />
-
-        {/* ── 이미지 크기 조절 ── */}
-        <div className="space-y-1.5 shrink-0">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-card-foreground">
-              이미지 크기 조절
-            </span>
-            <span className="text-[13px] font-bold text-primary">
-              {imageScale.toFixed(1)}x
-            </span>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={2}
-            step={0.1}
-            value={imageScale}
-            onChange={(e) => setImageScale(Number(e.target.value))}
-            className={cn(
-              "w-full h-1.5 rounded-full appearance-none cursor-pointer",
-              "bg-primary",
-              "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer",
-              "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
-            )}
-          />
-        </div>
-
         {/* ── 필터 선택 ── */}
         <div className="space-y-1.5 shrink-0">
           <div className="flex items-center justify-between">
@@ -210,9 +208,10 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
             </span>
             <span className="text-[13px] font-bold text-primary">
               {FILTERS.find((f) => f.id === activeFilter)?.label}
+              {activeFilter !== "none" && ` ${filterIntensity.toFixed(1)}`}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-4 gap-1.5">
             {FILTERS.map((filter) => (
               <button
                 key={filter.id}
@@ -229,27 +228,48 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
               </button>
             ))}
           </div>
-          {activeFilter !== "none" && (
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.1}
-                value={filterIntensity}
-                onChange={(e) => setFilterIntensity(Number(e.target.value))}
-                className={cn(
-                  "flex-1 h-1.5 rounded-full appearance-none cursor-pointer",
-                  "bg-primary",
-                  "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer",
-                  "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer"
-                )}
-              />
-              <span className="text-[13px] font-bold text-primary w-7 text-right">
-                {filterIntensity.toFixed(1)}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={activeFilter === "none" ? 0 : filterIntensity}
+              onChange={(e) => setFilterIntensity(Number(e.target.value))}
+              disabled={activeFilter === "none"}
+              className={cn(
+                "flex-1 h-1.5 rounded-full appearance-none",
+                activeFilter === "none"
+                  ? "bg-muted cursor-not-allowed opacity-40"
+                  : "bg-primary cursor-pointer",
+                "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md",
+                activeFilter === "none"
+                  ? "[&::-webkit-slider-thumb]:cursor-not-allowed"
+                  : "[&::-webkit-slider-thumb]:cursor-pointer",
+                "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md",
+                activeFilter === "none"
+                  ? "[&::-moz-range-thumb]:cursor-not-allowed"
+                  : "[&::-moz-range-thumb]:cursor-pointer"
+              )}
+            />
+            <span className={cn(
+              "text-[13px] font-bold w-7 text-right",
+              activeFilter === "none" ? "text-muted-foreground/40" : "text-primary"
+            )}>
+              {activeFilter === "none" ? "0.0" : filterIntensity.toFixed(1)}
+            </span>
+          </div>
+        </div>
+
+        {/* ── 성별 + 모드 ── */}
+        <div className="space-y-1.5 shrink-0">
+          <span className="text-[13px] font-medium text-card-foreground">
+            보정 설정
+          </span>
+          <div className="flex gap-1.5">
+            <Dropdown options={GENDER_OPTIONS} value={gender} onChange={setGender} className="flex-1" />
+            <Dropdown options={MODE_OPTIONS} value={mode} onChange={setMode} className="flex-1" />
+          </div>
         </div>
 
         {/* ── 보정 부위 ── */}
@@ -285,13 +305,12 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
         </div>
       </div>
 
-      {/* ── 하단 고정: 드롭다운 + 생성 버튼 ── */}
+      {/* ── 하단 고정: 비율/해상도 + 생성 버튼 ── */}
       <div className="shrink-0 px-3 pb-3 space-y-2">
         <div className="rounded-xl border border-border bg-white/[0.02] p-2.5 space-y-2.5">
           <div className="flex gap-1.5">
-            <Dropdown options={GENDER_OPTIONS} value={gender} onChange={setGender} className="flex-1" />
-            <Dropdown options={ETHNICITY_OPTIONS} value={ethnicity} onChange={setEthnicity} className="flex-1" />
-            <Dropdown options={MODE_OPTIONS} value={mode} onChange={setMode} className="flex-1" />
+            <Dropdown options={SIZE_OPTIONS} value={outputSize} onChange={setOutputSize} className="flex-1" />
+            <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="flex-1" columns={5} align="right" />
           </div>
 
           <button
@@ -303,14 +322,6 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
             80 크레딧
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowGuide(true)}
-          className="w-full text-[13px] font-semibold text-primary hover:text-[#818CF8] transition-colors cursor-pointer text-center"
-        >
-          생성 이미지 가이드
-        </button>
 
         {showGuide && (
           <div
