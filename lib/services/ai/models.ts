@@ -176,3 +176,34 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
 export function getModelDef(id: string): ModelDef | undefined {
   return IMAGE_EDIT_MODELS.find((m) => m.id === id);
 }
+
+/* ── Retouching Models ── */
+export const RETOUCHING_MODELS: ModelDef[] = [
+  {
+    id: "retouching-seedream-4.5",
+    label: "Seedream 4.5",
+    provider: "replicate",
+    modelId: "bytedance/seedream-4.5",
+    maxImages: 1,
+    maxOutputs: 1,
+    supportedSizes: ["2K", "4K"],
+    ui: { ratio: true, customSize: false, imageSize: true },
+    buildInput: ({ prompt, images, ratio, imageSize }) => ({
+      prompt,
+      size: imageSize === "4K" ? "4K" : "2K",
+      aspect_ratio:
+        ratio === "AUTO"
+          ? images && images.length > 0
+            ? "match_input_image"
+            : "1:1"
+          : ratio,
+      output_format: "png",
+      sequential_image_generation: "disabled",
+      ...(images && images.length > 0 && { image_input: images }),
+    }),
+  },
+];
+
+export function getRetouchingModelDef(id: string): ModelDef | undefined {
+  return RETOUCHING_MODELS.find((m) => m.id === id);
+}

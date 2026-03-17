@@ -1,30 +1,35 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Upload,
   X,
   Gem,
+  Loader2,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
+import { useToast } from "@/components/ui/toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 /* ── Filter Chips ── */
 const FILTERS = [
   { id: "none", label: "없음" },
   { id: "studio", label: "스튜디오" },
   { id: "brightening", label: "브라이트닝" },
-  { id: "soft-light", label: "소프트라이트" },
+  { id: "glow", label: "글로우" },
 ];
 
-/* ── Retouching Area Chips ── */
+/* ── Retouching Area Options (for dropdown) ── */
 const RETOUCH_AREAS = [
-  { id: "lips", label: "입술 제외" },
-  { id: "eyebrows", label: "눈썹 제외" },
-  { id: "nose", label: "코 제외" },
-  { id: "hair", label: "헤어 제외" },
-  { id: "background", label: "배경 제외" },
-  { id: "clothes", label: "의상 제외" },
+  { id: "lips", label: "입술" },
+  { id: "eyebrows", label: "눈썹" },
+  { id: "nose", label: "코" },
+  { id: "hair", label: "헤어" },
+  { id: "background", label: "배경" },
+  { id: "clothes", label: "의상" },
 ];
 
 /* ── Dropdown options ── */
@@ -35,13 +40,11 @@ const SIZE_OPTIONS = [
   { value: "4K", label: "4K" },
 ];
 const RATIO_OPTIONS = [
-  // 1행: 덜 쓰이는 비율 (트리거에서 먼 쪽)
   { value: "2:3", label: "2:3" },
   { value: "3:2", label: "3:2" },
   { value: "9:16", label: "9:16" },
   { value: "16:9", label: "16:9" },
   { value: "21:9", label: "21:9" },
-  // 2행: 자주 쓰는 비율 (트리거에 가까운 쪽)
   { value: "AUTO", label: "AUTO" },
   { value: "1:1", label: "1:1" },
   { value: "3:4", label: "3:4" },
@@ -57,6 +60,106 @@ const MODE_OPTIONS = [
   { value: "matte", label: "보정(매트메이크업)" },
 ];
 
+const CREDIT_COST = 80;
+
+/* ── Multi-select Dropdown ── */
+function ExcludeAreasDropdown({
+  selected,
+  onToggle,
+}: {
+  selected: string[];
+  onToggle: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [direction, setDirection] = useState<"below" | "above">("below");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleToggle = () => {
+    if (!open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const menuHeight = RETOUCH_AREAS.length * 32 + 8;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setDirection(spaceBelow < menuHeight && rect.top > menuHeight ? "above" : "below");
+    }
+    setOpen((v) => !v);
+  };
+
+  const label = selected.length === 0 ? "기본 (전체 보정)" : `${selected.length}개 부위 제외`;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={cn(
+          "flex items-center justify-between gap-1.5 w-full rounded-lg border px-2.5 py-1.5 text-sm outline-none transition-all duration-200 cursor-pointer",
+          "bg-muted border-border text-foreground hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10",
+          open && "ring-1 ring-primary/40 border-primary/40"
+        )}
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: direction === "above" ? 4 : -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: direction === "above" ? 4 : -4, scale: 0.97 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className={cn(
+              "absolute z-[9999] w-full rounded-lg border border-white/[0.14] bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
+              direction === "above" ? "bottom-full mb-1" : "top-full mt-1"
+            )}
+          >
+            {RETOUCH_AREAS.map((area) => {
+              const isSelected = selected.includes(area.id);
+              return (
+                <button
+                  key={area.id}
+                  type="button"
+                  onClick={() => onToggle(area.id)}
+                  className="flex items-center gap-2 w-full px-2.5 py-1.5 text-sm cursor-pointer transition-colors hover:bg-white/[0.08] text-card-foreground"
+                >
+                  <div
+                    className={cn(
+                      "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
+                      isSelected
+                        ? "bg-primary border-primary"
+                        : "border-border bg-transparent"
+                    )}
+                  >
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <span>{area.label} 제외</span>
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ── Main Panel ── */
 interface RetouchingInputPanelProps {
   onGenerate?: (outputUrls: string[]) => void;
   onGenerateStart?: (count: number) => void;
@@ -66,6 +169,7 @@ interface RetouchingInputPanelProps {
 export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEnd }: RetouchingInputPanelProps) {
   /* Image upload */
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,11 +181,18 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
   const [excludedAreas, setExcludedAreas] = useState<string[]>([]);
   const [gender, setGender] = useState("female");
   const [mode, setMode] = useState("natural");
+  const [faceReshape, setFaceReshape] = useState(false);
+  const [faceReshapeIntensity, setFaceReshapeIntensity] = useState(0.5);
   const [showGuide, setShowGuide] = useState(false);
+
+  /* Generation */
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   const hasImage = !!uploadedImage;
 
   const processFile = useCallback((file: File) => {
+    setUploadedFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setUploadedImage(ev.target?.result as string);
@@ -121,20 +232,105 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
 
   const handleRemoveImage = useCallback(() => {
     setUploadedImage(null);
+    setUploadedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
-  const toggleArea = (id: string) => {
+  const toggleArea = useCallback((id: string) => {
     setExcludedAreas((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
-  };
+  }, []);
+
+  /* ── 생성 핸들러 ── */
+  const handleGenerate = useCallback(async () => {
+    if (!uploadedFile) {
+      toast("이미지를 업로드해주세요", "warning");
+      return;
+    }
+    if (isGenerating) return;
+
+    setIsGenerating(true);
+    onGenerateStart?.(1);
+
+    window.dispatchEvent(
+      new CustomEvent("credits-updated", {
+        detail: { delta: -CREDIT_COST },
+      })
+    );
+
+    try {
+      const fd = new FormData();
+      fd.append("image", uploadedFile);
+      fd.append("filter", activeFilter);
+      fd.append("filterIntensity", String(filterIntensity));
+      fd.append("gender", gender);
+      fd.append("mode", mode);
+      fd.append("excludedAreas", excludedAreas.join(","));
+      fd.append("faceReshape", String(faceReshape));
+      fd.append("faceReshapeIntensity", String(faceReshapeIntensity));
+      fd.append("outputSize", outputSize);
+      fd.append("ratio", ratio);
+
+      const res = await fetch("/api/retouching/generate", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error?.message ?? "생성에 실패했습니다");
+      }
+      onGenerate?.(data.data.outputUrls);
+      if (data.data.balanceAfter != null) {
+        window.dispatchEvent(
+          new CustomEvent("credits-updated", {
+            detail: { total: data.data.balanceAfter },
+          })
+        );
+      }
+    } catch (err) {
+      window.dispatchEvent(
+        new CustomEvent("credits-updated", {
+          detail: { delta: CREDIT_COST },
+        })
+      );
+      toast(
+        err instanceof Error ? err.message : "생성에 실패했습니다",
+        "error"
+      );
+    } finally {
+      setIsGenerating(false);
+      onGenerateEnd?.();
+    }
+  }, [uploadedFile, isGenerating, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, onGenerateStart, onGenerate, onGenerateEnd, toast]);
+
+  /* ── beforeunload 가드 ── */
+  useEffect(() => {
+    if (!isGenerating) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isGenerating]);
+
+  /* ── Cmd+Enter 단축키 ── */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleGenerate();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleGenerate]);
 
   return (
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col">
       {/* Settings */}
       <div className="flex-1 flex flex-col p-3 gap-3 min-h-0">
-        {/* ── Image Upload Area — flex-1로 남은 공간 흡수 ── */}
+        {/* ── Image Upload Area ── */}
         <div
           onClick={() => !hasImage && fileInputRef.current?.click()}
           onDragOver={handleDragOver}
@@ -200,6 +396,7 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
           className="hidden"
           aria-label="이미지 파일 선택"
         />
+
         {/* ── 필터 선택 ── */}
         <div className="space-y-1.5 shrink-0">
           <div className="flex items-center justify-between">
@@ -261,7 +458,7 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
           </div>
         </div>
 
-        {/* ── 성별 + 모드 ── */}
+        {/* ── 보정 설정 (성별 + 모드) ── */}
         <div className="space-y-1.5 shrink-0">
           <span className="text-[13px] font-medium text-card-foreground">
             보정 설정
@@ -272,36 +469,67 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
           </div>
         </div>
 
-        {/* ── 보정 부위 ── */}
+        {/* ── 윤곽 보정 ── */}
         <div className="space-y-1.5 shrink-0">
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-medium text-card-foreground">
-              보정 부위
+              윤곽 보정
             </span>
-            <span className="text-[13px] font-bold text-primary">
-              {excludedAreas.length === 0 ? "기본" : `${excludedAreas.length}개 제외`}
+            <button
+              type="button"
+              onClick={() => setFaceReshape((v) => !v)}
+              className={cn(
+                "relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer",
+                faceReshape ? "bg-primary" : "bg-muted"
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200",
+                  faceReshape && "translate-x-4"
+                )}
+              />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={faceReshape ? faceReshapeIntensity : 0}
+              onChange={(e) => setFaceReshapeIntensity(Number(e.target.value))}
+              disabled={!faceReshape}
+              className={cn(
+                "flex-1 h-1.5 rounded-full appearance-none",
+                faceReshape
+                  ? "bg-primary cursor-pointer"
+                  : "bg-muted cursor-not-allowed opacity-40",
+                "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md",
+                faceReshape
+                  ? "[&::-webkit-slider-thumb]:cursor-pointer"
+                  : "[&::-webkit-slider-thumb]:cursor-not-allowed",
+                "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md",
+                faceReshape
+                  ? "[&::-moz-range-thumb]:cursor-pointer"
+                  : "[&::-moz-range-thumb]:cursor-not-allowed"
+              )}
+            />
+            <span className={cn(
+              "text-[13px] font-bold w-7 text-right",
+              faceReshape ? "text-primary" : "text-muted-foreground/40"
+            )}>
+              {faceReshape ? faceReshapeIntensity.toFixed(1) : "0.0"}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {RETOUCH_AREAS.map((area) => {
-              const active = excludedAreas.includes(area.id);
-              return (
-                <button
-                  key={area.id}
-                  type="button"
-                  onClick={() => toggleArea(area.id)}
-                  className={cn(
-                    "py-1.5 rounded-lg text-[13px] font-bold transition-all cursor-pointer border",
-                    active
-                      ? "border-primary bg-gradient-to-r from-primary to-[#818CF8] text-primary-foreground"
-                      : "border-border bg-white/[0.03] text-card-foreground hover:border-white/[0.15]"
-                  )}
-                >
-                  {area.label}
-                </button>
-              );
-            })}
-          </div>
+        </div>
+
+        {/* ── 보정 제외 부위 ── */}
+        <div className="space-y-1.5 shrink-0">
+          <span className="text-[12px] text-muted-foreground">
+            보정 제외 부위
+          </span>
+          <ExcludeAreasDropdown selected={excludedAreas} onToggle={toggleArea} />
         </div>
       </div>
 
@@ -315,11 +543,27 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
 
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-bold text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110 transition-all duration-300 cursor-pointer"
+            disabled={isGenerating || !hasImage}
+            onClick={handleGenerate}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-bold text-white transition-all duration-300",
+              isGenerating || !hasImage
+                ? "bg-muted cursor-not-allowed opacity-50"
+                : "bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110 cursor-pointer"
+            )}
           >
-            생성하기
-            <Gem className="w-4 h-4" />
-            80 크레딧
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                생성 중...
+              </>
+            ) : (
+              <>
+                생성하기
+                <Gem className="w-4 h-4" />
+                {CREDIT_COST} 크레딧
+              </>
+            )}
           </button>
         </div>
 
