@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
-import { Clock, Loader2 } from "lucide-react";
+import { Clock, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,70 @@ function PreloadOnVisible({ url, children }: { url?: string; children: React.Rea
   return <div ref={ref}>{children}</div>;
 }
 
+function DeleteConfirmModal({
+  open,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.15 }}
+        className="relative z-10 w-[280px] rounded-xl glass-card border border-border p-5 shadow-elevated"
+      >
+        <p className="text-[14px] font-medium text-foreground text-center">
+          이 기록을 삭제할까요?
+        </p>
+        <p className="text-[12px] text-muted-foreground text-center mt-1.5">
+          삭제된 기록은 복구할 수 없습니다
+        </p>
+        <div className="flex gap-2 mt-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2 rounded-lg text-[13px] font-medium text-foreground bg-muted/50 hover:bg-muted transition-colors"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 py-2 rounded-lg text-[13px] font-medium text-white bg-red-500/80 hover:bg-red-500 transition-colors"
+          >
+            삭제
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 type HistoryRow = Database["public"]["Tables"]["generation_history"]["Row"];
+
+/* 리터칭 히스토리: metadata → 옵션 요약 텍스트 */
+const FILTER_LABELS: Record<string, string> = { none: "필터 없음", studio: "스튜디오", brightening: "브라이트닝", glow: "글로우" };
+const MODE_LABELS: Record<string, string> = { natural: "보정", "soft-makeup": "메이크업", matte: "매트" };
+const GENDER_LABELS: Record<string, string> = { female: "여성", male: "남성" };
+
+function getRetouchingSummary(meta: Record<string, unknown> | null): string {
+  if (!meta) return "피부 보정";
+  const parts: string[] = [];
+  if (meta.filter && meta.filter !== "none") parts.push(FILTER_LABELS[meta.filter as string] ?? String(meta.filter));
+  parts.push(GENDER_LABELS[meta.gender as string] ?? "여성");
+  parts.push(MODE_LABELS[meta.mode as string] ?? "보정");
+  if (meta.faceReshape) parts.push("윤곽보정");
+  return parts.join(" · ");
+}
 
 interface ImageEditHistoryPanelProps {
   featureType?: string;
@@ -68,6 +131,7 @@ export function ImageEditHistoryPanel({
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const fetchHistory = useCallback(async (showLoader = false) => {
     if (showLoader) setIsLoading(true);
@@ -105,6 +169,33 @@ export function ImageEditHistoryPanel({
   const handleSelect = (item: HistoryRow) => {
     setSelectedId(item.id);
     onSelect?.(item.display_urls, item.original_urls);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleteTargetId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    const id = deleteTargetId;
+    if (!id) return;
+    setDeleteTargetId(null);
+
+    setHistory((prev) => prev.filter((h) => h.id !== id));
+    if (selectedId === id) setSelectedId(null);
+
+    try {
+      const res = await fetch("/api/history", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        fetchHistory(false);
+      }
+    } catch {
+      fetchHistory(false);
+    }
   };
 
   const formatTime = (dateStr: string) => {
@@ -146,14 +237,13 @@ export function ImageEditHistoryPanel({
             <div className="flex flex-col gap-1.5">
               {history.map((item, i) => (
                 <PreloadOnVisible key={item.id} url={item.display_urls?.[0]}>
-                <motion.button
-                  type="button"
+                <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03, duration: 0.2 }}
                   onClick={() => handleSelect(item)}
                   className={cn(
-                    "group w-full flex gap-2 p-1.5 rounded-lg text-left transition-colors cursor-pointer",
+                    "group relative w-full flex gap-2 p-1.5 rounded-lg text-left transition-colors cursor-pointer",
                     selectedId === item.id
                       ? "bg-primary/10 ring-1 ring-primary/30"
                       : "hover:bg-muted/50"
@@ -177,21 +267,37 @@ export function ImageEditHistoryPanel({
                   {/* Info */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                     <p className="text-[11px] text-foreground truncate leading-tight">
-                      {item.prompt.length > 40
-                        ? item.prompt.slice(0, 40) + "..."
-                        : item.prompt}
+                      {item.feature_type === "retouching"
+                        ? getRetouchingSummary(item.metadata as Record<string, unknown> | null)
+                        : item.prompt.length > 40
+                          ? item.prompt.slice(0, 40) + "..."
+                          : item.prompt}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {formatTime(item.created_at)}
                     </p>
                   </div>
-                </motion.button>
+                  {/* Delete */}
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteClick(e, item.id)}
+                    className="absolute -top-1 -right-1 z-10 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-neutral-400"
+                  >
+                    <X className="w-2 h-2 text-white" />
+                  </button>
+                </motion.div>
                 </PreloadOnVisible>
               ))}
             </div>
           </AnimatePresence>
         )}
       </div>
+
+      <DeleteConfirmModal
+        open={deleteTargetId !== null}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTargetId(null)}
+      />
     </div>
   );
 }

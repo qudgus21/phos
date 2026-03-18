@@ -13,7 +13,9 @@ export default function RetouchingPage() {
   const [originalUrls, setOriginalUrls] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingCount, setGeneratingCount] = useState(1);
+  const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [externalImageUrl, setExternalImageUrl] = useState<string | null>(null);
 
   const handleGenerate = useCallback((outputUrls: string[]) => {
     setDisplayUrls(outputUrls);
@@ -41,10 +43,12 @@ export default function RetouchingPage() {
         {/* Left: Input Panel */}
         <div className={cn("min-h-0 min-w-0", mobileTab !== "input" && "hidden lg:block")}>
           <RetouchingInputPanel
+            externalImageUrl={externalImageUrl}
             onGenerate={handleGenerate}
-            onGenerateStart={(count) => {
+            onGenerateStart={(count, inputImage) => {
               setIsGenerating(true);
               setGeneratingCount(count);
+              setGeneratingInputImage(inputImage ?? null);
             }}
             onGenerateEnd={() => {
               setIsGenerating(false);
@@ -59,6 +63,11 @@ export default function RetouchingPage() {
             originalUrls={originalUrls}
             isGenerating={isGenerating}
             generatingCount={generatingCount}
+            generatingInputImage={generatingInputImage}
+            onAddToInput={(src) => {
+              setExternalImageUrl(`${src}#t=${Date.now()}`);
+              setMobileTab("input");
+            }}
           />
         </div>
 

@@ -18,7 +18,7 @@ const SYSTEM_PREFIX = [
   "The result must be photorealistic and indistinguishable from a professionally retouched real photograph.",
   "No AI artifacts, no plastic or airbrushed appearance, no uncanny valley effects.",
   "Maintain natural skin pore texture and micro-detail throughout.",
-  "Do NOT change the pose, angle, framing, or composition of the original image.",
+  "CRITICAL: Do NOT change the pose, face angle, head tilt, gaze direction, body position, framing, or composition of the original image in any way. The spatial layout must remain pixel-identical to the input.",
 ].join(" ");
 
 /* ── 2. Gender ── */

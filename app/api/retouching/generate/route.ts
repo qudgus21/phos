@@ -10,7 +10,6 @@ import {
   refundCredits,
   checkCooldown,
 } from "@/lib/services/credits";
-import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
@@ -22,7 +21,7 @@ const lambda: LambdaClient =
   ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
 
 const CREDIT_COST = 80;
-const DEFAULT_MODEL_ID = "retouching-seedream-4.5";
+const DEFAULT_MODEL_ID = "retouching-seedream-5.0";
 
 interface GenerateResponse {
   outputUrls: string[];
@@ -34,6 +33,7 @@ const VALID_FILTERS = ["none", "studio", "brightening", "glow"] as const;
 const VALID_GENDERS = ["female", "male"] as const;
 const VALID_MODES = ["natural", "soft-makeup", "matte"] as const;
 const VALID_AREAS = ["lips", "eyebrows", "nose", "hair", "background", "clothes"] as const;
+
 
 export const POST = withAuth(async (request, { user }) => {
   // 1. FormData 파싱
@@ -69,7 +69,7 @@ export const POST = withAuth(async (request, { user }) => {
   if (!VALID_MODES.includes(mode as typeof VALID_MODES[number])) {
     throw new ValidationError("올바르지 않은 모드입니다");
   }
-  if (!["1K", "2K", "3K", "4K"].includes(outputSize)) {
+  if (!["2K", "3K"].includes(outputSize)) {
     throw new ValidationError("올바르지 않은 출력 크기입니다");
   }
 
@@ -96,7 +96,7 @@ export const POST = withAuth(async (request, { user }) => {
   const builtPrompt = buildSkinRetouchPrompt(retouchOptions);
   console.log("[retouching] prompt:", builtPrompt);
 
-  // 5. 이미지 업로드 (Replicate Files)
+  // 5. 이미지 업로드 (Replicate Files) — 클라이언트에서 1024px 이하로 리사이즈 완료
   const imageUrl = await uploadFileToReplicate(imageFile, imageFile.name);
 
   // 6. 크레딧 + 플랜 정보 조회
@@ -158,9 +158,6 @@ export const POST = withAuth(async (request, { user }) => {
       defaults: modelDef.defaults,
     };
 
-    // 모든 사이즈를 2K로 생성, 3K/4K는 업스케일
-    const generateSize = "2K";
-
     const modelInput = modelDef.buildInput({
       prompt: builtPrompt,
       images: [imageUrl],
@@ -168,7 +165,7 @@ export const POST = withAuth(async (request, { user }) => {
       height: 0,
       ratio,
       imageCount: 1,
-      imageSize: generateSize,
+      imageSize: outputSize,
     });
 
     const result = await provider.generate(modelConfig, {
@@ -177,11 +174,6 @@ export const POST = withAuth(async (request, { user }) => {
     });
 
     allOutputUrls = result.outputUrls;
-
-    // 업스케일: 3K/4K 선택 시 2x 업스케일
-    if (outputSize === "3K" || outputSize === "4K") {
-      allOutputUrls = await upscaleImages(allOutputUrls, 2);
-    }
   } catch (err) {
     console.error("[retouching] AI generation failed, refunding credits:", err);
     await refundCredits(

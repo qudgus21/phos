@@ -157,6 +157,30 @@ function ImageActionBar({
   );
 }
 
+/* ── 텍스트 로테이션 ── */
+function RotatingText({ texts, interval = 4000 }: { texts: string[]; interval?: number }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setIndex((i) => (i + 1) % texts.length), interval);
+    return () => clearInterval(id);
+  }, [texts.length, interval]);
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.span
+        key={index}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.3 }}
+      >
+        {texts[index]}
+      </motion.span>
+    </AnimatePresence>
+  );
+}
+
 /* ── 프로그레시브 블러 플레이스홀더 ── */
 function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase = "generating" }: { count: number; inputImage?: string | null; willUpscale?: boolean; phase?: "generating" | "loading" }) {
   const [progress, setProgress] = useState(0);
@@ -253,11 +277,19 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
-          {phase === "loading"
-            ? "결과를 불러오고 있습니다..."
-            : willUpscale && elapsed > 25
-              ? "고해상도로 변환하고 있습니다..."
-              : "잠시만 기다려 주세요..."}
+          <AnimatePresence mode="wait">
+            {phase === "loading" ? (
+              <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                결과를 불러오고 있습니다...
+              </motion.span>
+            ) : willUpscale && elapsed > 25 ? (
+              <motion.span key="upscale" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                고해상도로 변환하고 있습니다...
+              </motion.span>
+            ) : (
+              <RotatingText texts={["잠시만 기다려 주세요", "페이지를 벗어나지 마세요"]} interval={5000} />
+            )}
+          </AnimatePresence>
         </motion.p>
       </div>
     </div>

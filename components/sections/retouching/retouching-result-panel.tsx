@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Sparkles, Upload, SlidersHorizontal, Zap, ZoomIn, Download, X, Loader2 } from "lucide-react";
+import { Sparkles, Upload, SlidersHorizontal, Zap, ZoomIn, Download, Plus, X, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -51,6 +51,8 @@ interface RetouchingResultPanelProps {
   originalUrls?: string[];
   isGenerating?: boolean;
   generatingCount?: number;
+  generatingInputImage?: string | null;
+  onAddToInput?: (src: string) => void;
 }
 
 /* ── 툴팁 액션 버튼 ── */
@@ -122,22 +124,51 @@ function DownloadButton({ src }: { src: string }) {
 function ImageActionBar({
   src,
   onZoom,
+  onAddToInput,
 }: {
   src: string;
   onZoom: () => void;
+  onAddToInput?: (src: string) => void;
 }) {
   return (
     <div className="absolute inset-x-0 bottom-0 flex justify-center p-6 opacity-0 group-hover:opacity-100 transition-opacity z-10">
       <div className="flex items-center gap-2 px-3 py-2 bg-black/70 backdrop-blur-md rounded-xl">
         <ActionButton icon={ZoomIn} label="확대" onClick={(e) => { e.stopPropagation(); onZoom(); }} />
         <DownloadButton src={src} />
+        {onAddToInput && (
+          <ActionButton icon={Plus} label="다시 보정" onClick={(e) => { e.stopPropagation(); onAddToInput(src); }} />
+        )}
       </div>
     </div>
   );
 }
 
+/* ── 텍스트 로테이션 ── */
+function RotatingText({ texts, interval = 4000 }: { texts: string[]; interval?: number }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setIndex((i) => (i + 1) % texts.length), interval);
+    return () => clearInterval(id);
+  }, [texts.length, interval]);
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.span
+        key={index}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.3 }}
+      >
+        {texts[index]}
+      </motion.span>
+    </AnimatePresence>
+  );
+}
+
 /* ── 프로그레시브 블러 플레이스홀더 ── */
-function GeneratingPlaceholder({ count, phase = "generating" }: { count: number; phase?: "generating" | "loading" }) {
+function GeneratingPlaceholder({ count, inputImage, phase = "generating" }: { count: number; inputImage?: string | null; phase?: "generating" | "loading" }) {
   const [progress, setProgress] = useState(0);
   const startTimeRef = useRef(Date.now());
 
@@ -161,21 +192,31 @@ function GeneratingPlaceholder({ count, phase = "generating" }: { count: number;
     "from-rose-500/30 via-amber-500/20 to-emerald-500/30",
   ];
 
-  const renderBlurContent = (index: number) => (
-    <>
-      <div className="absolute inset-0 bg-muted/40" />
-      <motion.div
-        className={cn("absolute inset-0 bg-gradient-to-br opacity-60", blobColors[index % blobColors.length])}
-        animate={{ scale: [1, 1.15, 1], rotate: [0, 5 + index * 3, -(3 + index * 2), 0] }}
-        transition={{ duration: 7 + index * 2, repeat: Infinity, ease: "easeInOut", delay: index * 0.5 }}
-      />
-      <motion.div
-        className="absolute w-[50%] h-[50%] top-[25%] left-[25%] rounded-full bg-gradient-to-tr from-white/10 to-white/5"
-        animate={{ scale: [1, 1.3, 0.9, 1], x: [0, 15, -10, 0], y: [0, -10, 15, 0] }}
-        transition={{ duration: 9 + index, repeat: Infinity, ease: "easeInOut", delay: index * 0.3 }}
-      />
-    </>
-  );
+  const renderBlurContent = (index: number) => {
+    if (inputImage) {
+      return (
+        <>
+          <img src={inputImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/20" />
+        </>
+      );
+    }
+    return (
+      <>
+        <div className="absolute inset-0 bg-muted/40" />
+        <motion.div
+          className={cn("absolute inset-0 bg-gradient-to-br opacity-60", blobColors[index % blobColors.length])}
+          animate={{ scale: [1, 1.15, 1], rotate: [0, 5 + index * 3, -(3 + index * 2), 0] }}
+          transition={{ duration: 7 + index * 2, repeat: Infinity, ease: "easeInOut", delay: index * 0.5 }}
+        />
+        <motion.div
+          className="absolute w-[50%] h-[50%] top-[25%] left-[25%] rounded-full bg-gradient-to-tr from-white/10 to-white/5"
+          animate={{ scale: [1, 1.3, 0.9, 1], x: [0, 15, -10, 0], y: [0, -10, 15, 0] }}
+          transition={{ duration: 9 + index, repeat: Infinity, ease: "easeInOut", delay: index * 0.3 }}
+        />
+      </>
+    );
+  };
 
   const spinnerOverlay = (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5">
@@ -208,7 +249,15 @@ function GeneratingPlaceholder({ count, phase = "generating" }: { count: number;
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
-          {phase === "loading" ? "결과를 불러오고 있습니다..." : "잠시만 기다려 주세요..."}
+          <AnimatePresence mode="wait">
+            {phase === "loading" ? (
+              <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                결과를 불러오고 있습니다...
+              </motion.span>
+            ) : (
+              <RotatingText texts={["잠시만 기다려 주세요", "페이지를 벗어나지 마세요"]} interval={5000} />
+            )}
+          </AnimatePresence>
         </motion.p>
       </div>
     </div>
@@ -316,7 +365,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function RetouchingResultPanel({ displayUrls, originalUrls, isGenerating, generatingCount = 1 }: RetouchingResultPanelProps) {
+export function RetouchingResultPanel({ displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, onAddToInput }: RetouchingResultPanelProps) {
   const outputs = displayUrls && displayUrls.length > 0 ? displayUrls : [];
   const originals = originalUrls && originalUrls.length > 0 ? originalUrls : outputs;
 
@@ -353,11 +402,11 @@ export function RetouchingResultPanel({ displayUrls, originalUrls, isGenerating,
 
       {/* 이미지 로딩 중일 때 숨겨진 img로 프리로드 */}
       {isImageLoading && !isGenerating && outputs.length > 0 && (
-        <img src={outputs[0]} alt="" className="hidden" onLoad={handleImageLoad} />
+        <img src={outputs[0]} alt="" className="hidden" onLoad={handleImageLoad} onError={handleImageLoad} />
       )}
 
       {showPlaceholder ? (
-        <GeneratingPlaceholder count={generatingCount} phase={isImageLoading ? "loading" : "generating"} />
+        <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} phase={isImageLoading ? "loading" : "generating"} />
       ) : outputs.length > 0 ? (
         <div className="relative flex-1 min-h-0 p-4 group">
           <Image
@@ -372,6 +421,7 @@ export function RetouchingResultPanel({ displayUrls, originalUrls, isGenerating,
           <ImageActionBar
             src={originals[0]}
             onZoom={() => setLightboxSrc(originals[0])}
+            onAddToInput={onAddToInput}
           />
         </div>
       ) : (

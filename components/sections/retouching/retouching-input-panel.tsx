@@ -34,7 +34,6 @@ const RETOUCH_AREAS = [
 
 /* ── Dropdown options ── */
 const SIZE_OPTIONS = [
-  { value: "1K", label: "1K" },
   { value: "2K", label: "2K" },
   { value: "3K", label: "3K" },
   { value: "4K", label: "4K" },
@@ -162,11 +161,12 @@ function ExcludeAreasDropdown({
 /* ── Main Panel ── */
 interface RetouchingInputPanelProps {
   onGenerate?: (outputUrls: string[]) => void;
-  onGenerateStart?: (count: number) => void;
+  onGenerateStart?: (count: number, inputImage?: string | null) => void;
   onGenerateEnd?: () => void;
+  externalImageUrl?: string | null;
 }
 
-export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEnd }: RetouchingInputPanelProps) {
+export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEnd, externalImageUrl }: RetouchingInputPanelProps) {
   /* Image upload */
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -174,7 +174,7 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* Settings */
-  const [outputSize, setOutputSize] = useState("1K");
+  const [outputSize, setOutputSize] = useState("2K");
   const [ratio, setRatio] = useState("AUTO");
   const [activeFilter, setActiveFilter] = useState("none");
   const [filterIntensity, setFilterIntensity] = useState(0.5);
@@ -192,13 +192,46 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
   const hasImage = !!uploadedImage;
 
   const processFile = useCallback((file: File) => {
-    setUploadedFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setUploadedImage(ev.target?.result as string);
+      const dataUrl = ev.target?.result as string;
+      const img = new window.Image();
+      img.onload = () => {
+        if (img.width < 100 || img.height < 100) {
+          toast("이미지가 너무 작습니다 (100×100px 이상)", "warning");
+          return;
+        }
+
+        const MAX = 1024;
+        if (img.width <= MAX && img.height <= MAX) {
+          setUploadedFile(file);
+          setUploadedImage(dataUrl);
+          return;
+        }
+
+        // 클라이언트에서 1024px로 리사이즈
+        const scale = MAX / Math.max(img.width, img.height);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return;
+            const resizedFile = new File([blob], file.name.replace(/\.[^.]+$/, ".png"), { type: "image/png" });
+            setUploadedFile(resizedFile);
+            setUploadedImage(canvas.toDataURL("image/png"));
+          },
+          "image/png"
+        );
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
-  }, []);
+  }, [toast]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -236,6 +269,21 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
+  // 외부에서 이미지 URL 주입 (결과 → 입력 재사용)
+  useEffect(() => {
+    if (!externalImageUrl) return;
+    const cleanUrl = externalImageUrl.replace(/#.*$/, "");
+    // 즉시 미리보기 반영
+    setUploadedImage(cleanUrl);
+    // 백그라운드에서 File 객체 생성
+    (async () => {
+      const res = await fetch(cleanUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `input-${Date.now()}.png`, { type: blob.type || "image/png" });
+      setUploadedFile(file);
+    })();
+  }, [externalImageUrl]);
+
   const toggleArea = useCallback((id: string) => {
     setExcludedAreas((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
@@ -251,7 +299,7 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
     if (isGenerating) return;
 
     setIsGenerating(true);
-    onGenerateStart?.(1);
+    onGenerateStart?.(1, uploadedImage);
 
     window.dispatchEvent(
       new CustomEvent("credits-updated", {
@@ -302,7 +350,7 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
       setIsGenerating(false);
       onGenerateEnd?.();
     }
-  }, [uploadedFile, isGenerating, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, onGenerateStart, onGenerate, onGenerateEnd, toast]);
+  }, [uploadedFile, uploadedImage, isGenerating, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, onGenerateStart, onGenerate, onGenerateEnd, toast]);
 
   /* ── beforeunload 가드 ── */
   useEffect(() => {
