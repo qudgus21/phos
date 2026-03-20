@@ -26,33 +26,34 @@ const GENDER_PROMPT: Record<string, string> = {
   female: [
     "Female portrait retouching.",
     "Maintain feminine facial structure.",
-    "Smooth skin while preserving natural texture and luminosity.",
-    "Even complexion with subtle radiance.",
+    "Smooth, polished skin with refined texture and luminosity.",
+    "Even complexion with subtle radiance, like a high-end beauty advertisement.",
   ].join(" "),
   male: [
     "Male portrait retouching.",
     "Maintain masculine facial structure and skin texture.",
     "Minimize blemishes while keeping natural ruggedness and visible pore detail.",
-    "Even skin tone without over-softening.",
+    "Even skin tone without over-softening, like a premium editorial portrait.",
   ].join(" "),
 };
 
 /* ── 3. Mode ── */
 const MODE_PROMPT: Record<string, string> = {
   natural: [
-    "Natural retouching only. Clean skin, no makeup added.",
+    "Natural retouching only. Clean, refined skin with no makeup added.",
     "Minimize blemishes, even skin tone, maintain all natural features.",
     "No foundation, concealer, or cosmetic enhancement.",
+    "The result should look like a striking, editorial natural beauty portrait.",
   ].join(" "),
   "soft-makeup": [
-    "Apply subtle, natural-looking soft makeup.",
+    "Apply subtle, natural-looking soft makeup for a polished, refined appearance.",
     "Light foundation for even tone, gentle concealer under eyes, soft blush on cheeks, light lip tint, barely visible mascara.",
-    "The makeup should look effortless and barely noticeable.",
+    "The makeup should look effortless and barely noticeable, like a high-end beauty campaign.",
   ].join(" "),
   matte: [
-    "Apply matte finish makeup.",
+    "Apply matte finish makeup for a striking editorial beauty look.",
     "Full-coverage matte foundation, mattified T-zone, defined contour lines, matte lipstick, structured eyebrows, visible but refined eyeliner.",
-    "Professional editorial matte beauty look.",
+    "Professional editorial matte beauty look, polished and refined like a magazine cover.",
   ].join(" "),
 };
 
@@ -67,65 +68,49 @@ function getIntensityAdverb(intensity: number): string {
 const FILTER_PROMPT: Record<string, (adverb: string) => string> = {
   studio: (adv) =>
     [
-      `${adv} apply studio lighting:`,
+      `${adv} apply studio lighting for a polished, high-end commercial look:`,
       "controlled directional key light with fill light,",
       "professional catchlights in eyes,",
       "neutral-warm color temperature (~5500K), clean specular highlights on skin.",
-      "Keep shadows minimal and close to original.",
+      "Keep shadows minimal and close to original. The result should look like a professional beauty studio photograph.",
     ].join(" "),
   brightening: (adv) =>
     [
-      `${adv} brighten the image:`,
+      `${adv} brighten the image for a striking, refined appearance:`,
       "lifted shadows, increased luminosity in midtones,",
       "bright and airy feel, slightly warm highlights,",
       "open shadow detail, high-key lighting tendency.",
+      "The skin should look radiant and polished like a high-end beauty editorial.",
     ].join(" "),
   glow: (adv) =>
     [
-      `${adv} add a natural skin glow:`,
+      `${adv} add a natural skin glow for a striking, editorial beauty look:`,
       "luminous, healthy-looking skin with a dewy finish,",
       "soft light reflecting off the skin surface,",
       "subtle inner radiance without oily or sweaty appearance,",
       "enhanced skin luminosity while maintaining texture and pore detail.",
+      "The skin should look alive and vibrant, polished and refined like a beauty campaign.",
     ].join(" "),
 };
 
 /* ── 5. Face Reshape ── */
-const RESHAPE_POSE_LOCK =
-  "CRITICAL: Do NOT change the face angle, head tilt, pose, gaze direction, or camera perspective in any way. The composition must remain pixel-identical to the original photograph. Only modify the contour shapes within the existing pose.";
-
 function buildFaceReshapePrompt(intensity: number): string {
-  if (intensity <= 0.3) {
-    return [
-      "Moderately reshape facial contours:",
-      "slimmer jawline toward a V-shape, refined nose bridge and tip,",
-      "smoother forehead line, slightly lifted cheekbones.",
-      "Changes should look natural as if the person simply has flattering angles.",
-      "Do NOT alter facial identity or recognizable features.",
-      RESHAPE_POSE_LOCK,
-    ].join(" ");
-  }
-  if (intensity <= 0.6) {
-    return [
-      "Noticeably reshape facial contours:",
-      "defined V-line jaw, slimmer and refined nose,",
-      "reduced cheekbone width, smooth and balanced forehead contour,",
-      "overall more sculpted and defined facial structure.",
-      "Results should still look like the same person, just more refined.",
-      "Do NOT create an unnatural or overly surgical appearance.",
-      RESHAPE_POSE_LOCK,
-    ].join(" ");
-  }
+  const adverb =
+    intensity <= 0.3 ? "Subtly" : intensity <= 0.6 ? "Noticeably" : "Dramatically";
+
+  const reshapeDetails =
+    intensity <= 0.3
+      ? "slimmer jawline toward a V-shape, refined nose bridge and tip, smoother forehead line, slightly lifted cheekbones. Changes should look natural as if the person simply has flattering angles."
+      : intensity <= 0.6
+        ? "defined V-line jaw, slimmer and refined nose, reduced cheekbone width, smooth and balanced forehead contour, overall more sculpted and defined facial structure. Results should still look like the same person, just more refined."
+        : "sharp and defined V-line jaw with tapered chin, visibly slimmer and straighter nose with refined tip, high and sculpted cheekbones with subtle hollowing underneath, smaller overall face proportion (소두 effect), smooth and lifted forehead contour, balanced facial symmetry. The result should look like a high-end beauty magazine cover — polished and refined, but still recognizably the same person.";
+
   return [
-    "Dramatically reshape facial contours for a striking, editorial beauty look:",
-    "sharp and defined V-line jaw with tapered chin,",
-    "visibly slimmer and straighter nose with refined tip,",
-    "high and sculpted cheekbones with subtle hollowing underneath,",
-    "smaller overall face proportion (소두 effect),",
-    "smooth and lifted forehead contour, balanced facial symmetry.",
-    "The result should look like a high-end beauty magazine cover — polished and refined, but still recognizably the same person.",
+    `${adverb} reshape facial contours for a striking, editorial beauty look:`,
+    reshapeDetails,
     "Avoid cartoonish, plastic, or CGI-like distortion.",
-    RESHAPE_POSE_LOCK,
+    "CRITICAL: Do NOT change the face angle, head tilt, pose, gaze direction, or camera perspective in any way.",
+    "The composition must remain pixel-identical to the original photograph. Only modify the contour shapes within the existing pose.",
   ].join(" ");
 }
 
@@ -146,6 +131,7 @@ const AREA_PRESERVE: Record<string, string> = {
 const QUALITY_SUFFIX = [
   "Output at professional commercial photography standard suitable for beauty advertising and editorial print.",
   "Ultra-sharp detail, accurate color reproduction, natural lighting consistency.",
+  "The final result should be polished and refined, worthy of a high-end beauty magazine cover.",
 ].join(" ");
 
 /* ── Builder ── */

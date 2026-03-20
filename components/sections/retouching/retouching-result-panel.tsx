@@ -53,6 +53,7 @@ interface RetouchingResultPanelProps {
   displayUrls?: string[];
   originalUrls?: string[];
   beforeImageUrl?: string | null;
+  generatedRatio?: string;
   isGenerating?: boolean;
   generatingCount?: number;
   generatingInputImage?: string | null;
@@ -369,7 +370,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, beforeImageUrl, isGenerating, generatingCount = 1, generatingInputImage, onAddToInput }: RetouchingResultPanelProps) {
+export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, beforeImageUrl, generatedRatio, isGenerating, generatingCount = 1, generatingInputImage, onAddToInput }: RetouchingResultPanelProps) {
   // 샘플 선택 시 after 이미지를 결과로 표시
   const activeSample = sampleId ? RETOUCHING_SAMPLES.find((s) => s.id === sampleId) : null;
   const effectiveDisplayUrls = activeSample ? [activeSample.after] : displayUrls;
@@ -379,12 +380,29 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, bef
   const outputs = effectiveDisplayUrls && effectiveDisplayUrls.length > 0 ? effectiveDisplayUrls : [];
   const originals = effectiveOriginalUrls && effectiveOriginalUrls.length > 0 ? effectiveOriginalUrls : outputs;
 
+  const { toast } = useToast();
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const { sliderPos, sliderProps } = useSlider(50);
   const wasGeneratingRef = useRef(false);
   const hasBeforeImage = !!effectiveBeforeUrl;
+  const isRatioMismatch = !activeSample && generatedRatio != null && generatedRatio !== "AUTO";
+
+  // before 이미지 프리로드 — 비교 모드 전환 전에 미리 로드
+  useEffect(() => {
+    if (effectiveBeforeUrl) {
+      const img = new window.Image();
+      img.src = effectiveBeforeUrl;
+    }
+  }, [effectiveBeforeUrl]);
+
+  // 샘플 선택 시 defaultCompare 반영
+  useEffect(() => {
+    if (activeSample) {
+      setCompareMode(!!activeSample.defaultCompare);
+    }
+  }, [activeSample]);
 
   useEffect(() => {
     if (isGenerating) {
@@ -393,6 +411,7 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, bef
       wasGeneratingRef.current = false;
       if (displayUrls && displayUrls.length > 0) {
         setIsImageLoading(true);
+        setCompareMode(false);
       }
     }
   }, [isGenerating]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -430,7 +449,12 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, bef
             </button>
             <button
               type="button"
-              onClick={() => setCompareMode(true)}
+              onClick={() => {
+                setCompareMode(true);
+                if (isRatioMismatch) {
+                  toast("원본과 출력 비율이 달라 비교가 정확하지 않을 수 있습니다", "warning");
+                }
+              }}
               className={cn(
                 "relative z-10 px-3 py-1 rounded-md text-[12px] font-medium transition-colors duration-200 cursor-pointer",
                 compareMode ? "text-foreground" : "text-muted-foreground hover:text-foreground/70"

@@ -4,6 +4,7 @@ export interface RetouchingSample {
   label: string;
   before: string;
   after: string;
+  defaultCompare?: boolean;
   settings: {
     filter: string;
     filterIntensity: number;
@@ -12,24 +13,29 @@ export interface RetouchingSample {
     faceReshape: boolean;
     faceReshapeIntensity: number;
     excludedAreas: string[];
+    outputSize: string;
+    ratio: string;
   };
 }
 
 export const RETOUCHING_SAMPLES: RetouchingSample[] = [
   {
     id: "1",
-    thumbnail: "/images/retouching/sample1/thumbnail.png",
-    label: "기본 보정",
-    before: "/images/retouching/sample1/before.png",
-    after: "/images/retouching/sample1/after.png",
+    thumbnail: "/images/retouching/sample1/thumbnail.webp",
+    label: "글로우 매트",
+    before: "/images/retouching/sample1/before.webp",
+    after: "/images/retouching/sample1/after.webp",
+    defaultCompare: true,
     settings: {
-      filter: "none",
-      filterIntensity: 0.5,
+      filter: "glow",
+      filterIntensity: 1.0,
       gender: "female",
-      mode: "natural",
+      mode: "matte",
       faceReshape: false,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
+      outputSize: "2K",
+      ratio: "AUTO",
     },
   },
   {
@@ -46,6 +52,8 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: false,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
+      outputSize: "2K",
+      ratio: "AUTO",
     },
   },
   {
@@ -62,6 +70,8 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: true,
       faceReshapeIntensity: 0.6,
       excludedAreas: [],
+      outputSize: "2K",
+      ratio: "AUTO",
     },
   },
   {
@@ -78,6 +88,8 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: false,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
+      outputSize: "2K",
+      ratio: "AUTO",
     },
   },
   {
@@ -94,6 +106,8 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: false,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
+      outputSize: "2K",
+      ratio: "AUTO",
     },
   },
 ];

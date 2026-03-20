@@ -35,6 +35,7 @@ const RETOUCH_AREAS = [
 
 /* ── Dropdown options ── */
 const SIZE_OPTIONS = [
+  { value: "1K", label: "1K" },
   { value: "2K", label: "2K" },
   { value: "4K", label: "4K" },
 ];
@@ -161,7 +162,7 @@ function ExcludeAreasDropdown({
 /* ── Main Panel ── */
 interface RetouchingInputPanelProps {
   sampleId?: string | null;
-  onGenerate?: (outputUrls: string[], inputImageUrl?: string | null) => void;
+  onGenerate?: (outputUrls: string[], inputImageUrl?: string | null, ratio?: string) => void;
   onGenerateStart?: (count: number, inputImage?: string | null) => void;
   onGenerateEnd?: () => void;
   externalImageUrl?: string | null;
@@ -175,7 +176,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* Settings */
-  const [outputSize, setOutputSize] = useState("2K");
+  const [outputSize, setOutputSize] = useState("1K");
   const [ratio, setRatio] = useState("AUTO");
   const [activeFilter, setActiveFilter] = useState("none");
   const [filterIntensity, setFilterIntensity] = useState(0.5);
@@ -278,6 +279,8 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
     setFaceReshape(sample.settings.faceReshape);
     setFaceReshapeIntensity(sample.settings.faceReshapeIntensity);
     setExcludedAreas(sample.settings.excludedAreas);
+    setOutputSize(sample.settings.outputSize);
+    setRatio(sample.settings.ratio);
     // before 이미지를 업로드 영역에 표시
     setUploadedImage(sample.before);
     // File 객체 생성 (생성 시 필요)
@@ -285,7 +288,8 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       try {
         const res = await fetch(sample.before);
         const blob = await res.blob();
-        const file = new File([blob], `sample-${sampleId}.png`, { type: blob.type || "image/png" });
+        const ext = sample.before.endsWith(".webp") ? "webp" : "png";
+        const file = new File([blob], `sample-${sampleId}.${ext}`, { type: blob.type || `image/${ext}` });
         setUploadedFile(file);
       } catch {
         // 로컬 이미지 fetch 실패 시 무시
@@ -352,7 +356,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       if (!data.success) {
         throw new Error(data.error?.message ?? "생성에 실패했습니다");
       }
-      onGenerate?.(data.data.outputUrls, data.data.inputImageUrl);
+      onGenerate?.(data.data.outputUrls, data.data.inputImageUrl, ratio);
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
           new CustomEvent("credits-updated", {
@@ -544,9 +548,16 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
         {/* ── 윤곽 보정 ── */}
         <div className="space-y-1.5 shrink-0">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-card-foreground">
-              윤곽 보정
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[13px] font-medium text-card-foreground">
+                윤곽 보정
+              </span>
+              {faceReshape && (
+                <span className="text-[10px] text-amber-400/80">
+                  얼굴 각도가 달라질 수 있어요
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => setFaceReshape((v) => !v)}
