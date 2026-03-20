@@ -143,6 +143,9 @@ export function ImageEditHistoryPanel({
       .order("created_at", { ascending: false })
       .limit(50);
 
+    if (error) {
+      console.error("[HistoryPanel] fetch error:", error.message, error);
+    }
     if (!error && data) {
       setHistory(data as HistoryRow[]);
     }
