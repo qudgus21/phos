@@ -54,6 +54,7 @@ interface RetouchingResultPanelProps {
   isGenerating?: boolean;
   generatingCount?: number;
   generatingInputImage?: string | null;
+  generatingScale?: number;
   onAddToInput?: (src: string) => void;
 }
 
@@ -170,8 +171,9 @@ function RotatingText({ texts, interval = 4000 }: { texts: string[]; interval?: 
 }
 
 /* ── 프로그레시브 블러 플레이스홀더 ── */
-function GeneratingPlaceholder({ count, inputImage, phase = "generating" }: { count: number; inputImage?: string | null; phase?: "generating" | "loading" }) {
+function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase = "generating" }: { count: number; inputImage?: string | null; willUpscale?: boolean; phase?: "generating" | "loading" }) {
   const [progress, setProgress] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
@@ -182,6 +184,7 @@ function GeneratingPlaceholder({ count, inputImage, phase = "generating" }: { co
       const sec = (Date.now() - startTimeRef.current) / 1000;
       const p = Math.min(95, 100 * (1 - Math.exp(-sec / 60)));
       setProgress(p);
+      setElapsed(sec);
     }, 200);
 
     return () => clearInterval(interval);
@@ -244,7 +247,11 @@ function GeneratingPlaceholder({ count, inputImage, phase = "generating" }: { co
       </div>
       <div className="text-center space-y-1.5">
         <p className="text-base font-bold text-foreground">
-          {phase === "loading" ? "저장 중" : "이미지 보정 중"}
+          {phase === "loading"
+            ? "저장 중"
+            : willUpscale && elapsed > 25
+              ? "업스케일 중"
+              : "이미지 보정 중"}
         </p>
         <motion.p
           className="text-sm font-medium text-foreground/70"
@@ -255,6 +262,10 @@ function GeneratingPlaceholder({ count, inputImage, phase = "generating" }: { co
             {phase === "loading" ? (
               <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 결과를 불러오고 있습니다...
+              </motion.span>
+            ) : willUpscale && elapsed > 25 ? (
+              <motion.span key="upscale" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                고해상도로 변환하고 있습니다...
               </motion.span>
             ) : (
               <RotatingText texts={["잠시만 기다려 주세요", "페이지를 벗어나지 마세요"]} interval={5000} />
@@ -367,7 +378,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, onAddToInput }: RetouchingResultPanelProps) {
+export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, generatingScale = 0, onAddToInput }: RetouchingResultPanelProps) {
   // 샘플 선택 시 after 이미지를 결과로 표시
   const activeSample = sampleId ? RETOUCHING_SAMPLES.find((s) => s.id === sampleId) : null;
   const effectiveDisplayUrls = activeSample ? [activeSample.after] : displayUrls;
@@ -413,7 +424,7 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isG
       )}
 
       {showPlaceholder ? (
-        <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} phase={isImageLoading ? "loading" : "generating"} />
+        <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} willUpscale={generatingScale > 1} phase={isImageLoading ? "loading" : "generating"} />
       ) : outputs.length > 0 ? (
         <div className="relative flex-1 min-h-0 p-4 group">
           <Image

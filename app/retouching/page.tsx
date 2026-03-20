@@ -16,6 +16,7 @@ export default function RetouchingPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingCount, setGeneratingCount] = useState(1);
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
+  const [generatingScale, setGeneratingScale] = useState(0);
   const [externalImageUrl, setExternalImageUrl] = useState<string | null>(null);
 
   const handleGenerate = useCallback((outputUrls: string[]) => {
@@ -54,10 +55,11 @@ export default function RetouchingPage() {
               sampleId={sampleId}
               externalImageUrl={externalImageUrl}
               onGenerate={handleGenerate}
-              onGenerateStart={(count, inputImage) => {
+              onGenerateStart={(count, inputImage, scale) => {
                 setIsGenerating(true);
                 setGeneratingCount(count);
                 setGeneratingInputImage(inputImage ?? null);
+                setGeneratingScale(scale ?? 0);
               }}
               onGenerateEnd={() => {
                 setIsGenerating(false);
@@ -74,6 +76,7 @@ export default function RetouchingPage() {
               isGenerating={isGenerating}
               generatingCount={generatingCount}
               generatingInputImage={generatingInputImage}
+              generatingScale={generatingScale}
               onAddToInput={(src) => {
                 setExternalImageUrl(`${src}#t=${Date.now()}`);
                 setMobileTab("input");

@@ -53,6 +53,16 @@ const MODE_OPTIONS = [
 
 const CREDIT_COST = 80;
 
+const sliderThumb =
+  "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer";
+
+const SCALE_OPTIONS = [
+  { value: "1", label: "1K" },
+  { value: "2", label: "2K" },
+  { value: "3", label: "3K" },
+  { value: "4", label: "4K" },
+];
+
 /* ── Multi-select Dropdown ── */
 function ExcludeAreasDropdown({
   selected,
@@ -154,7 +164,7 @@ function ExcludeAreasDropdown({
 interface RetouchingInputPanelProps {
   sampleId?: string | null;
   onGenerate?: (outputUrls: string[], inputImageUrl?: string | null, ratio?: string) => void;
-  onGenerateStart?: (count: number, inputImage?: string | null) => void;
+  onGenerateStart?: (count: number, inputImage?: string | null, scale?: number) => void;
   onGenerateEnd?: () => void;
   externalImageUrl?: string | null;
 }
@@ -170,6 +180,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
   /* Settings */
   const outputSize = "auto";
   const [ratio, setRatio] = useState("1:1");
+  const [scale, setScale] = useState(1);
   const [activeFilter, setActiveFilter] = useState("none");
   const [filterIntensity, setFilterIntensity] = useState(0.5);
   const [excludedAreas, setExcludedAreas] = useState<string[]>([]);
@@ -318,7 +329,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
     if (isGenerating) return;
 
     setIsGenerating(true);
-    onGenerateStart?.(1, uploadedImage);
+    onGenerateStart?.(1, uploadedImage, scale);
 
     window.dispatchEvent(
       new CustomEvent("credits-updated", {
@@ -338,6 +349,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       fd.append("faceReshapeIntensity", String(faceReshapeIntensity));
       fd.append("outputSize", outputSize);
       fd.append("ratio", ratio);
+      fd.append("scale", String(scale));
 
       const res = await fetch("/api/retouching/generate", {
         method: "POST",
@@ -379,7 +391,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       setIsGenerating(false);
       onGenerateEnd?.();
     }
-  }, [uploadedFile, uploadedImage, isGenerating, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
+  }, [uploadedFile, uploadedImage, isGenerating, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, scale, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
 
   /* ── beforeunload 가드 ── */
   useEffect(() => {
@@ -616,6 +628,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       <div className="shrink-0 px-3 pb-3 space-y-2">
         <div className="rounded-xl border border-border bg-white/[0.02] p-2.5 space-y-2.5">
           <div className="flex gap-1.5">
+            <Dropdown options={SCALE_OPTIONS} value={String(scale)} onChange={(v) => setScale(Number(v))} className="flex-1" />
             <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="flex-1" />
           </div>
 

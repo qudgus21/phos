@@ -11,6 +11,7 @@ import {
   checkCooldown,
 } from "@/lib/services/credits";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
+import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { ApiError, CreditError, ValidationError } from "@/lib/errors";
@@ -51,6 +52,7 @@ export const POST = withAuth(async (request, { user }) => {
   const faceReshapeIntensity = Number(formData.get("faceReshapeIntensity") ?? 0.5);
   const outputSize = formData.get("outputSize") as string;
   const ratio = formData.get("ratio") as string;
+  const scale = Number(formData.get("scale") ?? 1);
 
   // 2. 유효성 검증
   if (!imageFile || !(imageFile instanceof File) || imageFile.size === 0) {
@@ -178,6 +180,15 @@ export const POST = withAuth(async (request, { user }) => {
     });
 
     allOutputUrls = result.outputUrls;
+
+    // 업스케일 (GPT Image 1.5는 항상 ~1K 출력 → 최대 4x까지)
+    const effectiveScale = Math.min(
+      scale > 1 ? Math.round(scale) : 1,
+      4
+    );
+    if (effectiveScale >= 2) {
+      allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
+    }
   } catch (err) {
     console.error("[retouching] AI generation failed, refunding credits:", err);
     await refundCredits(
@@ -211,6 +222,7 @@ export const POST = withAuth(async (request, { user }) => {
       faceReshapeIntensity,
       outputSize,
       ratio,
+      scale,
     },
   };
 
