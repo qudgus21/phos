@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { Clock, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
+import { useHistory } from "@/hooks/use-history";
 import { cn } from "@/lib/utils";
-import type { Database } from "@/lib/types/database";
 
 function HistoryThumbnail({ src }: { src: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -100,7 +99,7 @@ function DeleteConfirmModal({
   );
 }
 
-type HistoryRow = Database["public"]["Tables"]["generation_history"]["Row"];
+import type { HistoryRow } from "@/hooks/use-history";
 
 /* 리터칭 히스토리: metadata → 옵션 요약 텍스트 */
 const FILTER_LABELS: Record<string, string> = { none: "필터 없음", studio: "스튜디오", brightening: "브라이트닝", glow: "글로우" };
@@ -119,48 +118,16 @@ function getRetouchingSummary(meta: Record<string, unknown> | null): string {
 
 interface ImageEditHistoryPanelProps {
   featureType?: string;
-  refreshKey?: number;
   onSelect?: (displayUrls: string[], originalUrls: string[], inputUrls?: string[]) => void;
 }
 
 export function ImageEditHistoryPanel({
   featureType = "image-edit",
-  refreshKey = 0,
   onSelect,
 }: ImageEditHistoryPanelProps) {
-  const [history, setHistory] = useState<HistoryRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { history, isLoading, deleteHistory } = useHistory(featureType);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-
-  const fetchHistory = useCallback(async (showLoader = false) => {
-    if (showLoader) setIsLoading(true);
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("generation_history")
-      .select("*")
-      .eq("feature_type", featureType)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (error) {
-      console.error("[HistoryPanel] fetch error:", error.message, error);
-    }
-    if (!error && data) {
-      setHistory(data as HistoryRow[]);
-    }
-    setIsLoading(false);
-  }, [featureType]);
-
-  // 초기 로드 시에만 로딩 스피너 표시
-  useEffect(() => {
-    fetchHistory(true);
-  }, [featureType]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // refreshKey 변경 시 (생성 완료 후) 로딩 없이 조용히 갱신
-  useEffect(() => {
-    if (refreshKey > 0) fetchHistory(false);
-  }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 상대 시간 텍스트 갱신 (1분마다 re-render — 네트워크 호출 없음)
   const [, setTick] = useState(0);
@@ -179,26 +146,12 @@ export function ImageEditHistoryPanel({
     setDeleteTargetId(id);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     const id = deleteTargetId;
     if (!id) return;
     setDeleteTargetId(null);
-
-    setHistory((prev) => prev.filter((h) => h.id !== id));
     if (selectedId === id) setSelectedId(null);
-
-    try {
-      const res = await fetch("/api/history", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) {
-        fetchHistory(false);
-      }
-    } catch {
-      fetchHistory(false);
-    }
+    deleteHistory(id);
   };
 
   const formatTime = (dateStr: string) => {

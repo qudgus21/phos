@@ -210,11 +210,12 @@ export const RETOUCHING_MODELS: ModelDef[] = [
     maxImages: 1,
     maxOutputs: 1,
     supportedSizes: ["auto"],
-    ui: { ratio: false, customSize: false, imageSize: false },
-    buildInput: ({ prompt, images }) => ({
+    ui: { ratio: true, customSize: false, imageSize: false },
+    buildInput: ({ prompt, images, ratio }) => ({
       prompt,
       quality: "high",
       input_fidelity: "high",
+      aspect_ratio: ratio || "1:1",
       output_format: "webp",
       output_compression: 95,
       moderation: "low",

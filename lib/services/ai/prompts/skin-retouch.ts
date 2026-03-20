@@ -49,7 +49,8 @@ const MODE_PROMPT: Record<string, Record<string, string>> = {
     ].join(" "),
     male: [
       "Natural retouching only. Clean, refined skin with no visible makeup.",
-      "Thoroughly remove blemishes, dark spots, acne scars, and uneven patches. Smooth and even out skin tone across the entire face.",
+      "Thoroughly remove blemishes, dark spots, acne scars, enlarged pores, and uneven patches.",
+      "Smooth and even out skin tone and texture across the entire face — refine pore texture, reduce fine lines, and eliminate any roughness or dullness.",
       "No visible foundation or cosmetic products — all improvement must look naturally achieved.",
       "The result should look like a premium men's editorial portrait — clean, polished skin that looks naturally flawless.",
     ].join(" "),
@@ -62,7 +63,8 @@ const MODE_PROMPT: Record<string, Record<string, string>> = {
     ].join(" "),
     male: [
       "Apply invisible grooming-level enhancement for a polished, refined editorial look.",
-      "Thoroughly even out skin tone, neutralize dark circles and redness, mattify T-zone, smooth under-eye area, clean up skin imperfections across the entire face.",
+      "Thoroughly clean up all skin imperfections across the entire face — remove blemishes, dark spots, enlarged pores, acne scars, and rough texture.",
+      "Even out skin tone, neutralize dark circles and redness, mattify T-zone, smooth under-eye area, refine pore texture for a clean and smooth complexion.",
       "Do NOT touch eyelashes, eyeliner area, or add any eye makeup effects. Enhancement must be strong but with zero visible cosmetic makeup — the result should look like exceptionally well-maintained skin, like a premium men's fashion campaign.",
     ].join(" "),
   },
@@ -74,7 +76,8 @@ const MODE_PROMPT: Record<string, Record<string, string>> = {
     ].join(" "),
     male: [
       "Apply a strong matte finish for a bold, editorial men's look.",
-      "Full matte skin with zero shine, sharply defined jawline contour, mattified forehead and nose, enhanced facial definition through shadow and highlight control.",
+      "Thoroughly clean up all skin imperfections — remove blemishes, dark spots, enlarged pores, acne scars, rough texture, and uneven patches across the entire face.",
+      "Full matte skin with zero shine, refined pore texture, sharply defined jawline contour, mattified forehead and nose, enhanced facial definition through shadow and highlight control.",
       "Do NOT touch eyelashes, eyeliner area, or add any eye makeup effects. The result should look like a high-end men's magazine cover — powerful, sculpted, and commanding.",
     ].join(" "),
   },

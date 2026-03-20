@@ -24,6 +24,7 @@ interface GenerateResponse {
   outputUrls: string[];
   creditsUsed: number;
   balanceAfter: number;
+  historyId: string | null;
 }
 
 export const POST = withAuth(async (request, { user }) => {
@@ -122,6 +123,7 @@ export const POST = withAuth(async (request, { user }) => {
           "https://placehold.co/1024x1024/1a1a2e/white?text=DRY+RUN"
         ),
         creditsUsed: 0,
+        historyId: null,
         balanceAfter: creditInfo.balance.total,
       },
     };
@@ -274,6 +276,7 @@ export const POST = withAuth(async (request, { user }) => {
       outputUrls: allOutputUrls,
       creditsUsed: creditCost,
       balanceAfter: deductResult.totalBalance ?? 0,
+      historyId: historyRow?.id ?? null,
     },
   };
 

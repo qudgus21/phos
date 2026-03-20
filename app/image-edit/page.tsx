@@ -17,7 +17,6 @@ export default function ImageEditPage() {
   const [generatingCount, setGeneratingCount] = useState(1);
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
   const [generatingScale, setGeneratingScale] = useState(0);
-  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const inputPanelRef = useRef<ImageEditInputPanelHandle>(null);
 
   const addOutputToInput = useCallback((src: string) => {
@@ -29,7 +28,6 @@ export default function ImageEditPage() {
     setDisplayUrls(outputUrls);
     setOriginalUrls(outputUrls);
     setMobileTab("result");
-    setHistoryRefreshKey((k) => k + 1);
   }, []);
 
   const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[]) => {
@@ -86,7 +84,6 @@ export default function ImageEditPage() {
           <div className={cn("min-h-0", mobileTab !== "history" && "hidden lg:block")}>
             <ImageEditHistoryPanel
               featureType="image-edit"
-              refreshKey={historyRefreshKey}
               onSelect={handleHistorySelect}
             />
           </div>

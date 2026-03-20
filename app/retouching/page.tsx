@@ -16,23 +16,18 @@ export default function RetouchingPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingCount, setGeneratingCount] = useState(1);
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
-  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [externalImageUrl, setExternalImageUrl] = useState<string | null>(null);
-  const [beforeImageUrl, setBeforeImageUrl] = useState<string | null>(null);
 
-  const handleGenerate = useCallback((outputUrls: string[], inputImageUrl?: string | null) => {
+  const handleGenerate = useCallback((outputUrls: string[]) => {
     setDisplayUrls(outputUrls);
     setOriginalUrls(outputUrls);
-    setBeforeImageUrl(inputImageUrl ?? null);
     setSampleId(null);
     setMobileTab("result");
-    setHistoryRefreshKey((k) => k + 1);
   }, []);
 
-  const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[], histInputUrls?: string[]) => {
+  const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[]) => {
     setDisplayUrls(histDisplayUrls);
     setOriginalUrls(histOriginalUrls);
-    setBeforeImageUrl(histInputUrls?.[0] ?? null);
     setSampleId(null);
     setMobileTab("result");
   }, []);
@@ -76,7 +71,6 @@ export default function RetouchingPage() {
               sampleId={sampleId}
               displayUrls={displayUrls}
               originalUrls={originalUrls}
-              beforeImageUrl={beforeImageUrl}
               isGenerating={isGenerating}
               generatingCount={generatingCount}
               generatingInputImage={generatingInputImage}
@@ -91,7 +85,6 @@ export default function RetouchingPage() {
           <div className={cn("min-h-0", mobileTab !== "history" && "hidden lg:block")}>
             <ImageEditHistoryPanel
               featureType="retouching"
-              refreshKey={historyRefreshKey}
               onSelect={handleHistorySelect}
             />
           </div>

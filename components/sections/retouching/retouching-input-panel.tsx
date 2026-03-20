@@ -9,9 +9,11 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
+import { prependHistoryItem } from "@/hooks/use-history";
 import { motion, AnimatePresence } from "framer-motion";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 
@@ -158,6 +160,7 @@ interface RetouchingInputPanelProps {
 }
 
 export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd, externalImageUrl }: RetouchingInputPanelProps) {
+  const queryClient = useQueryClient();
   /* Image upload */
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -344,6 +347,16 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       if (!data.success) {
         throw new Error(data.error?.message ?? "생성에 실패했습니다");
       }
+      prependHistoryItem(queryClient, "retouching", {
+        id: data.data.historyId,
+        display_urls: data.data.outputUrls,
+        original_urls: data.data.outputUrls,
+        input_urls: data.data.inputImageUrl ? [data.data.inputImageUrl] : [],
+        model_id: "retouching-gpt-image-1.5",
+        prompt: "",
+        credits_used: CREDIT_COST,
+        metadata: { filter: activeFilter, filterIntensity, gender, mode, faceReshape, faceReshapeIntensity },
+      });
       onGenerate?.(data.data.outputUrls, data.data.inputImageUrl, ratio);
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
@@ -366,7 +379,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       setIsGenerating(false);
       onGenerateEnd?.();
     }
-  }, [uploadedFile, uploadedImage, isGenerating, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, onGenerateStart, onGenerate, onGenerateEnd, toast]);
+  }, [uploadedFile, uploadedImage, isGenerating, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
 
   /* ── beforeunload 가드 ── */
   useEffect(() => {

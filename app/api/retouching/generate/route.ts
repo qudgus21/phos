@@ -28,6 +28,7 @@ interface GenerateResponse {
   inputImageUrl: string | null;
   creditsUsed: number;
   balanceAfter: number;
+  historyId: string | null;
 }
 
 const VALID_FILTERS = ["none", "studio", "brightening", "glow"] as const;
@@ -123,6 +124,7 @@ export const POST = withAuth(async (request, { user }) => {
         inputImageUrl: null,
         creditsUsed: 0,
         balanceAfter: creditInfo.balance.total,
+        historyId: null,
       },
     };
     return NextResponse.json(body);
@@ -246,6 +248,7 @@ export const POST = withAuth(async (request, { user }) => {
       inputImageUrl: null,
       creditsUsed: CREDIT_COST,
       balanceAfter: deductResult.totalBalance ?? 0,
+      historyId: historyRow?.id ?? null,
     },
   };
 

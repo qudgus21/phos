@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { compressImageForFavorite } from "@/lib/utils/compress-image";
+import { queryKeys } from "@/lib/query-keys";
 import type { Database } from "@/lib/types/database";
 
 type FavoriteRow = Database["public"]["Tables"]["favorites"]["Row"];
@@ -24,29 +25,27 @@ interface SaveFavoriteInput {
 }
 
 export function useFavorites(featureType: string = "image-edit") {
-  const [favorites, setFavorites] = useState<FavoriteRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchFavorites = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("favorites")
-      .select("*")
-      .eq("feature_type", featureType)
-      .order("created_at", { ascending: false })
-      .limit(MAX_FAVORITES);
+  const { data: favorites = [], isLoading } = useQuery<FavoriteRow[]>({
+    queryKey: queryKeys.favorites.byFeature(featureType),
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("favorites")
+        .select("*")
+        .eq("feature_type", featureType)
+        .order("created_at", { ascending: false })
+        .limit(MAX_FAVORITES);
 
-    if (data) setFavorites(data as FavoriteRow[]);
-    setIsLoading(false);
-  }, [featureType]);
+      return (data ?? []) as FavoriteRow[];
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchFavorites();
-  }, [fetchFavorites]);
-
-  const saveFavorite = useCallback(
-    async (input: SaveFavoriteInput) => {
+  const saveMutation = useMutation({
+    mutationFn: async (input: SaveFavoriteInput) => {
       const supabase = createClient();
 
       // 현재 유저
@@ -123,14 +122,14 @@ export function useFavorites(featureType: string = "image-edit") {
             .eq("id", row.id);
         }
       }
-
-      await fetchFavorites();
     },
-    [featureType, fetchFavorites]
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.favorites.byFeature(featureType) });
+    },
+  });
 
-  const deleteFavorite = useCallback(
-    async (id: string) => {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const supabase = createClient();
 
       const {
@@ -138,11 +137,10 @@ export function useFavorites(featureType: string = "image-edit") {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 해당 row 조회 (이미지 개수 파악)
+      // 캐시에서 target 찾기 (optimistic에서 이미 제거되었으므로 previousData에서 찾음)
       const target = favorites.find((f) => f.id === id);
       if (target && target.reference_image_urls.length > 0) {
         const paths = target.reference_image_urls.map((url) => {
-          // public URL에서 path 추출
           const idx = url.indexOf("/favorite-images/");
           return idx >= 0 ? url.slice(idx + "/favorite-images/".length) : "";
         }).filter(Boolean);
@@ -153,19 +151,29 @@ export function useFavorites(featureType: string = "image-edit") {
       }
 
       await supabase.from("favorites").delete().eq("id", id);
-      await fetchFavorites();
     },
-    [favorites, fetchFavorites]
-  );
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.favorites.byFeature(featureType) });
+      const previous = queryClient.getQueryData<FavoriteRow[]>(queryKeys.favorites.byFeature(featureType));
+      queryClient.setQueryData<FavoriteRow[]>(
+        queryKeys.favorites.byFeature(featureType),
+        (old) => old?.filter((f) => f.id !== id) ?? []
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.favorites.byFeature(featureType), context.previous);
+      }
+    },
+  });
 
   return {
     favorites,
     isLoading,
-    isSaving,
-    setIsSaving,
-    saveFavorite,
-    deleteFavorite,
-    fetchFavorites,
+    saveFavorite: saveMutation.mutateAsync,
+    deleteFavorite: deleteMutation.mutate,
+    fetchFavorites: () => queryClient.invalidateQueries({ queryKey: queryKeys.favorites.byFeature(featureType) }),
     maxFavorites: MAX_FAVORITES,
     isFull: favorites.length >= MAX_FAVORITES,
   };

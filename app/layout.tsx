@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/ui/toast";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { Navigation } from "@/components/sections/navigation";
 import "./globals.css";
 
@@ -39,8 +40,10 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${pretendard.variable} font-sans antialiased`}
       >
-        <Navigation />
-        <ToastProvider>{children}</ToastProvider>
+        <QueryProvider>
+          <Navigation />
+          <ToastProvider>{children}</ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );

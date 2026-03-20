@@ -3,10 +3,13 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sparkles, LogOut, Zap, Plus } from "lucide-react";
 import { LoginModal } from "@/components/ui/login-modal";
 import { createClient } from "@/lib/supabase/client";
+import { useCreditsBalance } from "@/hooks/use-credits";
+import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
 import type { UserCreditInfo } from "@/lib/types/credits";
@@ -97,10 +100,11 @@ export function Navigation() {
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [creditInfo, setCreditInfo] = useState<UserCreditInfo | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const { scrolled, progress } = useNavScroll();
+  const queryClient = useQueryClient();
+  const { data: creditInfo = null } = useCreditsBalance(!!user);
 
   /* 페이지 전환 완료 시 상태 리셋 */
   useEffect(() => {
@@ -133,25 +137,11 @@ export function Navigation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* 로그인 시 크레딧 정보 fetch */
-  useEffect(() => {
-    if (!user) {
-      setCreditInfo(null);
-      return;
-    }
-    fetch("/api/credits/balance")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setCreditInfo(json.data);
-      })
-      .catch(() => {});
-  }, [user]);
-
   /* 크레딧 변동 이벤트 수신 (낙관적 업데이트) */
   useEffect(() => {
     const handler = (e: Event) => {
       const { total, delta } = (e as CustomEvent).detail;
-      setCreditInfo((prev) => {
+      queryClient.setQueryData<UserCreditInfo>(queryKeys.credits.balance, (prev) => {
         if (!prev) return prev;
         const newTotal = delta != null
           ? Math.max(0, prev.balance.total + delta)
@@ -161,7 +151,7 @@ export function Navigation() {
     };
     window.addEventListener("credits-updated", handler);
     return () => window.removeEventListener("credits-updated", handler);
-  }, []);
+  }, [queryClient]);
 
   /* 드롭다운 외부 클릭 닫기 */
   useEffect(() => {

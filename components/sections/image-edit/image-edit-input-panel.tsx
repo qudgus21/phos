@@ -3,12 +3,14 @@
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Plus, PenLine, X, GripVertical, Zap, Loader2, RotateCcw, Ruler } from "lucide-react";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { SAMPLES } from "@/lib/constants/samples";
 import { IMAGE_EDIT_MODELS } from "@/lib/services/ai/models";
+import { prependHistoryItem } from "@/hooks/use-history";
 
 interface UploadedImage {
   file: File | null;
@@ -72,6 +74,7 @@ interface ImageEditInputPanelProps {
 }
 
 export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd }, ref) {
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
 
@@ -256,6 +259,16 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       if (!data.success) {
         throw new Error(data.error?.message ?? "생성에 실패했습니다");
       }
+      prependHistoryItem(queryClient, "image-edit", {
+        id: data.data.historyId,
+        display_urls: data.data.outputUrls,
+        original_urls: data.data.outputUrls,
+        input_urls: [],
+        model_id: model,
+        prompt,
+        credits_used: creditCost * imageCount,
+        metadata: {},
+      });
       onGenerate?.(data.data.outputUrls);
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
@@ -278,7 +291,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       setIsGenerating(false);
       onGenerateEnd?.();
     }
-  }, [prompt, isGenerating, imageCount, images, creditCost, model, imageSize, ratio, width, height, scale, onGenerateStart, onGenerate, onGenerateEnd, toast]);
+  }, [prompt, isGenerating, imageCount, images, creditCost, model, imageSize, ratio, width, height, scale, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
