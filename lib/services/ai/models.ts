@@ -180,17 +180,17 @@ export function getModelDef(id: string): ModelDef | undefined {
 /* ── Retouching Models ── */
 export const RETOUCHING_MODELS: ModelDef[] = [
   {
-    id: "retouching-seedream-5.0",
-    label: "Seedream 5.0",
+    id: "retouching-seedream-4.5",
+    label: "Seedream 4.5",
     provider: "replicate",
-    modelId: "bytedance/seedream-5-lite",
+    modelId: "bytedance/seedream-4.5",
     maxImages: 1,
     maxOutputs: 1,
-    supportedSizes: ["2K", "3K"],
+    supportedSizes: ["2K", "4K"],
     ui: { ratio: true, customSize: false, imageSize: true },
     buildInput: ({ prompt, images, ratio, imageSize }) => ({
       prompt,
-      size: imageSize === "3K" ? "3K" : "2K",
+      size: imageSize === "4K" ? "4K" : "2K",
       aspect_ratio:
         ratio === "AUTO"
           ? images && images.length > 0

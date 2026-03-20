@@ -21,7 +21,7 @@ const lambda: LambdaClient =
   ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
 
 const CREDIT_COST = 80;
-const DEFAULT_MODEL_ID = "retouching-seedream-5.0";
+const DEFAULT_MODEL_ID = "retouching-seedream-4.5";
 
 interface GenerateResponse {
   outputUrls: string[];
@@ -69,7 +69,7 @@ export const POST = withAuth(async (request, { user }) => {
   if (!VALID_MODES.includes(mode as typeof VALID_MODES[number])) {
     throw new ValidationError("올바르지 않은 모드입니다");
   }
-  if (!["2K", "3K"].includes(outputSize)) {
+  if (!["2K", "4K"].includes(outputSize)) {
     throw new ValidationError("올바르지 않은 출력 크기입니다");
   }
 

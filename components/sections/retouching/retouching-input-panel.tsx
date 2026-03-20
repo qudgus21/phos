@@ -35,7 +35,6 @@ const RETOUCH_AREAS = [
 /* ── Dropdown options ── */
 const SIZE_OPTIONS = [
   { value: "2K", label: "2K" },
-  { value: "3K", label: "3K" },
   { value: "4K", label: "4K" },
 ];
 const RATIO_OPTIONS = [
