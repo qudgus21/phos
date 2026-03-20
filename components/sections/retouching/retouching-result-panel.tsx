@@ -7,7 +7,6 @@ import { Sparkles, Upload, SlidersHorizontal, Zap, ZoomIn, Download, Plus, X, Lo
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
-import { useSlider } from "@/hooks/use-slider";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 
 /** Supabase Storage URL이면 이미 최적화된 WebP → unoptimized 가능 */
@@ -52,8 +51,6 @@ interface RetouchingResultPanelProps {
   sampleId?: string | null;
   displayUrls?: string[];
   originalUrls?: string[];
-  beforeImageUrl?: string | null;
-  generatedRatio?: string;
   isGenerating?: boolean;
   generatingCount?: number;
   generatingInputImage?: string | null;
@@ -370,39 +367,18 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
-export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, beforeImageUrl, generatedRatio, isGenerating, generatingCount = 1, generatingInputImage, onAddToInput }: RetouchingResultPanelProps) {
+export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, onAddToInput }: RetouchingResultPanelProps) {
   // 샘플 선택 시 after 이미지를 결과로 표시
   const activeSample = sampleId ? RETOUCHING_SAMPLES.find((s) => s.id === sampleId) : null;
   const effectiveDisplayUrls = activeSample ? [activeSample.after] : displayUrls;
   const effectiveOriginalUrls = activeSample ? [activeSample.after] : originalUrls;
-  const effectiveBeforeUrl = activeSample ? activeSample.before : beforeImageUrl;
 
   const outputs = effectiveDisplayUrls && effectiveDisplayUrls.length > 0 ? effectiveDisplayUrls : [];
   const originals = effectiveOriginalUrls && effectiveOriginalUrls.length > 0 ? effectiveOriginalUrls : outputs;
 
-  const { toast } = useToast();
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
-  const [compareMode, setCompareMode] = useState(false);
-  const { sliderPos, sliderProps } = useSlider(50);
   const wasGeneratingRef = useRef(false);
-  const hasBeforeImage = !!effectiveBeforeUrl;
-  const isRatioMismatch = !activeSample && generatedRatio != null && generatedRatio !== "AUTO";
-
-  // before 이미지 프리로드 — 비교 모드 전환 전에 미리 로드
-  useEffect(() => {
-    if (effectiveBeforeUrl) {
-      const img = new window.Image();
-      img.src = effectiveBeforeUrl;
-    }
-  }, [effectiveBeforeUrl]);
-
-  // 샘플 선택 시 defaultCompare 반영
-  useEffect(() => {
-    if (activeSample) {
-      setCompareMode(!!activeSample.defaultCompare);
-    }
-  }, [activeSample]);
 
   useEffect(() => {
     if (isGenerating) {
@@ -411,7 +387,6 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, bef
       wasGeneratingRef.current = false;
       if (displayUrls && displayUrls.length > 0) {
         setIsImageLoading(true);
-        setCompareMode(false);
       }
     }
   }, [isGenerating]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -425,45 +400,11 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, bef
   return (
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="hidden lg:block px-4 py-3 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
           <Sparkles className="w-4 h-4 text-secondary" />
           결과
         </h2>
-        {hasBeforeImage && outputs.length > 0 && !showPlaceholder && (
-          <div className="relative flex items-center bg-muted/60 rounded-lg p-0.5">
-            {/* 슬라이딩 배경 */}
-            <div
-              className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-md bg-foreground/10 border border-white/10 transition-all duration-200 ease-out"
-              style={{ left: compareMode ? "calc(50% + 2px)" : "2px" }}
-            />
-            <button
-              type="button"
-              onClick={() => setCompareMode(false)}
-              className={cn(
-                "relative z-10 px-3 py-1 rounded-md text-[12px] font-medium transition-colors duration-200 cursor-pointer",
-                !compareMode ? "text-foreground" : "text-muted-foreground hover:text-foreground/70"
-              )}
-            >
-              결과
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setCompareMode(true);
-                if (isRatioMismatch) {
-                  toast("원본과 출력 비율이 달라 비교가 정확하지 않을 수 있습니다", "warning");
-                }
-              }}
-              className={cn(
-                "relative z-10 px-3 py-1 rounded-md text-[12px] font-medium transition-colors duration-200 cursor-pointer",
-                compareMode ? "text-foreground" : "text-muted-foreground hover:text-foreground/70"
-              )}
-            >
-              비교
-            </button>
-          </div>
-        )}
       </div>
 
       {/* 이미지 로딩 중일 때 숨겨진 img로 프리로드 */}
@@ -474,80 +415,22 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, bef
       {showPlaceholder ? (
         <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} phase={isImageLoading ? "loading" : "generating"} />
       ) : outputs.length > 0 ? (
-        compareMode && effectiveBeforeUrl ? (
-          /* Before/After 슬라이더 비교 */
-          <div className="relative flex-1 min-h-0 p-4 cursor-col-resize select-none" onDragStart={(e) => e.preventDefault()} {...sliderProps}>
-            {/* After (결과) — 전체 배경 */}
-            <Image
-              src={outputs[0]}
-              alt="결과"
-              fill
-              priority
-              draggable={false}
-              unoptimized={isOptimizedUrl(outputs[0])}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-contain !p-4 pointer-events-none"
-            />
-            {/* Before (원본) — clip으로 왼쪽에서 슬라이더 위치만큼만 표시 */}
-            <div
-              className="absolute inset-0"
-              style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
-            >
-              <Image
-                src={effectiveBeforeUrl}
-                alt="원본"
-                fill
-                draggable={false}
-                unoptimized={isOptimizedUrl(effectiveBeforeUrl)}
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-contain !p-4 pointer-events-none"
-              />
-            </div>
-            {/* 슬라이더 핸들 */}
-            <div
-              className="absolute top-4 bottom-4 w-0.5 bg-white/80 z-20 pointer-events-none"
-              style={{ left: `${sliderPos}%` }}
-            >
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-lg flex items-center justify-center">
-                <div className="flex gap-[2px]">
-                  <svg width="4" height="8" viewBox="0 0 4 8" fill="none">
-                    <path d="M3 1L1 4L3 7" stroke="#1a1b2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <svg width="4" height="8" viewBox="0 0 4 8" fill="none">
-                    <path d="M1 1L3 4L1 7" stroke="#1a1b2e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            {/* 라벨 */}
-            <span
-              className="absolute top-6 left-6 px-2 py-0.5 text-[11px] font-semibold bg-black/50 text-white rounded z-20 transition-opacity duration-200"
-              style={{ opacity: sliderPos > 10 ? 1 : 0 }}
-            >원본</span>
-            <span
-              className="absolute top-6 right-6 px-2 py-0.5 text-[11px] font-semibold bg-black/50 text-white rounded z-20 transition-opacity duration-200"
-              style={{ opacity: sliderPos < 90 ? 1 : 0 }}
-            >결과</span>
-          </div>
-        ) : (
-          /* 결과만 보기 */
-          <div className="relative flex-1 min-h-0 p-4 group">
-            <Image
-              src={outputs[0]}
-              alt="결과"
-              fill
-              priority
-              unoptimized={isOptimizedUrl(outputs[0])}
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-contain !p-4"
-            />
-            <ImageActionBar
-              src={originals[0]}
-              onZoom={() => setLightboxSrc(originals[0])}
-              onAddToInput={onAddToInput}
-            />
-          </div>
-        )
+        <div className="relative flex-1 min-h-0 p-4 group">
+          <Image
+            src={outputs[0]}
+            alt="결과"
+            fill
+            priority
+            unoptimized={isOptimizedUrl(outputs[0])}
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-contain !p-4"
+          />
+          <ImageActionBar
+            src={originals[0]}
+            onZoom={() => setLightboxSrc(originals[0])}
+            onAddToInput={onAddToInput}
+          />
+        </div>
       ) : (
         /* Empty State */
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">

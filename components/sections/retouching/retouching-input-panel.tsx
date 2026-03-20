@@ -34,21 +34,10 @@ const RETOUCH_AREAS = [
 ];
 
 /* ── Dropdown options ── */
-const SIZE_OPTIONS = [
-  { value: "1K", label: "1K" },
-  { value: "2K", label: "2K" },
-  { value: "4K", label: "4K" },
-];
 const RATIO_OPTIONS = [
-  { value: "2:3", label: "2:3" },
-  { value: "3:2", label: "3:2" },
-  { value: "9:16", label: "9:16" },
-  { value: "16:9", label: "16:9" },
-  { value: "21:9", label: "21:9" },
-  { value: "AUTO", label: "AUTO" },
   { value: "1:1", label: "1:1" },
-  { value: "3:4", label: "3:4" },
-  { value: "4:3", label: "4:3" },
+  { value: "3:2", label: "3:2" },
+  { value: "2:3", label: "2:3" },
 ];
 const GENDER_OPTIONS = [
   { value: "female", label: "여성" },
@@ -176,8 +165,8 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* Settings */
-  const [outputSize, setOutputSize] = useState("1K");
-  const [ratio, setRatio] = useState("AUTO");
+  const outputSize = "auto";
+  const [ratio, setRatio] = useState("1:1");
   const [activeFilter, setActiveFilter] = useState("none");
   const [filterIntensity, setFilterIntensity] = useState(0.5);
   const [excludedAreas, setExcludedAreas] = useState<string[]>([]);
@@ -279,7 +268,6 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
     setFaceReshape(sample.settings.faceReshape);
     setFaceReshapeIntensity(sample.settings.faceReshapeIntensity);
     setExcludedAreas(sample.settings.excludedAreas);
-    setOutputSize(sample.settings.outputSize);
     setRatio(sample.settings.ratio);
     // before 이미지를 업로드 영역에 표시
     setUploadedImage(sample.before);
@@ -552,11 +540,6 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
               <span className="text-[13px] font-medium text-card-foreground">
                 윤곽 보정
               </span>
-              {faceReshape && (
-                <span className="text-[10px] text-amber-400/80">
-                  얼굴 각도가 달라질 수 있어요
-                </span>
-              )}
             </div>
             <button
               type="button"
@@ -620,8 +603,7 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       <div className="shrink-0 px-3 pb-3 space-y-2">
         <div className="rounded-xl border border-border bg-white/[0.02] p-2.5 space-y-2.5">
           <div className="flex gap-1.5">
-            <Dropdown options={SIZE_OPTIONS} value={outputSize} onChange={setOutputSize} className="flex-1" />
-            <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="flex-1" columns={5} align="right" />
+            <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="flex-1" />
           </div>
 
           <button

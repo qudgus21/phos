@@ -21,7 +21,7 @@ const lambda: LambdaClient =
   ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
 
 const CREDIT_COST = 80;
-const DEFAULT_MODEL_ID = "retouching-seedream-4.5";
+const DEFAULT_MODEL_ID = "retouching-gpt-image-1.5";
 
 interface GenerateResponse {
   outputUrls: string[];
@@ -70,7 +70,7 @@ export const POST = withAuth(async (request, { user }) => {
   if (!VALID_MODES.includes(mode as typeof VALID_MODES[number])) {
     throw new ValidationError("올바르지 않은 모드입니다");
   }
-  if (!["2K", "4K"].includes(outputSize)) {
+  if (!["auto", "2K", "4K"].includes(outputSize)) {
     throw new ValidationError("올바르지 않은 출력 크기입니다");
   }
 
@@ -100,20 +100,6 @@ export const POST = withAuth(async (request, { user }) => {
   // 5. 이미지 업로드 (Replicate Files) — 클라이언트에서 1024px WebP 변환 완료
   const imageUrl = await uploadFileToReplicate(imageFile, imageFile.name);
 
-  // 5-1. 입력 이미지를 Supabase Storage에 영구 저장 (before/after 비교용)
-  const supabaseForInput = createAdminClient();
-  const inputFileName = `retouching-inputs/${user.id}/${Date.now()}.webp`;
-  const inputBuffer = Buffer.from(await imageFile.arrayBuffer());
-  const { data: inputUpload } = await supabaseForInput.storage
-    .from("generation-outputs")
-    .upload(inputFileName, inputBuffer, {
-      contentType: "image/webp",
-      upsert: false,
-    });
-  const inputStorageUrl = inputUpload
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/generation-outputs/${inputFileName}`
-    : null;
-
   // 6. 크레딧 + 플랜 정보 조회
   const creditInfo = await getUserCreditInfo(user.id);
 
@@ -134,7 +120,7 @@ export const POST = withAuth(async (request, { user }) => {
       success: true,
       data: {
         outputUrls: ["https://placehold.co/1024x1024/1a1a2e/white?text=DRY+RUN+RETOUCH"],
-        inputImageUrl: inputStorageUrl,
+        inputImageUrl: null,
         creditsUsed: 0,
         balanceAfter: creditInfo.balance.total,
       },
@@ -209,7 +195,7 @@ export const POST = withAuth(async (request, { user }) => {
     feature_type: "retouching" as const,
     model_id: DEFAULT_MODEL_ID,
     prompt: builtPrompt,
-    input_urls: inputStorageUrl ? [inputStorageUrl] : [imageUrl],
+    input_urls: [imageUrl],
     display_urls: allOutputUrls,
     original_urls: allOutputUrls,
     credits_used: CREDIT_COST,
@@ -257,7 +243,7 @@ export const POST = withAuth(async (request, { user }) => {
     success: true,
     data: {
       outputUrls: allOutputUrls,
-      inputImageUrl: inputStorageUrl,
+      inputImageUrl: null,
       creditsUsed: CREDIT_COST,
       balanceAfter: deductResult.totalBalance ?? 0,
     },

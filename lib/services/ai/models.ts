@@ -202,6 +202,26 @@ export const RETOUCHING_MODELS: ModelDef[] = [
       ...(images && images.length > 0 && { image_input: images }),
     }),
   },
+  {
+    id: "retouching-gpt-image-1.5",
+    label: "GPT Image 1.5",
+    provider: "replicate",
+    modelId: "openai/gpt-image-1.5",
+    maxImages: 1,
+    maxOutputs: 1,
+    supportedSizes: ["auto"],
+    ui: { ratio: false, customSize: false, imageSize: false },
+    buildInput: ({ prompt, images }) => ({
+      prompt,
+      quality: "high",
+      input_fidelity: "high",
+      output_format: "webp",
+      output_compression: 95,
+      moderation: "low",
+      background: "opaque",
+      ...(images && images.length > 0 && { input_images: images }),
+    }),
+  },
 ];
 
 export function getRetouchingModelDef(id: string): ModelDef | undefined {
