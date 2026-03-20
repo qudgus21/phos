@@ -120,7 +120,7 @@ function getRetouchingSummary(meta: Record<string, unknown> | null): string {
 interface ImageEditHistoryPanelProps {
   featureType?: string;
   refreshKey?: number;
-  onSelect?: (displayUrls: string[], originalUrls: string[]) => void;
+  onSelect?: (displayUrls: string[], originalUrls: string[], inputUrls?: string[]) => void;
 }
 
 export function ImageEditHistoryPanel({
@@ -168,7 +168,7 @@ export function ImageEditHistoryPanel({
 
   const handleSelect = (item: HistoryRow) => {
     setSelectedId(item.id);
-    onSelect?.(item.display_urls, item.original_urls);
+    onSelect?.(item.display_urls, item.original_urls, item.input_urls);
   };
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {

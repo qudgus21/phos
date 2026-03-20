@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 
 /* ── Filter Chips ── */
 const FILTERS = [
@@ -159,13 +160,14 @@ function ExcludeAreasDropdown({
 
 /* ── Main Panel ── */
 interface RetouchingInputPanelProps {
-  onGenerate?: (outputUrls: string[]) => void;
+  sampleId?: string | null;
+  onGenerate?: (outputUrls: string[], inputImageUrl?: string | null) => void;
   onGenerateStart?: (count: number, inputImage?: string | null) => void;
   onGenerateEnd?: () => void;
   externalImageUrl?: string | null;
 }
 
-export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEnd, externalImageUrl }: RetouchingInputPanelProps) {
+export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd, externalImageUrl }: RetouchingInputPanelProps) {
   /* Image upload */
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -201,15 +203,10 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
           return;
         }
 
+        // 항상 WebP 변환 (≤1024px: 포맷만, >1024px: 리사이즈+포맷)
         const MAX = 1024;
-        if (img.width <= MAX && img.height <= MAX) {
-          setUploadedFile(file);
-          setUploadedImage(dataUrl);
-          return;
-        }
-
-        // 클라이언트에서 1024px로 리사이즈
-        const scale = MAX / Math.max(img.width, img.height);
+        const needsResize = img.width > MAX || img.height > MAX;
+        const scale = needsResize ? MAX / Math.max(img.width, img.height) : 1;
         const w = Math.round(img.width * scale);
         const h = Math.round(img.height * scale);
         const canvas = document.createElement("canvas");
@@ -220,11 +217,12 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
         canvas.toBlob(
           (blob) => {
             if (!blob) return;
-            const resizedFile = new File([blob], file.name.replace(/\.[^.]+$/, ".png"), { type: "image/png" });
-            setUploadedFile(resizedFile);
-            setUploadedImage(canvas.toDataURL("image/png"));
+            const webpFile = new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" });
+            setUploadedFile(webpFile);
+            setUploadedImage(canvas.toDataURL("image/webp"));
           },
-          "image/png"
+          "image/webp",
+          0.85
         );
       };
       img.src = dataUrl;
@@ -267,6 +265,33 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
     setUploadedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
+
+  // 샘플 선택 시 설정값 주입
+  useEffect(() => {
+    if (!sampleId) return;
+    const sample = RETOUCHING_SAMPLES.find((s) => s.id === sampleId);
+    if (!sample) return;
+    setActiveFilter(sample.settings.filter);
+    setFilterIntensity(sample.settings.filterIntensity);
+    setGender(sample.settings.gender);
+    setMode(sample.settings.mode);
+    setFaceReshape(sample.settings.faceReshape);
+    setFaceReshapeIntensity(sample.settings.faceReshapeIntensity);
+    setExcludedAreas(sample.settings.excludedAreas);
+    // before 이미지를 업로드 영역에 표시
+    setUploadedImage(sample.before);
+    // File 객체 생성 (생성 시 필요)
+    (async () => {
+      try {
+        const res = await fetch(sample.before);
+        const blob = await res.blob();
+        const file = new File([blob], `sample-${sampleId}.png`, { type: blob.type || "image/png" });
+        setUploadedFile(file);
+      } catch {
+        // 로컬 이미지 fetch 실패 시 무시
+      }
+    })();
+  }, [sampleId]);
 
   // 외부에서 이미지 URL 주입 (결과 → 입력 재사용)
   useEffect(() => {
@@ -327,7 +352,7 @@ export function RetouchingInputPanel({ onGenerate, onGenerateStart, onGenerateEn
       if (!data.success) {
         throw new Error(data.error?.message ?? "생성에 실패했습니다");
       }
-      onGenerate?.(data.data.outputUrls);
+      onGenerate?.(data.data.outputUrls, data.data.inputImageUrl);
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
           new CustomEvent("credits-updated", {

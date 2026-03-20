@@ -25,6 +25,7 @@ const DEFAULT_MODEL_ID = "retouching-seedream-4.5";
 
 interface GenerateResponse {
   outputUrls: string[];
+  inputImageUrl: string | null;
   creditsUsed: number;
   balanceAfter: number;
 }
@@ -96,8 +97,22 @@ export const POST = withAuth(async (request, { user }) => {
   const builtPrompt = buildSkinRetouchPrompt(retouchOptions);
   console.log("[retouching] prompt:", builtPrompt);
 
-  // 5. 이미지 업로드 (Replicate Files) — 클라이언트에서 1024px 이하로 리사이즈 완료
+  // 5. 이미지 업로드 (Replicate Files) — 클라이언트에서 1024px WebP 변환 완료
   const imageUrl = await uploadFileToReplicate(imageFile, imageFile.name);
+
+  // 5-1. 입력 이미지를 Supabase Storage에 영구 저장 (before/after 비교용)
+  const supabaseForInput = createAdminClient();
+  const inputFileName = `retouching-inputs/${user.id}/${Date.now()}.webp`;
+  const inputBuffer = Buffer.from(await imageFile.arrayBuffer());
+  const { data: inputUpload } = await supabaseForInput.storage
+    .from("generation-outputs")
+    .upload(inputFileName, inputBuffer, {
+      contentType: "image/webp",
+      upsert: false,
+    });
+  const inputStorageUrl = inputUpload
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/generation-outputs/${inputFileName}`
+    : null;
 
   // 6. 크레딧 + 플랜 정보 조회
   const creditInfo = await getUserCreditInfo(user.id);
@@ -119,6 +134,7 @@ export const POST = withAuth(async (request, { user }) => {
       success: true,
       data: {
         outputUrls: ["https://placehold.co/1024x1024/1a1a2e/white?text=DRY+RUN+RETOUCH"],
+        inputImageUrl: inputStorageUrl,
         creditsUsed: 0,
         balanceAfter: creditInfo.balance.total,
       },
@@ -193,7 +209,7 @@ export const POST = withAuth(async (request, { user }) => {
     feature_type: "retouching" as const,
     model_id: DEFAULT_MODEL_ID,
     prompt: builtPrompt,
-    input_urls: [imageUrl],
+    input_urls: inputStorageUrl ? [inputStorageUrl] : [imageUrl],
     display_urls: allOutputUrls,
     original_urls: allOutputUrls,
     credits_used: CREDIT_COST,
@@ -241,6 +257,7 @@ export const POST = withAuth(async (request, { user }) => {
     success: true,
     data: {
       outputUrls: allOutputUrls,
+      inputImageUrl: inputStorageUrl,
       creditsUsed: CREDIT_COST,
       balanceAfter: deductResult.totalBalance ?? 0,
     },
