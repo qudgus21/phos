@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
 import {
   Upload,
   X,
@@ -161,6 +161,15 @@ function ExcludeAreasDropdown({
 }
 
 /* ── Main Panel ── */
+export interface RetouchingInputPanelHandle {
+  loadFavorite: (fav: { prompt: string; model_id: string; ratio: string; image_size: string; scale: number; image_count: number; reference_image_urls: string[]; metadata?: Record<string, unknown> | null }) => void;
+  getCurrentSettings: () => {
+    filter: string; filterIntensity: number; gender: string; mode: string;
+    faceReshape: boolean; faceReshapeIntensity: number; excludedAreas: string[];
+    ratio: string; scale: number; image: File | string | null;
+  };
+}
+
 interface RetouchingInputPanelProps {
   sampleId?: string | null;
   onGenerate?: (outputUrls: string[], inputImageUrl?: string | null, ratio?: string) => void;
@@ -169,7 +178,7 @@ interface RetouchingInputPanelProps {
   externalImageUrl?: string | null;
 }
 
-export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd, externalImageUrl }: RetouchingInputPanelProps) {
+export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, RetouchingInputPanelProps>(function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd, externalImageUrl }, ref) {
   const queryClient = useQueryClient();
   /* Image upload */
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -319,6 +328,48 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
   }, []);
+
+  /* ── Imperative Handle (즐겨찾기용) ── */
+  useImperativeHandle(ref, () => ({
+    loadFavorite: (fav) => {
+      // metadata에 retouching 설정이 저장됨
+      const meta = (fav.metadata ?? {}) as Record<string, unknown>;
+      setActiveFilter((meta.filter as string) ?? "none");
+      setFilterIntensity(Number(meta.filterIntensity ?? 0.5));
+      setGender((meta.gender as string) ?? "female");
+      setMode((meta.mode as string) ?? "natural");
+      setFaceReshape(Boolean(meta.faceReshape));
+      setFaceReshapeIntensity(Number(meta.faceReshapeIntensity ?? 0.5));
+      setExcludedAreas((meta.excludedAreas as string[]) ?? []);
+      setRatio(fav.ratio || "1:1");
+      setScale(Number(fav.scale) || 1);
+      // 참조 이미지 복원
+      if (fav.reference_image_urls.length > 0) {
+        const url = fav.reference_image_urls[0];
+        setUploadedImage(url);
+        (async () => {
+          try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            setUploadedFile(new File([blob], `fav-${Date.now()}.webp`, { type: blob.type || "image/webp" }));
+          } catch { /* ignore */ }
+        })();
+      }
+      toast("즐겨찾기를 불러왔습니다", "success");
+    },
+    getCurrentSettings: () => ({
+      filter: activeFilter,
+      filterIntensity,
+      gender,
+      mode,
+      faceReshape,
+      faceReshapeIntensity,
+      excludedAreas,
+      ratio,
+      scale,
+      image: uploadedFile ?? uploadedImage,
+    }),
+  }));
 
   /* ── 생성 핸들러 ── */
   const handleGenerate = useCallback(async () => {
@@ -686,4 +737,4 @@ export function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, on
       </div>
     </div>
   );
-}
+});

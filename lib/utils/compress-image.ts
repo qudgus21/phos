@@ -3,11 +3,13 @@
  * Canvas API를 사용하여 이미지를 리사이즈 + WebP 변환
  */
 
-const MAX_LONG_SIDE = 2048;
+const MAX_LONG_SIDE = 1024;
 const WEBP_QUALITY = 0.8;
 
 /**
- * 이미지를 2K WebP로 압축
+ * 이미지를 1K WebP로 압축
+ * - 긴 변이 1024px 이하: WebP 변환만
+ * - 긴 변이 1024px 초과: 1024px로 리사이즈 + WebP 변환
  * @param source File 객체 또는 이미지 URL
  * @returns 압축된 WebP Blob
  */

@@ -22,6 +22,8 @@ interface SaveFavoriteInput {
   imageCount: number;
   /** File 또는 URL — 압축 후 Storage 업로드 */
   images: (File | string)[];
+  /** 기능별 추가 설정 (retouching filter/gender/mode 등) */
+  metadata?: Record<string, unknown>;
 }
 
 export function useFavorites(featureType: string = "image-edit") {
@@ -79,6 +81,7 @@ export function useFavorites(featureType: string = "image-edit") {
           scale: input.scale,
           image_count: input.imageCount,
           reference_image_urls: [],
+          metadata: input.metadata ?? {},
         })
         .select()
         .single();

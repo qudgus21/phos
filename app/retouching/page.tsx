@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { RetouchingInputPanel } from "@/components/sections/retouching/retouching-input-panel";
+import { useState, useRef, useCallback } from "react";
+import { RetouchingInputPanel, type RetouchingInputPanelHandle } from "@/components/sections/retouching/retouching-input-panel";
 import { RetouchingResultPanel } from "@/components/sections/retouching/retouching-result-panel";
 import { RetouchingSampleSidebar } from "@/components/sections/retouching/retouching-sample-sidebar";
 import { ImageEditHistoryPanel } from "@/components/sections/image-edit/image-edit-history-panel";
@@ -18,6 +18,7 @@ export default function RetouchingPage() {
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
   const [generatingScale, setGeneratingScale] = useState(0);
   const [externalImageUrl, setExternalImageUrl] = useState<string | null>(null);
+  const inputPanelRef = useRef<RetouchingInputPanelHandle>(null);
 
   const handleGenerate = useCallback((outputUrls: string[]) => {
     setDisplayUrls(outputUrls);
@@ -44,6 +45,7 @@ export default function RetouchingPage() {
       {/* Main Editor */}
       <div className="flex-1 flex gap-2.5 p-2.5 lg:px-16 xl:px-24 min-h-0">
         <RetouchingSampleSidebar
+          inputPanelRef={inputPanelRef}
           selectedSampleId={sampleId}
           onSelectSample={setSampleId}
         />
@@ -52,6 +54,7 @@ export default function RetouchingPage() {
           {/* Left: Input Panel */}
           <div className={cn("min-h-0 min-w-0", mobileTab !== "input" && "hidden lg:block")}>
             <RetouchingInputPanel
+              ref={inputPanelRef}
               sampleId={sampleId}
               externalImageUrl={externalImageUrl}
               onGenerate={handleGenerate}
