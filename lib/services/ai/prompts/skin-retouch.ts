@@ -58,7 +58,7 @@ const MODE_PROMPT: Record<string, Record<string, string>> = {
   "soft-makeup": {
     female: [
       "Apply subtle, natural-looking soft makeup for a polished, refined appearance.",
-      "Light foundation for even tone, gentle concealer under eyes, soft blush on cheeks, light lip tint, barely visible mascara.",
+      "Light foundation for even tone, gentle concealer under eyes, soft blush on cheeks, light lip tint, barely visible mascara, thin and subtle eyeliner along the upper lash line.",
       "The makeup should look effortless and barely noticeable, like a high-end beauty campaign.",
     ].join(" "),
     male: [
