@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -111,7 +111,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [resending, setResending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : "";
 
   const resetForm = useCallback(() => {

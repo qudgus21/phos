@@ -34,7 +34,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
   if (email) {
     const { data: user, error } = await admin
       .from("users")
-      .select("*")
+      .select("id, email, name, role, auth_provider, created_at")
       .eq("email", email)
       .single();
 
@@ -87,7 +87,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
   const { data: users, error } = await admin
     .from("users")
     .select(`
-      *,
+      id, email, name, role, auth_provider, created_at,
       user_credits(balance, subscription_balance, onetime_balance, last_generation_at),
       user_subscriptions(plan_id, status, subscription_plans(name))
     `)

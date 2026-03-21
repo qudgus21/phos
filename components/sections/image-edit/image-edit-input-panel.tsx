@@ -50,7 +50,7 @@ const RATIO_OPTIONS = [
   { value: "4:3", label: "4:3" },
 ];
 
-const DEFAULT_maxImages = 14;
+const DEFAULT_MAX_IMAGES = 14;
 
 /* ── 디자인 시스템 기반 공통 스타일 ── */
 const fieldBase =
@@ -94,7 +94,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const [imageSize, setImageSize] = useState("1K");
 
   const currentModelDef = IMAGE_EDIT_MODELS.find((m) => m.id === model);
-  const maxImages = currentModelDef?.maxImages ?? DEFAULT_maxImages;
+  const maxImages = currentModelDef?.maxImages ?? DEFAULT_MAX_IMAGES;
   // 모델이 네이티브 지원하는 크기만 표시 (배율은 Real-ESRGAN으로 별도 처리)
   const sizeOptions = ALL_SIZE_OPTIONS.filter(
     (opt) => currentModelDef?.supportedSizes.includes(opt.value)
@@ -501,6 +501,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             multiple
             onChange={handleFileChange}
             className="hidden"
+            aria-label="참조 이미지 파일 선택"
           />
 
           <div className="flex items-center justify-between shrink-0">

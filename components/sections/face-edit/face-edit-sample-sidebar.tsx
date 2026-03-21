@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type Gender = "female" | "male";
@@ -68,9 +69,12 @@ export function FaceEditSampleSidebar() {
                   : "border-transparent group-hover:border-white/20"
               )}
             >
-              <img
+              <Image
                 src={sample.image}
                 alt={sample.label}
+                width={200}
+                height={200}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             </div>

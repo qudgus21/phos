@@ -63,10 +63,8 @@ export class BytePlusProvider implements AIProvider {
 
     if (!res.ok) {
       const text = await res.text();
-      throw new ApiError(
-        `BytePlus API 오류 (${res.status}): ${text}`,
-        502
-      );
+      console.error(`[byteplus] API error (${res.status}):`, text);
+      throw new ApiError("AI 이미지 생성 중 오류가 발생했습니다", 502);
     }
 
     const json = (await res.json()) as ArkResponse;

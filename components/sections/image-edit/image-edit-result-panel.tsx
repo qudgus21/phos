@@ -84,6 +84,7 @@ function ActionButton({
       <button
         type="button"
         onClick={onClick}
+        aria-label={label}
         className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
       >
         <Icon className="w-5 h-5 text-white" />
@@ -374,6 +375,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
+          aria-label="닫기"
           className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer z-10"
         >
           <X className="w-5 h-5 text-white" />
@@ -467,7 +469,7 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
 
       {/* 이미지 로딩 중일 때 숨겨진 img로 프리로드 */}
       {isImageLoading && !isGenerating && outputs.length > 0 && (
-        <img src={outputs[0]} alt="" className="hidden" onLoad={handleImageLoad} />
+        <img src={outputs[0]} alt="" className="hidden" onLoad={handleImageLoad} onError={handleImageLoad} />
       )}
 
       {showPlaceholder ? (

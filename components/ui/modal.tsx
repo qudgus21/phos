@@ -66,6 +66,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
                 <h3 className="text-lg font-bold text-card-foreground">{title}</h3>
                 <button
                   onClick={onClose}
+                  aria-label="닫기"
                   className="p-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -75,6 +76,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
             {!title && (
               <button
                 onClick={onClose}
+                aria-label="닫기"
                 className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
               >
                 <X className="w-5 h-5" />

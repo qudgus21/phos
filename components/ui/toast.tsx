@@ -5,6 +5,8 @@ import {
   useContext,
   useState,
   useCallback,
+  useRef,
+  useEffect,
   type ReactNode,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,16 +50,24 @@ const typeIcons: Record<ToastType, ReactNode> = {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, []);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+    timersRef.current.delete(id);
   }, []);
 
   const toast = useCallback(
     (message: string, type: ToastType = "info", duration: number = 4000) => {
       const id = crypto.randomUUID();
       setToasts((prev) => [...prev, { id, message, type, duration }]);
-      setTimeout(() => removeToast(id), duration);
+      const timer = setTimeout(() => removeToast(id), duration);
+      timersRef.current.set(id, timer);
     },
     [removeToast]
   );
@@ -83,6 +93,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <span className="text-sm font-medium flex-1">{t.message}</span>
               <button
                 onClick={() => removeToast(t.id)}
+                aria-label="알림 닫기"
                 className="p-0.5 rounded hover:bg-white/20 transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />

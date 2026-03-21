@@ -220,9 +220,9 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
         // 항상 WebP 변환 (≤1024px: 포맷만, >1024px: 리사이즈+포맷)
         const MAX = 1024;
         const needsResize = img.width > MAX || img.height > MAX;
-        const scale = needsResize ? MAX / Math.max(img.width, img.height) : 1;
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
+        const resizeScale = needsResize ? MAX / Math.max(img.width, img.height) : 1;
+        const w = Math.round(img.width * resizeScale);
+        const h = Math.round(img.height * resizeScale);
         const canvas = document.createElement("canvas");
         canvas.width = w;
         canvas.height = h;
@@ -586,6 +586,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
               value={activeFilter === "none" ? 0 : filterIntensity}
               onChange={(e) => setFilterIntensity(Number(e.target.value))}
               disabled={activeFilter === "none"}
+              aria-label="필터 강도"
               className={cn(
                 "flex-1 h-1.5 rounded-full appearance-none",
                 activeFilter === "none"
@@ -632,6 +633,8 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             <button
               type="button"
               onClick={() => setFaceReshape((v) => !v)}
+              role="switch"
+              aria-checked={faceReshape}
               className={cn(
                 "relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer",
                 faceReshape ? "bg-primary" : "bg-muted"
@@ -654,6 +657,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
               value={faceReshape ? faceReshapeIntensity : 0}
               onChange={(e) => setFaceReshapeIntensity(Number(e.target.value))}
               disabled={!faceReshape}
+              aria-label="얼굴 보정 강도"
               className={cn(
                 "flex-1 h-1.5 rounded-full appearance-none",
                 faceReshape

@@ -85,10 +85,8 @@ export class ReplicateProvider implements AIProvider {
     }
 
     if (prediction.status === "failed") {
-      throw new ApiError(
-        `Replicate 생성 실패: ${prediction.error ?? "Unknown error"}`,
-        502
-      );
+      console.error("[replicate] prediction failed:", prediction.error);
+      throw new ApiError("AI 이미지 생성에 실패했습니다", 502);
     }
 
     const outputUrls = this.extractUrls(prediction.output);
@@ -121,10 +119,8 @@ export class ReplicateProvider implements AIProvider {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new ApiError(
-          `Replicate API 오류 (${res.status}): ${text}`,
-          502
-        );
+        console.error(`[replicate] API error (${res.status}):`, text);
+        throw new ApiError("AI 이미지 생성 중 오류가 발생했습니다", 502);
       }
 
       return res;

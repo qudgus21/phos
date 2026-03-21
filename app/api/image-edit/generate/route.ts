@@ -13,7 +13,7 @@ import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
-import { ApiError, CreditError, ValidationError } from "@/lib/errors";
+import { CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
 
 const lambda: LambdaClient =
@@ -50,11 +50,14 @@ export const POST = withAuth(async (request, { user }) => {
   if (imageCount < 1 || imageCount > 4) {
     throw new ValidationError("이미지 수는 1~4장이어야 합니다");
   }
+  if (isNaN(width) || isNaN(height) || isNaN(scale)) {
+    throw new ValidationError("크기/배율 값이 올바르지 않습니다");
+  }
 
   // 2. 모델 설정 조회
   const modelDef = getModelDef(modelId);
   if (!modelDef) {
-    throw new ApiError(`지원하지 않는 모델입니다: ${modelId}`, 400);
+    throw new ValidationError("지원하지 않는 모델입니다");
   }
 
   // 3. 이미지 파일 처리 (Replicate Files 업로드 or data URI 변환)
@@ -236,7 +239,7 @@ export const POST = withAuth(async (request, { user }) => {
     feature_type: "image-edit" as const,
     model_id: modelId,
     prompt,
-    input_urls: images.filter((s) => s.startsWith("http")) ?? [],
+    input_urls: images.filter((s) => s.startsWith("http")),
     display_urls: allOutputUrls,
     original_urls: allOutputUrls,
     credits_used: creditCost,

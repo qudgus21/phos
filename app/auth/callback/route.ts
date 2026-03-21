@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(origin);
     }
+    console.error("[auth/callback] code exchange failed:", error.message);
   }
 
   // Implicit flow — token_hash로 직접 인증
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(origin);
     }
+    console.error("[auth/callback] OTP verification failed:", error.message);
   }
 
   return NextResponse.redirect(`${origin}/?error=auth`);

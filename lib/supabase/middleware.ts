@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import type { Database } from "@/lib/types/database";
-import { AuthError, AppError, ApiError, ValidationError } from "@/lib/errors";
+import { AuthError, AppError, ApiError, ValidationError, CreditError } from "@/lib/errors";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ApiErrorResponse } from "@/lib/types/api";
 
@@ -76,11 +76,13 @@ export function withAuth(handler: RouteHandler) {
             code: err.code,
             message: err.message,
             ...(err instanceof ValidationError && err.fields ? { fields: err.fields } : {}),
+            ...(err instanceof CreditError ? { required: err.required, available: err.available } : {}),
           },
         };
         return NextResponse.json(body, { status: err.statusCode });
       }
 
+      console.error("[withAuth] unhandled error:", err);
       const body: ApiErrorResponse = {
         success: false,
         error: { code: "INTERNAL_ERROR", message: "서버 오류가 발생했습니다" },

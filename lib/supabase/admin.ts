@@ -9,7 +9,10 @@ function requireEnv(key: string): string {
 }
 
 export function createAdminClient() {
-  return createClient<Database>(
+  const cached = (globalThis as Record<string, unknown>).__supabaseAdmin as ReturnType<typeof createClient<Database>> | undefined;
+  if (cached) return cached;
+
+  const client = createClient<Database>(
     requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
     requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
     {
@@ -19,4 +22,7 @@ export function createAdminClient() {
       },
     }
   );
+
+  (globalThis as Record<string, unknown>).__supabaseAdmin = client;
+  return client;
 }

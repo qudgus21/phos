@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Clock, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHistory } from "@/hooks/use-history";
+import type { HistoryRow } from "@/hooks/use-history";
 import { cn } from "@/lib/utils";
 
 function HistoryThumbnail({ src }: { src: string }) {
@@ -98,8 +99,6 @@ function DeleteConfirmModal({
     </div>
   );
 }
-
-import type { HistoryRow } from "@/hooks/use-history";
 
 /* 리터칭 히스토리: metadata → 옵션 요약 텍스트 */
 const FILTER_LABELS: Record<string, string> = { none: "필터 없음", studio: "스튜디오", brightening: "브라이트닝", glow: "글로우" };

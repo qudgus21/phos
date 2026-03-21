@@ -14,7 +14,7 @@ import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
-import { ApiError, CreditError, ValidationError } from "@/lib/errors";
+import { CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
 
 const lambda: LambdaClient =
@@ -44,15 +44,17 @@ export const POST = withAuth(async (request, { user }) => {
 
   const imageFile = formData.get("image") as File | null;
   const filter = formData.get("filter") as string;
-  const filterIntensity = Number(formData.get("filterIntensity") ?? 0.5);
+  const filterIntensityRaw = Number(formData.get("filterIntensity") ?? 0.5);
+  const filterIntensity = isNaN(filterIntensityRaw) ? 0.5 : filterIntensityRaw;
   const gender = formData.get("gender") as string;
   const mode = formData.get("mode") as string;
   const excludedAreasRaw = formData.get("excludedAreas") as string;
   const faceReshape = formData.get("faceReshape") === "true";
-  const faceReshapeIntensity = Number(formData.get("faceReshapeIntensity") ?? 0.5);
+  const faceReshapeIntensityRaw = Number(formData.get("faceReshapeIntensity") ?? 0.5);
+  const faceReshapeIntensity = isNaN(faceReshapeIntensityRaw) ? 0.5 : faceReshapeIntensityRaw;
   const outputSize = formData.get("outputSize") as string;
   const ratio = formData.get("ratio") as string;
-  const scale = Number(formData.get("scale") ?? 1);
+  const scale = Number(formData.get("scale") || 1);
 
   // 2. 유효성 검증
   if (!imageFile || !(imageFile instanceof File) || imageFile.size === 0) {
@@ -81,14 +83,16 @@ export const POST = withAuth(async (request, { user }) => {
     throw new ValidationError("올바르지 않은 비율입니다");
   }
 
-  const excludedAreas = excludedAreasRaw
-    ? excludedAreasRaw.split(",").filter((a) => VALID_AREAS.includes(a as typeof VALID_AREAS[number]))
-    : [];
+  const rawAreas = excludedAreasRaw ? excludedAreasRaw.split(",") : [];
+  const excludedAreas = rawAreas.filter((a) => VALID_AREAS.includes(a as typeof VALID_AREAS[number]));
+  if (rawAreas.length !== excludedAreas.length) {
+    console.warn("[retouching] invalid excludedAreas ignored:", rawAreas.filter(a => !excludedAreas.includes(a)));
+  }
 
   // 3. 모델 설정
   const modelDef = getRetouchingModelDef(DEFAULT_MODEL_ID);
   if (!modelDef) {
-    throw new ApiError(`지원하지 않는 모델입니다: ${DEFAULT_MODEL_ID}`, 400);
+    throw new ValidationError("지원하지 않는 모델입니다");
   }
 
   // 4. 프롬프트 생성
@@ -106,10 +110,7 @@ export const POST = withAuth(async (request, { user }) => {
     console.log("[retouching] prompt:", builtPrompt);
   }
 
-  // 5. 이미지 업로드 (Replicate Files) — 클라이언트에서 1024px WebP 변환 완료
-  const imageUrl = await uploadFileToReplicate(imageFile, imageFile.name);
-
-  // 6. 크레딧 + 플랜 정보 조회
+  // 5. 크레딧 + 플랜 정보 조회 (업로드 전 검증)
   const creditInfo = await getUserCreditInfo(user.id);
 
   const cooldownRemaining = checkCooldown(
@@ -121,6 +122,9 @@ export const POST = withAuth(async (request, { user }) => {
       `${Math.ceil(cooldownRemaining / 60)}분 후에 다시 시도해주세요`
     );
   }
+
+  // 6. 이미지 업로드 (Replicate Files) — 클라이언트에서 1024px WebP 변환 완료
+  const imageUrl = await uploadFileToReplicate(imageFile, imageFile.name);
 
   // 7. DRY_RUN 모드
   const isDryRun = process.env.DRY_RUN === "true";

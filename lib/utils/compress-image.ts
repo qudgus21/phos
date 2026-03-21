@@ -40,7 +40,11 @@ export async function compressImageForFavorite(
   ctx.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
 
-  return new Promise<Blob>((resolve) =>
-    canvas.toBlob((b) => resolve(b!), "image/webp", WEBP_QUALITY)
+  return new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("이미지 변환에 실패했습니다"))),
+      "image/webp",
+      WEBP_QUALITY
+    )
   );
 }

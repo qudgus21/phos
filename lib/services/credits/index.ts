@@ -83,7 +83,8 @@ export async function deductCredits(
   });
 
   if (error) {
-    throw new Error(`크레딧 차감 실패: ${error.message}`);
+    console.error("[deductCredits] RPC failed:", error);
+    throw new Error("크레딧 차감 중 오류가 발생했습니다");
   }
 
   const result = data as Record<string, unknown>;
@@ -120,27 +121,39 @@ export async function refundCredits(
 ): Promise<void> {
   const admin = createAdminClient();
 
+  const refundPromises: PromiseLike<void>[] = [];
+
   if (onetimeAmount > 0) {
-    await admin.rpc("add_credits", {
-      p_user_id: userId,
-      p_amount: onetimeAmount,
-      p_credit_type: "onetime",
-      p_transaction_type: "refund",
-      p_description: description ?? "생성 실패 환불 (onetime)",
-      p_metadata: metadata ?? {},
-    });
+    refundPromises.push(
+      admin.rpc("add_credits", {
+        p_user_id: userId,
+        p_amount: onetimeAmount,
+        p_credit_type: "onetime",
+        p_transaction_type: "refund",
+        p_description: description ?? "생성 실패 환불 (onetime)",
+        p_metadata: metadata ?? {},
+      }).then(({ error }) => {
+        if (error) console.error("[refundCredits] onetime refund failed:", error);
+      })
+    );
   }
 
   if (subscriptionAmount > 0) {
-    await admin.rpc("add_credits", {
-      p_user_id: userId,
-      p_amount: subscriptionAmount,
-      p_credit_type: "subscription",
-      p_transaction_type: "refund",
-      p_description: description ?? "생성 실패 환불 (subscription)",
-      p_metadata: metadata ?? {},
-    });
+    refundPromises.push(
+      admin.rpc("add_credits", {
+        p_user_id: userId,
+        p_amount: subscriptionAmount,
+        p_credit_type: "subscription",
+        p_transaction_type: "refund",
+        p_description: description ?? "생성 실패 환불 (subscription)",
+        p_metadata: metadata ?? {},
+      }).then(({ error }) => {
+        if (error) console.error("[refundCredits] subscription refund failed:", error);
+      })
+    );
   }
+
+  await Promise.all(refundPromises);
 }
 
 /**

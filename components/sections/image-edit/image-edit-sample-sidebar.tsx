@@ -222,8 +222,12 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
       onClose={() => setDeletingFavId(null)}
       onConfirm={async () => {
         if (deletingFavId) {
-          await deleteFavorite(deletingFavId);
-          toast("즐겨찾기를 삭제했습니다", "success");
+          try {
+            await deleteFavorite(deletingFavId);
+            toast("즐겨찾기를 삭제했습니다", "success");
+          } catch {
+            toast("삭제에 실패했습니다", "error");
+          }
           setDeletingFavId(null);
         }
       }}

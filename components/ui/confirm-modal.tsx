@@ -31,7 +31,7 @@ export function ConfirmModal({
         <div
           className={
             variant === "danger"
-              ? "w-11 h-11 rounded-full bg-error/15 flex items-center justify-center"
+              ? "w-11 h-11 rounded-full bg-error/15 flex items-center justify-center mb-4"
               : "w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center mb-4"
           }
         >

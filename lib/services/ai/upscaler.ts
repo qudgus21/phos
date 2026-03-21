@@ -30,7 +30,8 @@ async function fetchWithRetry(
 
     if (!res.ok) {
       const text = await res.text();
-      throw new ApiError(`Upscaler API 오류 (${res.status}): ${text}`, 502);
+      console.error(`[upscaler] API error (${res.status}):`, text);
+      throw new ApiError("이미지 업스케일 중 오류가 발생했습니다", 502);
     }
 
     return res;
@@ -82,10 +83,8 @@ export async function upscaleImage(
   }
 
   if (prediction.status === "failed") {
-    throw new ApiError(
-      `Upscale 실패: ${prediction.error ?? "Unknown error"}`,
-      502
-    );
+    console.error("[upscaler] prediction failed:", prediction.error);
+    throw new ApiError("이미지 업스케일에 실패했습니다", 502);
   }
 
   if (!prediction.output || typeof prediction.output !== "string") {
