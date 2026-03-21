@@ -53,9 +53,6 @@ const MODE_OPTIONS = [
 
 const CREDIT_COST = 80;
 
-const sliderThumb =
-  "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer";
-
 const SCALE_OPTIONS = [
   { value: "1", label: "1K" },
   { value: "2", label: "2K" },
@@ -215,6 +212,10 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
           toast("이미지가 너무 작습니다 (100×100px 이상)", "warning");
           return;
         }
+        if (img.width > 8192 || img.height > 8192) {
+          toast("이미지가 너무 큽니다 (8192px 이하)", "warning");
+          return;
+        }
 
         // 항상 WebP 변환 (≤1024px: 포맷만, >1024px: 리사이즈+포맷)
         const MAX = 1024;
@@ -284,6 +285,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     if (!sampleId) return;
     const sample = RETOUCHING_SAMPLES.find((s) => s.id === sampleId);
     if (!sample) return;
+    const controller = new AbortController();
     setActiveFilter(sample.settings.filter);
     setFilterIntensity(sample.settings.filterIntensity);
     setGender(sample.settings.gender);
@@ -297,30 +299,37 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     // File 객체 생성 (생성 시 필요)
     (async () => {
       try {
-        const res = await fetch(sample.before);
+        const res = await fetch(sample.before, { signal: controller.signal });
         const blob = await res.blob();
         const ext = sample.before.endsWith(".webp") ? "webp" : "png";
         const file = new File([blob], `sample-${sampleId}.${ext}`, { type: blob.type || `image/${ext}` });
-        setUploadedFile(file);
+        if (!controller.signal.aborted) setUploadedFile(file);
       } catch {
-        // 로컬 이미지 fetch 실패 시 무시
+        // fetch 취소 또는 실패 시 무시
       }
     })();
+    return () => controller.abort();
   }, [sampleId]);
 
   // 외부에서 이미지 URL 주입 (결과 → 입력 재사용)
   useEffect(() => {
     if (!externalImageUrl) return;
+    const controller = new AbortController();
     const cleanUrl = externalImageUrl.replace(/#.*$/, "");
     // 즉시 미리보기 반영
     setUploadedImage(cleanUrl);
     // 백그라운드에서 File 객체 생성
     (async () => {
-      const res = await fetch(cleanUrl);
-      const blob = await res.blob();
-      const file = new File([blob], `input-${Date.now()}.png`, { type: blob.type || "image/png" });
-      setUploadedFile(file);
+      try {
+        const res = await fetch(cleanUrl, { signal: controller.signal });
+        const blob = await res.blob();
+        const file = new File([blob], `input-${Date.now()}.png`, { type: blob.type || "image/png" });
+        if (!controller.signal.aborted) setUploadedFile(file);
+      } catch {
+        // fetch 취소 또는 실패 시 무시
+      }
     })();
+    return () => controller.abort();
   }, [externalImageUrl]);
 
   const toggleArea = useCallback((id: string) => {
@@ -352,7 +361,10 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             const res = await fetch(url);
             const blob = await res.blob();
             setUploadedFile(new File([blob], `fav-${Date.now()}.webp`, { type: blob.type || "image/webp" }));
-          } catch { /* ignore */ }
+          } catch {
+            toast("이미지를 불러오지 못했습니다. 다시 업로드해주세요", "warning");
+            setUploadedImage(null);
+          }
         })();
       }
       toast("즐겨찾기를 불러왔습니다", "success");

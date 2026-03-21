@@ -126,6 +126,7 @@ export function RetouchingSampleSidebar({
                 alt={sample.label}
                 width={200}
                 height={200}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             </button>
@@ -223,9 +224,14 @@ export function RetouchingSampleSidebar({
       onClose={() => setDeletingFavId(null)}
       onConfirm={async () => {
         if (deletingFavId) {
-          await deleteFavorite(deletingFavId);
-          toast("즐겨찾기를 삭제했습니다", "success");
-          setDeletingFavId(null);
+          try {
+            await deleteFavorite(deletingFavId);
+            toast("즐겨찾기를 삭제했습니다", "success");
+          } catch {
+            toast("삭제에 실패했습니다", "error");
+          } finally {
+            setDeletingFavId(null);
+          }
         }
       }}
       title="즐겨찾기 삭제"

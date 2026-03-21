@@ -76,6 +76,10 @@ export const POST = withAuth(async (request, { user }) => {
   if (!["auto", "2K", "4K"].includes(outputSize)) {
     throw new ValidationError("올바르지 않은 출력 크기입니다");
   }
+  const VALID_RATIOS = ["1:1", "3:2", "2:3"] as const;
+  if (!VALID_RATIOS.includes(ratio as typeof VALID_RATIOS[number])) {
+    throw new ValidationError("올바르지 않은 비율입니다");
+  }
 
   const excludedAreas = excludedAreasRaw
     ? excludedAreasRaw.split(",").filter((a) => VALID_AREAS.includes(a as typeof VALID_AREAS[number]))
@@ -98,7 +102,9 @@ export const POST = withAuth(async (request, { user }) => {
     faceReshapeIntensity: Math.max(0, Math.min(1, faceReshapeIntensity)),
   };
   const builtPrompt = buildSkinRetouchPrompt(retouchOptions);
-  console.log("[retouching] prompt:", builtPrompt);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[retouching] prompt:", builtPrompt);
+  }
 
   // 5. 이미지 업로드 (Replicate Files) — 클라이언트에서 1024px WebP 변환 완료
   const imageUrl = await uploadFileToReplicate(imageFile, imageFile.name);
