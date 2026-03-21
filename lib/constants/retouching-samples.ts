@@ -15,6 +15,7 @@ export interface RetouchingSample {
     excludedAreas: string[];
     outputSize: string;
     ratio: string;
+    scale: number;
   };
 }
 
@@ -34,8 +35,9 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: false,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
-      outputSize: "auto",
+      outputSize: "4K",
       ratio: "1:1",
+      scale: 4,
     },
   },
   {
@@ -52,8 +54,9 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: true,
       faceReshapeIntensity: 1.0,
       excludedAreas: [],
-      outputSize: "auto",
+      outputSize: "4K",
       ratio: "1:1",
+      scale: 4,
     },
   },
   {
@@ -70,26 +73,28 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: false,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
-      outputSize: "auto",
+      outputSize: "4K",
       ratio: "1:1",
+      scale: 4,
     },
   },
   {
     id: "4",
     thumbnail: "/images/retouching/sample4/thumb.webp",
-    label: "글로우 메이크업",
+    label: "글로우 매트메이크업",
     before: "/images/retouching/sample4/before.webp",
     after: "/images/retouching/sample4/after.webp",
     settings: {
       filter: "glow",
       filterIntensity: 0.3,
       gender: "female",
-      mode: "soft-makeup",
+      mode: "matte",
       faceReshape: false,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
-      outputSize: "auto",
+      outputSize: "4K",
       ratio: "1:1",
+      scale: 4,
     },
   },
   {
@@ -106,8 +111,9 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: true,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
-      outputSize: "auto",
+      outputSize: "4K",
       ratio: "1:1",
+      scale: 4,
     },
   },
   {
@@ -124,8 +130,9 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
       faceReshape: false,
       faceReshapeIntensity: 0.5,
       excludedAreas: [],
-      outputSize: "auto",
+      outputSize: "4K",
       ratio: "1:1",
+      scale: 4,
     },
   },
 ];

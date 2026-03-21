@@ -293,6 +293,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     setFaceReshape(sample.settings.faceReshape);
     setFaceReshapeIntensity(sample.settings.faceReshapeIntensity);
     setExcludedAreas(sample.settings.excludedAreas);
+    setScale(sample.settings.scale);
     setRatio(sample.settings.ratio);
     // before 이미지를 업로드 영역에 표시
     setUploadedImage(sample.before);
