@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 
@@ -24,6 +25,19 @@ export function ConfirmModal({
   cancelLabel = "취소",
   variant = "default",
 }: ConfirmModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onConfirm();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onConfirm, onClose]);
+
   return (
     <Modal open={open} onClose={onClose} size="sm">
       <div className="flex flex-col items-center text-center pt-2 pb-1">

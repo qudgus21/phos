@@ -64,10 +64,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback(
     (message: string, type: ToastType = "info", duration: number = 4000) => {
-      const id = crypto.randomUUID();
-      setToasts((prev) => [...prev, { id, message, type, duration }]);
-      const timer = setTimeout(() => removeToast(id), duration);
-      timersRef.current.set(id, timer);
+      // 동일 메시지+타입이 이미 표시 중이면 무시
+      setToasts((prev) => {
+        if (prev.some((t) => t.message === message && t.type === type)) return prev;
+        const id = crypto.randomUUID();
+        const timer = setTimeout(() => removeToast(id), duration);
+        timersRef.current.set(id, timer);
+        return [...prev, { id, message, type, duration }];
+      });
     },
     [removeToast]
   );
