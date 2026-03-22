@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Sparkles, Paintbrush, ZoomIn, Download, X, Loader2 } from "lucide-react";
+import { Sparkles, Paintbrush, ZoomIn, Download, X, Loader2, Columns2, ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
 import { useToast } from "@/components/ui/toast";
+import { useSlider } from "@/hooks/use-slider";
 
 const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
 const isOptimizedUrl = (url: string) =>
@@ -293,6 +294,101 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
+/* ── Before/After 비교 슬라이더 ── */
+function CompareSlider({ beforeSrc, afterSrc }: { beforeSrc: string; afterSrc: string }) {
+  const { sliderPos, sliderProps } = useSlider(50);
+
+  return (
+    <div
+      {...sliderProps}
+      className="relative flex-1 min-h-0 m-4 rounded-lg overflow-hidden cursor-col-resize select-none"
+    >
+      {/* After (전체 배경) */}
+      <img
+        src={afterSrc}
+        alt="After"
+        className="absolute inset-0 w-full h-full object-contain"
+        draggable={false}
+      />
+      {/* Before (clip) */}
+      <div
+        className="absolute inset-0"
+        style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+      >
+        <img
+          src={beforeSrc}
+          alt="Before"
+          className="absolute inset-0 w-full h-full object-contain"
+          draggable={false}
+        />
+      </div>
+
+      {/* Divider line */}
+      <div
+        className="absolute top-0 bottom-0 w-[3px] bg-white shadow-[0_0_8px_rgba(0,0,0,0.5)] z-10 -translate-x-1/2"
+        style={{ left: `${sliderPos}%` }}
+      />
+
+      {/* Handle */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border-2 border-white shadow-lg flex items-center justify-center"
+        style={{ left: `${sliderPos}%` }}
+      >
+        <ChevronLeft className="w-3 h-3 text-black/60 -mr-0.5" />
+        <ChevronRight className="w-3 h-3 text-black/60 -ml-0.5" />
+      </div>
+
+      {/* Labels */}
+      <span
+        className="absolute top-3 left-3 px-2 py-0.5 text-[11px] font-semibold text-white bg-black/50 backdrop-blur-sm rounded-md z-10 transition-opacity"
+        style={{ opacity: sliderPos > 8 ? 1 : 0 }}
+      >
+        Before
+      </span>
+      <span
+        className="absolute top-3 right-3 px-2 py-0.5 text-[11px] font-semibold text-white bg-black/50 backdrop-blur-sm rounded-md z-10 transition-opacity"
+        style={{ opacity: sliderPos < 92 ? 1 : 0 }}
+      >
+        After
+      </span>
+    </div>
+  );
+}
+
+/* ── 모드 토글 ── */
+function ViewModeToggle({ mode, onChange }: { mode: "single" | "compare"; onChange: (m: "single" | "compare") => void }) {
+  return (
+    <div className="flex items-center bg-white/[0.06] border border-white/[0.1] rounded-lg p-0.5">
+      <button
+        type="button"
+        onClick={() => onChange("single")}
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer",
+          mode === "single"
+            ? "bg-white/[0.12] text-foreground"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <ImageIcon className="w-3 h-3" />
+        단일
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("compare")}
+        className={cn(
+          "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer",
+          mode === "compare"
+            ? "bg-white/[0.12] text-foreground"
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <Columns2 className="w-3 h-3" />
+        비교
+      </button>
+    </div>
+  );
+}
+
 interface FaceEditResultPanelProps {
   sampleId?: string | null;
   displayUrls?: string[];
@@ -312,6 +408,19 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
     ? originalUrls
     : outputs;
 
+  // before 이미지: 생성 결과가 있으면 입력 이미지, 샘플이면 sample.before
+  const beforeImage = generatingInputImage
+    ?? (activeSample?.before ?? null);
+
+  const [viewMode, setViewMode] = useState<"single" | "compare">(() => {
+    if (typeof window === "undefined") return "single";
+    return (localStorage.getItem("face-edit-view-mode") as "single" | "compare") || "single";
+  });
+
+  const handleViewModeChange = useCallback((m: "single" | "compare") => {
+    setViewMode(m);
+    localStorage.setItem("face-edit-view-mode", m);
+  }, []);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const wasGeneratingRef = useRef(false);
@@ -332,15 +441,20 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
   }, []);
 
   const showPlaceholder = isGenerating || isImageLoading;
+  const hasOutput = outputs.length > 0;
+  const canCompare = hasOutput && !!beforeImage;
 
   return (
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="hidden lg:block px-4 py-3 border-b border-border">
+      <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
           <Sparkles className="w-4 h-4 text-secondary" />
           결과
         </h2>
+        {canCompare && !showPlaceholder && (
+          <ViewModeToggle mode={viewMode} onChange={handleViewModeChange} />
+        )}
       </div>
 
       {/* Preload hidden img */}
@@ -350,22 +464,26 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
 
       {showPlaceholder ? (
         <GeneratingPlaceholder inputImage={generatingInputImage} />
-      ) : outputs.length > 0 ? (
-        <div className="relative flex-1 min-h-0 p-4 group">
-          <Image
-            src={outputs[0]}
-            alt="결과"
-            fill
-            priority
-            unoptimized={isOptimizedUrl(outputs[0])}
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-contain !p-4"
-          />
-          <ImageActionBar
-            src={originals[0]}
-            onZoom={() => setLightboxSrc(originals[0])}
-          />
-        </div>
+      ) : hasOutput ? (
+        viewMode === "compare" && beforeImage ? (
+          <CompareSlider beforeSrc={beforeImage} afterSrc={outputs[0]} />
+        ) : (
+          <div className="relative flex-1 min-h-0 p-4 group">
+            <Image
+              src={outputs[0]}
+              alt="결과"
+              fill
+              priority
+              unoptimized={isOptimizedUrl(outputs[0])}
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-contain !p-4"
+            />
+            <ImageActionBar
+              src={originals[0]}
+              onZoom={() => setLightboxSrc(originals[0])}
+            />
+          </div>
+        )
       ) : (
         /* Empty State */
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">

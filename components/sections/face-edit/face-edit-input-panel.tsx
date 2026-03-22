@@ -53,7 +53,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
   const activeSample = FACE_EDIT_SAMPLES.find((s) => s.id === sampleId);
 
   const [gender, setGender] = useState<"female" | "male">("female");
-  const [strength, setStrength] = useState(0.5);
+  const [strength, setStrength] = useState(1);
   const [scale, setScale] = useState(1);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -396,25 +396,22 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                       삭제
                     </button>
                   </div>
-                  {/* 마스크 버튼 */}
-                  <div className="absolute bottom-2 right-2">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMaskEditorOpen(true);
-                      }}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg backdrop-blur-sm border transition-colors cursor-pointer",
-                        hasMask
-                          ? "text-[#A5B4FC] bg-primary/20 border-primary/30 hover:bg-primary/30"
-                          : "text-card-foreground bg-black/60 border-white/[0.1] hover:bg-black/80"
-                      )}
-                    >
-                      <Paintbrush className="w-3 h-3" />
-                      {hasMask ? "마스크 수정" : "영역 선택하기"}
-                    </button>
-                  </div>
+                  {/* 마스크 수정 버튼 — 마스크 있을 때만 */}
+                  {hasMask && (
+                    <div className="absolute bottom-2 right-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMaskEditorOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg backdrop-blur-sm border transition-colors cursor-pointer text-[#A5B4FC] bg-primary/20 border-primary/30 hover:bg-primary/30"
+                      >
+                        <Paintbrush className="w-3 h-3" />
+                        마스크 수정
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -448,7 +445,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                 type="button"
                 onClick={() => {
                   setGender("female");
-                  setStrength(0.5);
+                  setStrength(1);
                   setScale(1);
                 }}
                 className="p-1 text-white/30 hover:text-white/70 transition-colors cursor-pointer"
