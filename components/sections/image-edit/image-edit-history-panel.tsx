@@ -129,7 +129,7 @@ function getFaceEditSummary(meta: Record<string, unknown> | null): string {
   if (!meta) return "얼굴 변경";
   const parts: string[] = [];
   parts.push(GENDER_LABELS[meta.gender as string] ?? "여성");
-  if (typeof meta.strength === "number") parts.push(`강도 ${meta.strength.toFixed(1)}`);
+  if (meta.strength != null) parts.push(`강도 ${Number(meta.strength).toFixed(1)}`);
   if (meta.scale && meta.scale !== "auto") parts.push(`${meta.scale}K`);
   return parts.join(" · ");
 }

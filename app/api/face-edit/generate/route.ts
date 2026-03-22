@@ -125,9 +125,9 @@ export const POST = withAuth(async (request, { user }) => {
     const prompt = buildFaceEditPrompt(gender as "female" | "male");
 
     // strength에 따라 steps & guidance 매핑
-    // steps: 0.1→15, 1.0→50 / guidance: 0.1→20, 1.0→60 (API 범위: 1.5~100, default 60)
-    const steps = Math.round(15 + ((strength - 0.1) / 0.9) * 35);
-    const guidance = Math.round(20 + ((strength - 0.1) / 0.9) * 40);
+    // steps: 0.1→10, 1.0→35 / guidance: 0.1→10, 1.0→40 (API 범위: 1.5~100, default 60)
+    const steps = Math.round(10 + ((strength - 0.1) / 0.9) * 25);
+    const guidance = Math.round(10 + ((strength - 0.1) / 0.9) * 30);
 
     const provider = resolveProvider({
       provider: "replicate",

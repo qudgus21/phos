@@ -9,29 +9,24 @@
 
 const SHARED_PREFIX = [
   "Inpaint only the white-masked region.",
-  "Preserve every pixel outside the mask exactly as-is: same background, clothing, hair, body, accessories, lighting, color grading, and camera angle.",
-  "The inpainted area must blend seamlessly with the surrounding pixels — matched skin tone, lighting direction, shadow placement, and texture continuity.",
-  "Photorealistic result, high-end commercial retouching quality.",
-  "Natural facial proportions and accurate perspective alignment with the original image.",
-  "No artifacts, no visible seams, no style drift outside the mask.",
+  "Keep the original face identity as much as possible — same bone structure, face shape, and overall appearance.",
+  "Preserve everything outside the mask exactly as-is.",
+  "The inpainted area must blend seamlessly with the surrounding region — matched skin tone, lighting, shadow, and texture.",
+  "Photorealistic, natural result. No artifacts, no visible seams.",
 ].join(" ");
 
 const FEMALE_PROMPT = [
   SHARED_PREFIX,
-  "Generate a beautiful young woman's face in the masked area.",
-  "Soft, clear skin with natural subtle makeup.",
-  "Well-defined but natural features: bright eyes, gentle brow shape, natural lip color.",
-  "Skin texture must match the surrounding area — same warmth, undertone, and lighting response.",
-  "Professional beauty photography quality, studio-grade retouching.",
+  "Naturally enhance the female face in the masked area.",
+  "Clean, clear skin. Subtle natural makeup look.",
+  "Maintain the original facial features and identity.",
 ].join(" ");
 
 const MALE_PROMPT = [
   SHARED_PREFIX,
-  "Generate a handsome young man's face in the masked area.",
-  "Clean, clear skin with natural healthy complexion.",
-  "Well-defined masculine features: strong jawline, natural brow, sharp eyes.",
-  "Skin texture must match the surrounding area — same warmth, undertone, and lighting response.",
-  "Professional portrait photography quality, natural grooming look.",
+  "Naturally enhance the male face in the masked area.",
+  "Clean, clear skin. Natural healthy complexion.",
+  "Maintain the original facial features and identity.",
 ].join(" ");
 
 export function buildFaceEditPrompt(gender: "female" | "male"): string {
