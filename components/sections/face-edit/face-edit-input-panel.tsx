@@ -9,10 +9,13 @@ import { useToast } from "@/components/ui/toast";
 import { FaceEditMaskEditor } from "./face-edit-mask-editor";
 import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
 import { prependHistoryItem } from "@/hooks/use-history";
+import { createClient } from "@/lib/supabase/client";
+import { compressImageForFavorite } from "@/lib/utils/compress-image";
 
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 const SCALE_OPTIONS = [
+  { value: "auto", label: "Auto" },
   { value: "1", label: "1K" },
   { value: "2", label: "2K" },
   { value: "3", label: "3K" },
@@ -34,7 +37,7 @@ export interface FaceEditInputPanelHandle {
   getCurrentSettings: () => {
     gender: "female" | "male";
     strength: number;
-    scale: number;
+    scale: string;
     image: File | string | null;
     maskBlob: Blob | null;
   };
@@ -43,7 +46,7 @@ export interface FaceEditInputPanelHandle {
 interface FaceEditInputPanelProps {
   sampleId?: string | null;
   onGenerate?: (outputUrls: string[]) => void;
-  onGenerateStart?: (inputImage: string | null) => void;
+  onGenerateStart?: (inputImage: string | null, scale?: string) => void;
   onGenerateEnd?: () => void;
 }
 
@@ -54,12 +57,13 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
 
   const [gender, setGender] = useState<"female" | "male">("female");
   const [strength, setStrength] = useState(1);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState<string>("auto");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [maskEditorOpen, setMaskEditorOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [maskDataUrl, setMaskDataUrl] = useState<string | null>(null);
   const [maskBlob, setMaskBlob] = useState<Blob | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -90,7 +94,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       setFileName("샘플 이미지");
       setGender(activeSample.settings.gender);
       setStrength(activeSample.settings.strength);
-      setScale(activeSample.settings.scale);
+      setScale(String(activeSample.settings.scale));
       setMaskDataUrl(null);
       setMaskBlob(null);
     }
@@ -108,7 +112,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         setFileName("샘플 이미지");
         setGender(sample.settings.gender);
         setStrength(sample.settings.strength);
-        setScale(sample.settings.scale);
+        setScale(String(sample.settings.scale));
         setMaskDataUrl(null);
         setMaskBlob(null);
       }
@@ -117,7 +121,8 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       const meta = fav.metadata ?? {};
       if (meta.gender === "female" || meta.gender === "male") setGender(meta.gender);
       if (typeof meta.strength === "number") setStrength(meta.strength);
-      if (typeof fav.scale === "number" && fav.scale >= 1) setScale(fav.scale);
+      if (typeof fav.scale === "number" && fav.scale >= 1) setScale(String(fav.scale));
+      if (typeof meta.scale === "string") setScale(meta.scale);
       if (fav.reference_image_urls?.length > 0) {
         setUploadedImage(fav.reference_image_urls[0]);
         setUploadedFile(null);
@@ -188,7 +193,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     prevSampleIdRef.current = null;
   }, []);
 
-  const handleMaskSave = useCallback((dataUrl: string, blob: Blob) => {
+  const handleMaskSave = useCallback((dataUrl: string | null, blob: Blob | null) => {
     setMaskDataUrl(dataUrl);
     setMaskBlob(blob);
   }, []);
@@ -214,16 +219,43 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     if (isGenerating) return;
 
     setIsGenerating(true);
-    onGenerateStart?.(uploadedImage);
+    onGenerateStart?.(uploadedImage, scale);
     window.dispatchEvent(
       new CustomEvent("credits-updated", { detail: { delta: -CREDIT_COST } })
     );
 
     try {
+      // 입력 이미지를 WebP 압축 → Supabase Storage 영구 업로드
+      let permanentInputUrl: string | null = null;
+      if (uploadedImage) {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const compressed = await compressImageForFavorite(
+            uploadedFile ?? uploadedImage
+          );
+          const path = `inputs/${user.id}/${Date.now()}.webp`;
+          const { error: uploadErr } = await supabase.storage
+            .from("generation-outputs")
+            .upload(path, compressed, { contentType: "image/webp", upsert: false });
+          if (!uploadErr) {
+            const { data: { publicUrl } } = supabase.storage
+              .from("generation-outputs")
+              .getPublicUrl(path);
+            permanentInputUrl = publicUrl;
+          }
+        }
+      }
+
       const fd = new FormData();
       fd.append("gender", gender);
       fd.append("strength", String(strength));
       fd.append("scale", String(scale));
+
+      // 영구 URL이 있으면 API에도 전달 (히스토리 input_urls에 저장)
+      if (permanentInputUrl) {
+        fd.append("inputImageUrl", permanentInputUrl);
+      }
 
       // 이미지
       if (uploadedFile) {
@@ -255,11 +287,12 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         throw new Error(data.error?.message ?? "생성에 실패했습니다");
       }
 
+      const inputUrlForHistory = permanentInputUrl ?? (uploadedImage?.startsWith("http") ? uploadedImage : null);
       prependHistoryItem(queryClient, "face-edit", {
         id: data.data.historyId,
         display_urls: data.data.outputUrls,
         original_urls: data.data.outputUrls,
-        input_urls: uploadedImage ? [uploadedImage] : [],
+        input_urls: inputUrlForHistory ? [inputUrlForHistory] : [],
         model_id: "flux-fill-pro",
         prompt: "",
         credits_used: CREDIT_COST,
@@ -284,7 +317,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       setIsGenerating(false);
       onGenerateEnd?.();
     }
-  }, [strength, scale, hasImage, hasMask, isGenerating, uploadedImage, uploadedFile, maskBlob, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
+  }, [gender, strength, scale, hasImage, hasMask, isGenerating, uploadedImage, uploadedFile, maskBlob, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -405,7 +438,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                           e.stopPropagation();
                           setMaskEditorOpen(true);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg backdrop-blur-sm border transition-colors cursor-pointer text-[#A5B4FC] bg-primary/20 border-primary/30 hover:bg-primary/30"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg backdrop-blur-sm border transition-colors cursor-pointer text-[#A5B4FC] bg-black/60 border-white/[0.1] hover:bg-black/80"
                       >
                         <Paintbrush className="w-3 h-3" />
                         마스크 수정
@@ -422,6 +455,16 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                   <p className="text-[15px] text-muted-foreground">
                     JPG, PNG, WebP
                   </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowGuide(true);
+                    }}
+                    className="text-[12px] font-semibold text-primary hover:text-[#818CF8] transition-colors cursor-pointer mt-1"
+                  >
+                    생성 이미지 가이드 →
+                  </button>
                 </>
               )}
             </div>
@@ -446,7 +489,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                 onClick={() => {
                   setGender("female");
                   setStrength(1);
-                  setScale(1);
+                  setScale("auto");
                 }}
                 className="p-1 text-white/30 hover:text-white/70 transition-colors cursor-pointer"
                 title="설정 초기화"
@@ -495,11 +538,11 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
 
             {/* 해상도 */}
             <div className="flex items-center gap-3">
-              <span className="text-sm text-card-foreground shrink-0 w-14">해상도</span>
+              <span className="text-sm text-card-foreground shrink-0 w-14">업스케일</span>
               <Dropdown
                 options={SCALE_OPTIONS}
                 value={String(scale)}
-                onChange={(v) => setScale(Number(v))}
+                onChange={(v) => setScale(v)}
                 className="flex-1"
               />
             </div>
@@ -545,6 +588,33 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         />
       )}
 
+      {/* Guide Modal */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="rounded-xl border border-border bg-card shadow-[0_8px_30px_rgba(0,0,0,0.55)] p-5 space-y-3 max-w-xs w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-bold text-card-foreground">생성 이미지 가이드</p>
+            <ul className="space-y-1.5 text-[12px] text-card-foreground/80 leading-relaxed">
+              <li>· 얼굴이 선명하게 보이는 정면 사진을 권장합니다.</li>
+              <li>· 최소 512x512 해상도 이상이 좋습니다.</li>
+              <li>· 마스크는 변경할 얼굴 영역만 정확히 선택해주세요.</li>
+              <li>· 변화 강도가 높을수록 더 큰 변화가 적용됩니다.</li>
+            </ul>
+            <button
+              type="button"
+              onClick={() => setShowGuide(false)}
+              className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-primary hover:bg-[#818CF8] transition-colors cursor-pointer"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
 </>
   );
 });

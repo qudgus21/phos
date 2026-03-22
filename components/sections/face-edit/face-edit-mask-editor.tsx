@@ -19,7 +19,7 @@ import { useMaskCanvas, MaskMode } from "@/hooks/use-mask-canvas";
 interface FaceEditMaskEditorProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (dataUrl: string, blob: Blob) => void;
+  onSave: (dataUrl: string | null, blob: Blob | null) => void;
   imageSrc: string;
   initialMaskDataUrl?: string | null;
 }
@@ -84,13 +84,17 @@ export function FaceEditMaskEditor({
     initialMaskDataUrl,
   });
 
-  /* ── 저장 ── */
+  /* ── 저장 — 원본 이미지 크기로 리사이즈하여 내보냄 ── */
   const handleSave = useCallback(async () => {
-    if (isEmpty()) { onClose(); return; }
-    const result = await exportMask();
+    if (isEmpty()) {
+      onSave(null, null);
+      onClose();
+      return;
+    }
+    const result = await exportMask(imgSize.width || undefined, imgSize.height || undefined);
     if (result) onSave(result.dataUrl, result.blob);
     onClose();
-  }, [exportMask, isEmpty, onSave, onClose]);
+  }, [exportMask, isEmpty, onSave, onClose, imgSize]);
 
   /* ── 닫기 시 변경사항 확인 ── */
   const handleClose = useCallback(() => {

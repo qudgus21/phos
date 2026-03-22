@@ -125,6 +125,15 @@ function getRetouchingSummary(meta: Record<string, unknown> | null): string {
   return parts.join(" · ");
 }
 
+function getFaceEditSummary(meta: Record<string, unknown> | null): string {
+  if (!meta) return "얼굴 변경";
+  const parts: string[] = [];
+  parts.push(GENDER_LABELS[meta.gender as string] ?? "여성");
+  if (typeof meta.strength === "number") parts.push(`강도 ${meta.strength.toFixed(1)}`);
+  if (meta.scale && meta.scale !== "auto") parts.push(`${meta.scale}K`);
+  return parts.join(" · ");
+}
+
 interface ImageEditHistoryPanelProps {
   featureType?: string;
   onSelect?: (displayUrls: string[], originalUrls: string[], inputUrls?: string[]) => void;
@@ -234,9 +243,11 @@ export function ImageEditHistoryPanel({
                     <p className="text-[11px] text-foreground truncate leading-tight">
                       {item.feature_type === "retouching"
                         ? getRetouchingSummary(item.metadata as Record<string, unknown> | null)
-                        : item.prompt.length > 40
-                          ? item.prompt.slice(0, 40) + "..."
-                          : item.prompt}
+                        : item.feature_type === "face-edit"
+                          ? getFaceEditSummary(item.metadata as Record<string, unknown> | null)
+                          : item.prompt.length > 40
+                            ? item.prompt.slice(0, 40) + "..."
+                            : item.prompt}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {formatTime(item.created_at)}

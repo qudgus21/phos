@@ -141,8 +141,9 @@ function RotatingText({ texts, interval = 4000 }: { texts: string[]; interval?: 
   );
 }
 
-function GeneratingPlaceholder({ inputImage }: { inputImage?: string | null }) {
+function GeneratingPlaceholder({ inputImage, willUpscale = false, phase = "generating" }: { inputImage?: string | null; willUpscale?: boolean; phase?: "generating" | "loading" }) {
   const [progress, setProgress] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
@@ -151,6 +152,7 @@ function GeneratingPlaceholder({ inputImage }: { inputImage?: string | null }) {
     const interval = setInterval(() => {
       const sec = (Date.now() - startTimeRef.current) / 1000;
       setProgress(Math.min(95, 100 * (1 - Math.exp(-sec / 60))));
+      setElapsed(sec);
     }, 200);
     return () => clearInterval(interval);
   }, []);
@@ -205,13 +207,31 @@ function GeneratingPlaceholder({ inputImage }: { inputImage?: string | null }) {
           </div>
         </div>
         <div className="text-center space-y-1.5">
-          <p className="text-base font-bold text-foreground">얼굴 변경 중</p>
+          <p className="text-base font-bold text-foreground">
+            {phase === "loading"
+              ? "저장 중"
+              : willUpscale && elapsed > 25
+                ? "업스케일 중"
+                : "얼굴 변경 중"}
+          </p>
           <motion.p
             className="text-sm font-medium text-foreground/70"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <RotatingText texts={["잠시만 기다려 주세요", "페이지를 벗어나지 마세요"]} interval={5000} />
+            <AnimatePresence mode="wait">
+              {phase === "loading" ? (
+                <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  결과를 불러오고 있습니다...
+                </motion.span>
+              ) : willUpscale && elapsed > 25 ? (
+                <motion.span key="upscale" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  고해상도로 변환하고 있습니다...
+                </motion.span>
+              ) : (
+                <RotatingText texts={["잠시만 기다려 주세요", "페이지를 벗어나지 마세요"]} interval={5000} />
+              )}
+            </AnimatePresence>
           </motion.p>
         </div>
       </div>
@@ -395,9 +415,11 @@ interface FaceEditResultPanelProps {
   originalUrls?: string[];
   isGenerating?: boolean;
   generatingInputImage?: string | null;
+  generatingScale?: string;
+  historyBeforeImage?: string | null;
 }
 
-export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGenerating, generatingInputImage }: FaceEditResultPanelProps) {
+export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGenerating, generatingInputImage, generatingScale = "auto", historyBeforeImage }: FaceEditResultPanelProps) {
   const activeSample = FACE_EDIT_SAMPLES.find((s) => s.id === sampleId);
 
   const outputs = displayUrls && displayUrls.length > 0
@@ -408,8 +430,9 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
     ? originalUrls
     : outputs;
 
-  // before 이미지: 생성 결과가 있으면 입력 이미지, 샘플이면 sample.before
+  // before 이미지 우선순위: 생성 시 입력 > 히스토리 input_urls > 샘플 before
   const beforeImage = generatingInputImage
+    ?? historyBeforeImage
     ?? (activeSample?.before ?? null);
 
   const [viewMode, setViewMode] = useState<"single" | "compare">(() => {
@@ -463,7 +486,7 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
       )}
 
       {showPlaceholder ? (
-        <GeneratingPlaceholder inputImage={generatingInputImage} />
+        <GeneratingPlaceholder inputImage={generatingInputImage} willUpscale={generatingScale !== "auto" && Number(generatingScale) >= 2} phase={isImageLoading ? "loading" : "generating"} />
       ) : hasOutput ? (
         viewMode === "compare" && beforeImage ? (
           <CompareSlider beforeSrc={beforeImage} afterSrc={outputs[0]} />

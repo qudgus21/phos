@@ -15,6 +15,8 @@ export default function FaceEditPage() {
   const [originalUrls, setOriginalUrls] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
+  const [generatingScale, setGeneratingScale] = useState<string>("auto");
+  const [beforeImage, setBeforeImage] = useState<string | null>(null);
   const inputPanelRef = useRef<FaceEditInputPanelHandle>(null);
 
   const handleGenerate = useCallback((outputUrls: string[]) => {
@@ -23,9 +25,10 @@ export default function FaceEditPage() {
     setMobileTab("result");
   }, []);
 
-  const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[]) => {
+  const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[], inputUrls?: string[]) => {
     setDisplayUrls(histDisplayUrls);
     setOriginalUrls(histOriginalUrls);
+    setBeforeImage(inputUrls?.[0] ?? null);
     setMobileTab("result");
   }, []);
 
@@ -51,9 +54,10 @@ export default function FaceEditPage() {
               ref={inputPanelRef}
               sampleId={sampleId}
               onGenerate={handleGenerate}
-              onGenerateStart={(inputImage) => {
+              onGenerateStart={(inputImage, scale) => {
                 setIsGenerating(true);
                 setGeneratingInputImage(inputImage);
+                setGeneratingScale(scale ?? "auto");
               }}
               onGenerateEnd={() => {
                 setIsGenerating(false);
@@ -67,6 +71,8 @@ export default function FaceEditPage() {
               originalUrls={originalUrls}
               isGenerating={isGenerating}
               generatingInputImage={generatingInputImage}
+              generatingScale={generatingScale}
+              historyBeforeImage={beforeImage}
             />
           </div>
           <div className={cn("min-h-0", mobileTab !== "history" && "hidden lg:block")}>

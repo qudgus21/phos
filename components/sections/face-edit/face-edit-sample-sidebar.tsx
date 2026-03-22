@@ -119,13 +119,14 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
       prompt: "",
       modelId: "flux-fill-pro",
       ratio: "AUTO",
-      imageSize: `${settings.scale}K`,
-      scale: settings.scale,
+      imageSize: settings.scale === "auto" ? "auto" : `${settings.scale}K`,
+      scale: settings.scale === "auto" ? 1 : Number(settings.scale),
       imageCount: 1,
       images: settings.image ? [settings.image] : [],
       metadata: {
         gender: settings.gender,
         strength: settings.strength,
+        scale: settings.scale,
       },
     });
     toast("즐겨찾기에 저장했습니다", "success");
@@ -139,8 +140,8 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
     const s = inputPanelRef.current?.getCurrentSettings();
     return {
       gender: s?.gender ?? "female",
-      strength: s?.strength ?? 0.5,
-      scale: s?.scale ?? 1,
+      strength: s?.strength ?? 1,
+      scale: s?.scale ?? "auto",
       hasImage: !!s?.image,
       hasMask: !!s?.maskBlob,
     };

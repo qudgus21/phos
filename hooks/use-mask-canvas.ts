@@ -256,12 +256,48 @@ export function useMaskCanvas({
   }, [canvasRef, pushHistory]);
 
   /* ── Export ── */
-  const exportMask = useCallback((): Promise<{ dataUrl: string; blob: Blob } | null> => {
+  /**
+   * 마스크를 내보낸다.
+   * - dataUrl: 프리뷰용 (투명 배경 + 원본 색상 — UI 오버레이용)
+   * - blob: API용 흑백 PNG (흰색=변경, 검정=보존), targetWidth/Height로 리사이즈
+   */
+  const exportMask = useCallback((targetWidth?: number, targetHeight?: number): Promise<{ dataUrl: string; blob: Blob } | null> => {
     const canvas = canvasRef.current;
     if (!canvas) return Promise.resolve(null);
+
+    // 프리뷰용 dataUrl — 원본 캔버스 그대로 (투명 배경 + 파란색)
     const dataUrl = canvas.toDataURL("image/png");
+
+    // API용 흑백 마스크 — 리사이즈 + 색상 변환
+    const w = targetWidth || canvas.width;
+    const h = targetHeight || canvas.height;
+
+    const tmp = document.createElement("canvas");
+    tmp.width = w;
+    tmp.height = h;
+    const ctx = tmp.getContext("2d");
+    if (!ctx) return Promise.resolve(null);
+
+    ctx.drawImage(canvas, 0, 0, w, h);
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] > 10) {
+        data[i] = 255;
+        data[i + 1] = 255;
+        data[i + 2] = 255;
+        data[i + 3] = 255;
+      } else {
+        data[i] = 0;
+        data[i + 1] = 0;
+        data[i + 2] = 0;
+        data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+
     return new Promise((resolve) => {
-      canvas.toBlob((blob) => resolve(blob ? { dataUrl, blob } : null), "image/png");
+      tmp.toBlob((blob) => resolve(blob ? { dataUrl, blob } : null), "image/png");
     });
   }, [canvasRef]);
 

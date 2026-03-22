@@ -64,3 +64,13 @@ Content-Type: application/json
 }
 
 ###
+
+### ============================================
+### 얼굴 변경
+### ============================================
+
+### 얼굴 변경 (FormData — 브라우저 UI에서 테스트)
+### POST {{base}}/api/face-edit/generate
+### params: gender=female, strength=1, scale=auto, image=File, mask=File
+
+###

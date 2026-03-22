@@ -15,7 +15,7 @@ interface FaceEditFavoriteSaveModalProps {
   preview: {
     gender: string;
     strength: number;
-    scale: number;
+    scale: string;
     hasImage: boolean;
     hasMask: boolean;
   };
@@ -90,7 +90,7 @@ export function FaceEditFavoriteSaveModal({
         <div className="flex flex-wrap gap-1.5 mb-4">
           <Badge>{GENDER_LABELS[preview.gender] ?? preview.gender}</Badge>
           <Badge>강도 {preview.strength.toFixed(1)}</Badge>
-          {preview.scale > 1 && <Badge>{preview.scale}K</Badge>}
+          <Badge>{preview.scale === "auto" ? "Auto" : `${preview.scale}K`}</Badge>
           {preview.hasImage && <Badge>참조이미지</Badge>}
           {preview.hasMask && <Badge>마스크</Badge>}
         </div>
