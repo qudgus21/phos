@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
@@ -55,13 +56,18 @@ export function SkinRealism() {
               onMouseLeave={() => setIsHovering(false)}
               onMouseMove={handleMouseMove}
             >
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-8xl opacity-30">🧑</div>
-              </div>
+              <Image
+                src="/images/retouching/sample1/after.webp"
+                alt="AI 피부 보정 결과 — 실사 퀄리티 피부 질감"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                unoptimized
+              />
 
               {/* Magnifier lens */}
               <div
-                className="hidden md:block absolute w-36 h-36 rounded-full pointer-events-none z-10"
+                className="hidden md:block absolute w-36 h-36 rounded-full pointer-events-none z-10 overflow-hidden"
                 style={{
                   left: `${mousePos.x}%`,
                   top: `${mousePos.y}%`,
@@ -71,10 +77,16 @@ export function SkinRealism() {
                   border: "2px solid rgba(255,255,255,0.25)",
                   boxShadow:
                     "0 0 40px rgba(99,102,241,0.15), 0 8px 32px rgba(0,0,0,0.1), inset 0 0 20px rgba(255,255,255,0.05)",
-                  background:
-                    "radial-gradient(circle at 40% 40%, rgba(255,255,255,0.12) 0%, rgba(99,102,241,0.06) 50%, transparent 70%)",
                 }}
               >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: "url(/images/retouching/sample1/after.webp)",
+                    backgroundSize: "400%",
+                    backgroundPosition: `${mousePos.x}% ${mousePos.y}%`,
+                  }}
+                />
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-sm">
                   <span className="text-[10px] font-bold text-white tracking-wide">
                     4x
@@ -124,8 +136,8 @@ export function SkinRealism() {
               variants={fadeInUp}
               className="text-base md:text-lg text-muted-foreground mb-8 leading-relaxed"
             >
-              AI 이미지를 섬세한 피부 질감과 사실적인 디테일로 생생한 결과물로
-              변환합니다.
+              섬세한 피부 질감과 사실적인 디테일로 생생한 결과물을
+              만듭니다.
             </motion.p>
 
             {/* Feature grid — Lucide icons + premium cards */}

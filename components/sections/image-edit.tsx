@@ -1,11 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ArrowRight, ImagePlus, Wand2, Camera } from "lucide-react";
+import { ArrowRight, ImagePlus, Camera, Wand2 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 
@@ -17,7 +18,11 @@ const useCases = [
     title: "이미지를 조합해 새로운 결과물",
     desc: "모델 사진과 상품 사진을 넣고, 자연스럽게 합성된 결과를 받아보세요.",
     prompt: "figure 1의 모델에 figure 2와 동일한 선글라스를 착용시켜줘. 스타일은 모던하게 유지.",
-    inputs: ["모델 사진", "상품 사진"],
+    inputs: [
+      { label: "모델 사진", src: "/images/image-edit/sample2/input1.webp" },
+      { label: "상품 사진", src: "/images/image-edit/sample2/input2.webp" },
+    ],
+    output: "/images/image-edit/sample2/output1.webp",
     resultLabel: "합성 결과",
   },
   {
@@ -27,7 +32,10 @@ const useCases = [
     title: "제품 하나로 상업용 컷 완성",
     desc: "제품 사진 한 장과 프롬프트만으로 스튜디오 촬영 수준의 컨셉 이미지를 생성합니다.",
     prompt: "투명 블루 아크릴 위에 제품을 올리고, 위에서 물이 쏟아지는 하이스피드 촬영 컷. 깔끔한 스카이블루 배경, 8K 제품 촬영.",
-    inputs: ["제품 사진"],
+    inputs: [
+      { label: "제품 사진", src: "/images/image-edit/sample1/input1.webp" },
+    ],
+    output: "/images/image-edit/sample1/output1.webp",
     resultLabel: "컨셉 결과",
   },
   {
@@ -37,7 +45,10 @@ const useCases = [
     title: "포즈, 배경, 스타일을 자유롭게",
     desc: "기존 촬영 이미지의 포즈를 바꾸거나 배경과 소품을 수정할 수 있습니다.",
     prompt: "같은 제품을 화이트 세라믹 접시 위에 배치, 레스토랑 테이블 연출. 따뜻한 조명, 에디토리얼 스틸라이프 무드.",
-    inputs: ["원본 사진"],
+    inputs: [
+      { label: "원본 사진", src: "/images/image-edit/sample4/input1.webp" },
+    ],
+    output: "/images/image-edit/sample4/output1.webp",
     resultLabel: "수정 결과",
   },
 ];
@@ -112,13 +123,20 @@ export function ImageEdit() {
                 "grid gap-3",
                 current.inputs.length > 1 ? "grid-cols-2" : "grid-cols-1"
               )}>
-                {current.inputs.map((label) => (
-                  <div key={label}>
-                    <div className="aspect-square rounded-xl border border-border bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                      <div className="text-center">
-                        <ImagePlus className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground/50">{label}</p>
-                      </div>
+                {current.inputs.map((input) => (
+                  <div key={input.label}>
+                    <div className="relative aspect-square rounded-xl overflow-hidden border border-border">
+                      <Image
+                        src={input.src}
+                        alt={input.label}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 40vw, 200px"
+                        unoptimized
+                      />
+                      <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 text-[10px] font-bold text-white bg-black/50 backdrop-blur-sm rounded-md">
+                        {input.label}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -128,11 +146,21 @@ export function ImageEdit() {
               <ArrowRight className="w-6 h-6 text-primary shrink-0" />
 
               {/* Result */}
-              <div className="aspect-square rounded-xl border-2 border-primary/20 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/20 dark:to-violet-950/20 flex items-center justify-center">
-                <div className="text-center">
-                  <Wand2 className="w-10 h-10 text-primary/30 mx-auto mb-2" />
-                  <p className="text-sm text-primary/50 font-bold">{current.resultLabel}</p>
-                </div>
+              <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-primary/20">
+                <Image
+                  src={current.output}
+                  alt={current.resultLabel}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 40vw, 300px"
+                  unoptimized
+                />
+                <Badge
+                  variant="primary"
+                  className="absolute top-2 right-2 text-[10px] bg-black/50 backdrop-blur-sm border border-white/20 text-white"
+                >
+                  AI Generated
+                </Badge>
               </div>
             </div>
 

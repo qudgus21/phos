@@ -72,8 +72,9 @@ export function Upscale() {
             같은 사진, 다른 퀄리티
           </h2>
           <p className="text-lg md:text-2xl text-muted-foreground">
-            깨진 픽셀, 뭉개진 디테일까지{" "}
-            <span className="font-black text-primary">AI</span>가 복원합니다.
+            모든 보정에 포함된{" "}
+            <span className="font-black text-primary">자동 업스케일</span>로
+            디테일을 복원합니다
           </p>
         </motion.div>
 
@@ -103,7 +104,7 @@ export function Upscale() {
 
             {/* After */}
             <Image
-              src="/images/before-after/after.png"
+              src="/images/home/before-after/after.webp"
               alt="보정 후"
               fill
               className="object-cover"
@@ -118,7 +119,7 @@ export function Upscale() {
               style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
             >
               <Image
-                src="/images/before-after/before.png"
+                src="/images/home/before-after/before.webp"
                 alt="보정 전"
                 fill
                 className="object-cover blur-[1px]"
@@ -179,10 +180,10 @@ export function Upscale() {
             보정 전후 비교
           </p>
           <Link
-            href="#pricing"
+            href="/retouching"
             className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
           >
-            직접 체험해 보기
+            보정하면서 확인하기
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </motion.div>

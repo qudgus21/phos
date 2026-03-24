@@ -4,52 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
-import { useCountUp } from "@/hooks/use-count-up";
 import { useSlider } from "@/hooks/use-slider";
 
-const tags = ["저화질 복원", "피부 리터칭", "대량 보정", "상업용 퀄리티"];
-
-interface StatConfig {
-  end: number;
-  suffix: string;
-  label: string;
-  decimals?: number;
-}
-
-const statConfigs: StatConfig[] = [
-  { end: 100000, suffix: "+", label: "보정 완료", decimals: 0 },
-  { end: 99, suffix: "%", label: "만족도", decimals: 0 },
-  { end: 300000, suffix: "+", label: "다운로드", decimals: 0 },
-];
-
-const trustAudiences = ["이커머스 셀러", "포토그래퍼", "디자이너", "마케터"];
-
-function CountUpStat({ config }: { config: StatConfig }) {
-  const { ref, value } = useCountUp({
-    end: config.end,
-    suffix: config.suffix,
-    duration: 2200,
-    decimals: config.decimals,
-  });
-
-  const display =
-    config.end >= 10000
-      ? value.replace(/,/g, "").replace(/(\d+)\+?/, (_, num) => {
-          const n = parseInt(num);
-          if (n >= 10000) return Math.floor(n / 10000) + "만+";
-          return num + (config.suffix === "+" ? "+" : config.suffix);
-        })
-      : value;
-
-  return (
-    <div ref={ref} className="min-w-[5rem]">
-      <p className="relative -left-px text-2xl md:text-3xl font-bold text-white">
-        {display}
-      </p>
-      <p className="text-xs text-white/40 mt-1">{config.label}</p>
-    </div>
-  );
-}
+const tags = ["피부 리터칭", "이미지 편집", "얼굴 변경", "업스케일"];
 
 function BeforeAfterPreview() {
   const { sliderPos, sliderProps } = useSlider(40);
@@ -62,10 +19,11 @@ function BeforeAfterPreview() {
       >
         {/* After (enhanced) */}
         <Image
-          src="/images/hero/hero-after.jpg"
+          src="/images/home/hero/hero-after.webp"
           alt="AI 보정 후"
           fill
           className="object-cover"
+          unoptimized
         />
 
         {/* Before (degraded) */}
@@ -74,10 +32,11 @@ function BeforeAfterPreview() {
           style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
         >
           <Image
-            src="/images/hero/hero-before.jpg"
+            src="/images/home/hero/hero-before.webp"
             alt="보정 전"
             fill
             className="object-cover"
+            unoptimized
           />
         </div>
 
@@ -136,7 +95,7 @@ export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background base */}
-      <div className="absolute inset-0 bg-[#1a1b2e]" />
+      <div className="absolute inset-0 bg-[#090A14]" />
 
       {/* Ambient glow particles */}
       <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden">
@@ -157,11 +116,12 @@ export function Hero() {
       {/* Model image — right side */}
       <div className="absolute inset-y-0 right-0 w-full md:w-[70%] z-0">
         <Image
-          src="/images/hero/hero-model.png"
+          src="/images/home/hero/hero-model.webp"
           alt="AI로 보정된 고해상도 뷰티 이미지"
           fill
           className="object-cover object-top"
           priority
+          unoptimized
         />
         {/* Left fade */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#1a1b2e] from-5% via-[#1a1b2e]/40 via-30% to-transparent to-60%" />
@@ -202,10 +162,10 @@ export function Hero() {
             variants={fadeInUp}
             className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-8 font-display leading-[1.1] tracking-tight"
           >
-            흐릿한 이미지를
+            AI 보정, 편집, 생성
             <br />
             <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-              실사 퀄리티로
+              프로 퀄리티를 누구나
             </span>
           </motion.h1>
 
@@ -214,10 +174,9 @@ export function Hero() {
             variants={fadeInUp}
             className="text-lg md:text-xl text-white/60 mb-12 leading-relaxed"
           >
-            SNS, 상세페이지, 룩북, 광고 소재까지
+            피부 보정 · 이미지 편집 · 얼굴 변경
             <br className="hidden md:block" />
-            <span className="text-white/80">디테일</span>의 차이가 압도적인
-            차이를 만듭니다
+            하이엔드 실사 이미지, <span className="text-white/80">클릭 한 번</span>이면 충분합니다
           </motion.p>
 
           {/* CTA — E */}
@@ -229,7 +188,7 @@ export function Hero() {
               무료로 보정하기
             </Link>
             <span className="text-sm text-white/50">
-              카드 등록 없이 · 3장 무료
+              카드 등록 없이 · 무료 체험
             </span>
           </motion.div>
 
@@ -241,28 +200,11 @@ export function Hero() {
             <BeforeAfterPreview />
           </motion.div>
 
-          {/* Stats */}
-          <motion.div variants={fadeInUp} className="flex gap-8 mb-10">
-            {statConfigs.map((config) => (
-              <CountUpStat key={config.label} config={config} />
-            ))}
-          </motion.div>
-
-          {/* Trust Bar — C */}
+          {/* Trust Bar */}
           <motion.div variants={fadeInUp}>
-            <p className="text-[11px] text-white/25 mb-3 uppercase tracking-widest">
-              다양한 전문가가 선택한 AI 보정
+            <p className="text-[11px] text-white/35 leading-relaxed">
+              이커머스 셀러 · 포토그래퍼 · 마케터 · 디자이너를 위한 AI 이미지 도구
             </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              {trustAudiences.map((audience) => (
-                <span
-                  key={audience}
-                  className="px-3 py-1 text-[11px] font-medium text-white/30 border border-white/10 rounded-full"
-                >
-                  {audience}
-                </span>
-              ))}
-            </div>
           </motion.div>
         </div>
       </motion.div>

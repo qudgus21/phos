@@ -19,7 +19,7 @@ const monthlyPlans = [
     recommended: false,
     features: [
       "4,500 크레딧",
-      "AI 업스케일링",
+      "업스케일링",
       "피부 보정 (기본)",
       "고해상도 변환",
       "실시간 처리",
@@ -32,7 +32,7 @@ const monthlyPlans = [
     recommended: true,
     features: [
       "9,500 크레딧",
-      "AI 업스케일링",
+      "업스케일링",
       "피부 보정 (기본)",
       "피부 보정 (메이크업)",
       "고해상도 변환",
@@ -47,7 +47,7 @@ const monthlyPlans = [
     recommended: false,
     features: [
       "14,500 크레딧",
-      "AI 업스케일링",
+      "업스케일링",
       "피부 보정 (기본)",
       "피부 보정 (메이크업)",
       "고해상도 변환",

@@ -12,33 +12,24 @@ import Image from "next/image";
 import Link from "next/link";
 
 const samples = [
-  { id: "beauty", label: "뷰티 광고" },
-  { id: "fashion", label: "패션 룩북" },
-  { id: "profile", label: "프로필 · 헤드샷" },
-  { id: "ecommerce", label: "이커머스 상세페이지" },
+  { id: "sample1" },
+  { id: "sample2" },
+  { id: "sample3" },
+  { id: "sample4" },
+  { id: "sample5" },
+  { id: "sample6" },
 ];
 
-const sampleImages: Record<string, { before: string; after: string }> = {
-  beauty: {
-    before: "/images/home/compare/beauty-before.png",
-    after: "/images/home/compare/beauty-after.png",
-  },
-  fashion: {
-    before: "/images/home/compare/fashion-before.png",
-    after: "/images/home/compare/fashion-after.png",
-  },
-  profile: {
-    before: "/images/home/compare/profile-before.png",
-    after: "/images/home/compare/profile-after.png",
-  },
-  ecommerce: {
-    before: "/images/home/compare/ecommerce-before.png",
-    after: "/images/home/compare/ecommerce-after.png",
-  },
-};
+function getSampleImages(id: string) {
+  return {
+    before: `/images/retouching/${id}/before.webp`,
+    after: `/images/retouching/${id}/after.webp`,
+    thumbnail: `/images/retouching/${id}/${id === "sample1" || id === "sample2" || id === "sample3" ? "thumbnail" : "thumb"}.webp`,
+  };
+}
 
 export function SkinRetouch() {
-  const [selected, setSelected] = useState("beauty");
+  const [selected, setSelected] = useState("sample1");
   const { sliderPos, setSliderPos, sliderProps } = useSlider(70);
   const [hasInteracted, setHasInteracted] = useState(false);
   const sweepRef = useRef<HTMLDivElement>(null);
@@ -101,17 +92,17 @@ export function SkinRetouch() {
     setZoomPos({ x: Math.max(15, Math.min(85, x)), y: Math.max(15, Math.min(85, y)) });
   }, []);
 
-  const images = sampleImages[selected];
+  const images = getSampleImages(selected);
 
   return (
     <SectionWrapper className="pt-16 md:pt-20 bg-zinc-100 dark:bg-zinc-950/80">
       <div ref={sweepRef}>
       <motion.div variants={fadeInUp} className="text-center mb-10">
         <h2 className="text-3xl md:text-h3 font-black text-foreground mb-3 font-display">
-          차이를 직접 확인해보세요
+          보정, <span className="gradient-text">이 정도 차이</span>
         </h2>
         <p className="text-lg text-muted-foreground">
-          메이크업 보정부터 업스케일까지, AI 보정 전후를 비교해보세요.
+          슬라이더를 드래그해서 보정 전후를 직접 확인해보세요.
         </p>
       </motion.div>
 
@@ -125,22 +116,20 @@ export function SkinRetouch() {
             key={s.id}
             onClick={() => { setSelected(s.id); setSliderPos(50); setHasInteracted(false); }}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 text-sm md:text-base font-bold rounded-xl border transition-all cursor-pointer",
+              "relative w-10 h-10 rounded-full overflow-hidden border-2 transition-all cursor-pointer",
               selected === s.id
-                ? "bg-foreground text-background border-foreground shadow-lg"
-                : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:text-foreground hover:border-foreground/30"
+                ? "border-primary shadow-[0_0_8px_rgba(99,102,241,0.4)] scale-110"
+                : "border-white/20 opacity-60 hover:opacity-100"
             )}
           >
-            <div className="relative w-7 h-7 rounded-full overflow-hidden shrink-0 border border-white/20">
-              <Image
-                src={sampleImages[s.id].after}
-                alt={s.label}
-                fill
-                className="object-cover"
-                sizes="28px"
-              />
-            </div>
-            {s.label}
+            <Image
+              src={getSampleImages(s.id).thumbnail}
+              alt="보정 샘플"
+              fill
+              className="object-cover"
+              sizes="40px"
+              unoptimized
+            />
           </button>
         ))}
       </motion.div>
@@ -178,16 +167,6 @@ export function SkinRetouch() {
             className="relative aspect-square rounded-2xl overflow-hidden cursor-col-resize select-none border border-border shadow-card-light dark:shadow-card-dark"
             style={{ touchAction: "none" }}
           >
-            {/* Badge */}
-            <div className="absolute top-4 right-4 z-30">
-              <Badge
-                variant="primary"
-                className="backdrop-blur-md bg-black/50 border border-white/20 text-white"
-              >
-                4x 업스케일
-              </Badge>
-            </div>
-
             {/* After */}
             <Image
               src={images.after}
@@ -196,6 +175,7 @@ export function SkinRetouch() {
               className="object-cover"
               draggable={false}
               sizes="(max-width: 768px) 100vw, 560px"
+              unoptimized
             />
 
             {/* Before (clipped) */}
@@ -207,9 +187,10 @@ export function SkinRetouch() {
                 src={images.before}
                 alt="보정 전"
                 fill
-                className="object-cover blur-[0.7px]"
+                className="object-cover"
                 draggable={false}
                 sizes="(max-width: 768px) 100vw, 560px"
+                unoptimized
               />
             </div>
 
@@ -257,7 +238,7 @@ export function SkinRetouch() {
                 </Badge>
               </div>
               <div
-                className="absolute inset-0 blur-[0.7px]"
+                className="absolute inset-0"
                 style={{
                   backgroundImage: `url(${images.before})`,
                   backgroundSize: "400%",
@@ -296,7 +277,7 @@ export function SkinRetouch() {
       {/* Micro CTA */}
       <motion.div variants={fadeInUp} className="text-center mt-6">
         <Link
-          href="#pricing"
+          href="/retouching"
           className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
         >
           내 사진으로 확인하기

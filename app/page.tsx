@@ -11,10 +11,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background relative">
       <Hero />
-      <SkinRetouch />
-      <SkinRealism />
       <ImageEdit />
+      <SkinRetouch />
       <FaceSwap />
+      <SkinRealism />
       <Upscale />
       <Pricing />
       <Footer />
