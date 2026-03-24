@@ -184,7 +184,7 @@ export function Navigation() {
       <nav
         className={cn(
           "glass-nav px-6 lg:px-16 xl:px-24 flex items-center justify-between transition-all duration-300",
-          scrolled ? "py-3" : "py-4"
+          scrolled ? "py-3 glass-nav-scrolled" : "py-4"
         )}
       >
         {/* Logo */}
