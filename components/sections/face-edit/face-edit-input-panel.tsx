@@ -95,8 +95,26 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       setGender(activeSample.settings.gender);
       setStrength(activeSample.settings.strength);
       setScale(String(activeSample.settings.scale));
-      setMaskDataUrl(null);
-      setMaskBlob(null);
+
+      if (activeSample.mask) {
+        fetch(activeSample.mask)
+          .then((res) => res.blob())
+          .then((blob) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setMaskDataUrl(reader.result as string);
+              setMaskBlob(blob);
+            };
+            reader.readAsDataURL(blob);
+          })
+          .catch(() => {
+            setMaskDataUrl(null);
+            setMaskBlob(null);
+          });
+      } else {
+        setMaskDataUrl(null);
+        setMaskBlob(null);
+      }
     }
   }, [sampleId, activeSample]);
 
@@ -104,7 +122,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
   const hasMask = !!maskDataUrl;
 
   useImperativeHandle(ref, () => ({
-    loadSample: (id: string) => {
+    loadSample: async (id: string) => {
       const sample = FACE_EDIT_SAMPLES.find((s) => s.id === id);
       if (sample) {
         setUploadedImage(sample.before);
@@ -113,8 +131,26 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         setGender(sample.settings.gender);
         setStrength(sample.settings.strength);
         setScale(String(sample.settings.scale));
-        setMaskDataUrl(null);
-        setMaskBlob(null);
+
+        if (sample.mask) {
+          try {
+            const res = await fetch(sample.mask);
+            const blob = await res.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            setMaskDataUrl(dataUrl);
+            setMaskBlob(blob);
+          } catch {
+            setMaskDataUrl(null);
+            setMaskBlob(null);
+          }
+        } else {
+          setMaskDataUrl(null);
+          setMaskBlob(null);
+        }
       }
     },
     loadFavorite: (fav) => {

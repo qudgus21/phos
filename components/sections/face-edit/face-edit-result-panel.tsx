@@ -436,9 +436,15 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
     ?? (activeSample?.before ?? null);
 
   const [viewMode, setViewMode] = useState<"single" | "compare">(() => {
+    if (activeSample) return "compare";
     if (typeof window === "undefined") return "single";
     return (localStorage.getItem("face-edit-view-mode") as "single" | "compare") || "single";
   });
+
+  // 샘플 전환 시 항상 비교모드로 전환
+  useEffect(() => {
+    if (activeSample) setViewMode("compare");
+  }, [sampleId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleViewModeChange = useCallback((m: "single" | "compare") => {
     setViewMode(m);
@@ -489,7 +495,7 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
         <GeneratingPlaceholder inputImage={generatingInputImage} willUpscale={generatingScale !== "auto" && Number(generatingScale) >= 2} phase={isImageLoading ? "loading" : "generating"} />
       ) : hasOutput ? (
         viewMode === "compare" && beforeImage ? (
-          <CompareSlider beforeSrc={beforeImage} afterSrc={outputs[0]} />
+          <CompareSlider key={sampleId ?? "result"} beforeSrc={beforeImage} afterSrc={outputs[0]} />
         ) : (
           <div className="relative flex-1 min-h-0 p-4 group">
             <Image

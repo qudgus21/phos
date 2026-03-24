@@ -63,6 +63,17 @@ export function FaceEditMaskEditor({
     return () => observer.disconnect();
   }, [imgSize]);
 
+  /* ── [임시] 마스크 PNG 다운로드 ── */
+  const handleDownloadMask = useCallback(async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "mask.png";
+    a.click();
+  }, [canvasRef]);
+
   const {
     mode,
     setMode,
@@ -167,6 +178,14 @@ export function FaceEditMaskEditor({
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
               <h2 className="text-sm font-bold text-white/90">마스크 편집</h2>
               <div className="flex items-center gap-2">
+                {/* [임시] 마스크 다운로드 버튼 — 샘플 마스크 제작용. 필요 시 hidden 제거 */}
+                <button
+                  type="button"
+                  onClick={handleDownloadMask}
+                  className="hidden px-3 py-1.5 text-xs font-medium text-yellow-400/70 hover:text-yellow-400 border border-yellow-400/30 rounded-lg transition-colors cursor-pointer"
+                >
+                  마스크 다운로드
+                </button>
                 <button
                   type="button"
                   onClick={handleClose}

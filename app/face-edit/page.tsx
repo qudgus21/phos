@@ -25,6 +25,14 @@ export default function FaceEditPage() {
     setMobileTab("result");
   }, []);
 
+  const handleSampleSelect = useCallback((id: string | null) => {
+    setSampleId(id);
+    // 샘플 선택 시 히스토리 결과 초기화 → 샘플 before/after로 전환
+    setDisplayUrls([]);
+    setOriginalUrls([]);
+    setBeforeImage(null);
+  }, []);
+
   const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[], inputUrls?: string[]) => {
     setDisplayUrls(histDisplayUrls);
     setOriginalUrls(histOriginalUrls);
@@ -45,7 +53,7 @@ export default function FaceEditPage() {
         <FaceEditSampleSidebar
           inputPanelRef={inputPanelRef}
           selectedSampleId={sampleId}
-          onSelectSample={setSampleId}
+          onSelectSample={handleSampleSelect}
         />
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.4fr_1.6fr_200px] gap-2.5 min-h-0">

@@ -96,7 +96,13 @@
       "WebFetch(domain:docs.byteplus.com)",
       "mcp__supabase__get_advisors",
       "Bash(source /Applications/hbh/dev/revoa/.env.local)",
-      "Bash(source .env.local)"
+      "Bash(source .env.local)",
+      "Bash(done)",
+      "Bash(cwebp mask.png -o mask.webp -q 80)",
+      "Bash(rm mask.png)",
+      "Bash(mv sample1:*)",
+      "Bash(mv sample5:*)",
+      "Bash(mv sample_tmp sample5)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -83,9 +83,16 @@ export function withAuth(handler: RouteHandler) {
       }
 
       console.error("[withAuth] unhandled error:", err);
+
+      let message = "서버 오류가 발생했습니다";
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes("Cannot connect") || errMsg.includes("Connect call failed")) {
+        message = "AI 서버에 일시적으로 연결할 수 없습니다. 잠시 후 다시 시도해주세요.";
+      }
+
       const body: ApiErrorResponse = {
         success: false,
-        error: { code: "INTERNAL_ERROR", message: "서버 오류가 발생했습니다" },
+        error: { code: "INTERNAL_ERROR", message },
       };
       return NextResponse.json(body, { status: 500 });
     }

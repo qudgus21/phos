@@ -278,11 +278,25 @@ export function useMaskCanvas({
     const ctx = tmp.getContext("2d");
     if (!ctx) return Promise.resolve(null);
 
+    // 1) 마스크를 원본 크기로 리사이즈
     ctx.drawImage(canvas, 0, 0, w, h);
-    const imageData = ctx.getImageData(0, 0, w, h);
+
+    // 2) 경계 페더링 — blur 적용 후 재그리기로 부드러운 마스크 경계 생성
+    //    (hard edge → 검은 선 아티팩트 방지)
+    const feather = Math.max(Math.round(Math.min(w, h) * 0.008), 2);
+    const blurred = document.createElement("canvas");
+    blurred.width = w;
+    blurred.height = h;
+    const bCtx = blurred.getContext("2d")!;
+    bCtx.filter = `blur(${feather}px)`;
+    bCtx.drawImage(tmp, 0, 0);
+
+    // 3) 블러된 결과에서 흑백 이진화
+    const imageData = bCtx.getImageData(0, 0, w, h);
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] > 10) {
+      // 블러 후 alpha가 부드럽게 변하므로 threshold를 약간 올려줌
+      if (data[i + 3] > 20) {
         data[i] = 255;
         data[i + 1] = 255;
         data[i + 2] = 255;

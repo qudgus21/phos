@@ -19,11 +19,11 @@ export interface FaceEditSampleData {
   thumbnail: string;
   before: string;
   after: string;
-  defaultCompare?: boolean;
+  mask?: string;
   settings: {
     gender: Gender;
     strength: number;
-    scale: number;
+    scale: number | "auto";
   };
 }
 
@@ -31,57 +31,64 @@ export const FACE_EDIT_SAMPLES: FaceEditSampleData[] = [
   {
     id: "sample1",
     gender: "female",
-    label: "여성 내추럴",
-    thumbnail: "/images/face-edit/sample1/thumbnail.png",
-    before: "/images/face-edit/sample1/before.png",
-    after: "/images/face-edit/sample1/after.png",
-    defaultCompare: true,
-    settings: { gender: "female", strength: 0.5, scale: 2 },
+    label: "여성 글래머러스",
+    thumbnail: "/images/face-edit/sample1/thumbnail.webp",
+    before: "/images/face-edit/sample1/before.webp",
+    after: "/images/face-edit/sample1/after.webp",
+    mask: "/images/face-edit/sample1/mask.webp",
+    settings: { gender: "female", strength: 0.7, scale: "auto" },
   },
   {
     id: "sample2",
     gender: "male",
     label: "남성 클린",
-    thumbnail: "/images/face-edit/sample2/thumbnail.png",
-    before: "/images/face-edit/sample2/before.png",
-    after: "/images/face-edit/sample2/after.png",
-    settings: { gender: "male", strength: 0.5, scale: 2 },
+    thumbnail: "/images/face-edit/sample2/thumbnail.webp",
+    before: "/images/face-edit/sample2/before.webp",
+    after: "/images/face-edit/sample2/after.webp",
+    mask: "/images/face-edit/sample2/mask.webp",
+    settings: { gender: "female", strength: 0.5, scale: "auto" },
   },
   {
     id: "sample3",
-    gender: "female",
-    label: "여성 엘레강스",
-    thumbnail: "/images/face-edit/sample3/thumbnail.png",
-    before: "/images/face-edit/sample3/before.png",
-    after: "/images/face-edit/sample3/after.png",
-    settings: { gender: "female", strength: 0.6, scale: 2 },
+    gender: "male",
+    label: "남성 클린",
+    thumbnail: "/images/face-edit/sample3/thumbnail.webp",
+    before: "/images/face-edit/sample3/before.webp",
+    after: "/images/face-edit/sample3/after.webp",
+    mask: "/images/face-edit/sample3/mask.webp",
+
+    settings: { gender: "male", strength: 0.7, scale: "auto" },
   },
   {
     id: "sample4",
     gender: "female",
     label: "여성 스튜디오",
-    thumbnail: "/images/face-edit/sample4/thumbnail.png",
-    before: "/images/face-edit/sample4/before.png",
-    after: "/images/face-edit/sample4/after.png",
-    settings: { gender: "female", strength: 0.4, scale: 3 },
+    thumbnail: "/images/face-edit/sample4/thumbnail.webp",
+    before: "/images/face-edit/sample4/before.webp",
+    after: "/images/face-edit/sample4/after.webp",
+    mask: "/images/face-edit/sample4/mask.webp",
+
+    settings: { gender: "female", strength: 0.8, scale: "auto" },
   },
   {
     id: "sample5",
     gender: "female",
-    label: "여성 글래머러스",
-    thumbnail: "/images/face-edit/sample5/thumbnail.png",
-    before: "/images/face-edit/sample5/before.png",
-    after: "/images/face-edit/sample5/after.png",
-    settings: { gender: "female", strength: 0.7, scale: 2 },
+    label: "여성 내추럴",
+    thumbnail: "/images/face-edit/sample5/thumbnail.webp",
+    before: "/images/face-edit/sample5/before.webp",
+    after: "/images/face-edit/sample5/after.webp",
+    mask: "/images/face-edit/sample5/mask.webp",
+    settings: { gender: "female", strength: 0.7, scale: "auto" },
   },
   {
     id: "sample6",
     gender: "male",
     label: "남성 내추럴",
-    thumbnail: "/images/face-edit/sample6/thumbnail.png",
-    before: "/images/face-edit/sample6/before.png",
-    after: "/images/face-edit/sample6/after.png",
-    settings: { gender: "male", strength: 0.4, scale: 2 },
+    thumbnail: "/images/face-edit/sample6/thumbnail.webp",
+    before: "/images/face-edit/sample6/before.webp",
+    after: "/images/face-edit/sample6/after.webp",
+    mask: "/images/face-edit/sample6/mask.webp",
+    settings: { gender: "male", strength: 1.0, scale: "auto" },
   },
 ];
 
