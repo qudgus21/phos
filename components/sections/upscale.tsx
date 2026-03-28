@@ -69,11 +69,11 @@ export function Upscale() {
       <div ref={sweepRef}>
         <motion.div variants={fadeInUp} className="text-center mb-12">
           <h2 className="text-3xl md:text-h2 font-black text-foreground mb-4 font-display">
-            같은 사진, 다른 퀄리티
+            흐릿한 이미지, 선명하게
           </h2>
           <p className="text-lg md:text-2xl text-muted-foreground">
-            모든 보정에 포함된{" "}
-            <span className="font-black text-primary">자동 업스케일</span>로
+            최대{" "}
+            <span className="font-black text-primary">4x 업스케일</span>로
             디테일을 복원합니다
           </p>
         </motion.div>
@@ -89,14 +89,14 @@ export function Upscale() {
               handleInteraction();
               sliderProps.onTouchStart(e);
             }}
-            className="relative max-w-2xl mx-auto aspect-square rounded-2xl overflow-hidden cursor-col-resize select-none border border-border shadow-card-light dark:shadow-card-dark"
+            className="relative max-w-2xl mx-auto aspect-[3/2] rounded-2xl overflow-hidden cursor-col-resize select-none border border-border shadow-card-light dark:shadow-card-dark"
             style={{ touchAction: "none" }}
           >
             {/* 업스케일 배율 배지 */}
             <div className="absolute top-4 right-4 z-30">
               <Badge
                 variant="primary"
-                className="backdrop-blur-md bg-black/50 border border-white/20 text-white"
+                className="backdrop-blur-md bg-black/50 border border-primary/10 text-white"
               >
                 4x 업스케일
               </Badge>
@@ -104,10 +104,11 @@ export function Upscale() {
 
             {/* After */}
             <Image
-              src="/images/home/before-after/after.webp"
-              alt="보정 후"
+              src="/images/home/hero/hero-after.webp"
+              alt="업스케일 후"
               fill
               className="object-cover"
+              style={{ objectPosition: "center 25%" }}
               draggable={false}
               sizes="(max-width: 672px) 100vw, 672px"
               priority
@@ -119,10 +120,11 @@ export function Upscale() {
               style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
             >
               <Image
-                src="/images/home/before-after/before.webp"
-                alt="보정 전"
+                src="/images/home/hero/hero-before.webp"
+                alt="업스케일 전"
                 fill
                 className="object-cover blur-[1px]"
+                style={{ objectPosition: "center 25%" }}
                 draggable={false}
                 sizes="(max-width: 672px) 100vw, 672px"
               />
@@ -175,16 +177,13 @@ export function Upscale() {
         </motion.div>
 
         {/* 마이크로 CTA */}
-        <motion.div variants={fadeInUp} className="text-center mt-6 space-y-3">
-          <p className="text-muted-foreground text-base md:text-lg font-semibold">
-            보정 전후 비교
-          </p>
+        <motion.div variants={fadeInUp} className="text-center mt-6">
           <Link
-            href="/retouching"
-            className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
+            href="/image-edit"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-base transition-all group"
           >
-            보정하면서 확인하기
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            이미지 편집 시작하기
+            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </motion.div>
       </div>

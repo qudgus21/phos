@@ -52,11 +52,16 @@ function useNavScroll() {
 
       if (scrollHeight > 0) {
         setProgress(Math.min(currentScrollY / scrollHeight, 1));
+      } else {
+        setProgress(0);
       }
 
       setScrolled(currentScrollY > 50);
       ticking = false;
     };
+
+    // 페이지 이동 시 초기 상태 반영
+    update();
 
     const onScroll = () => {
       if (!ticking) {

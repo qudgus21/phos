@@ -12,12 +12,12 @@ import Image from "next/image";
 import Link from "next/link";
 
 const samples = [
-  { id: "sample1" },
-  { id: "sample2" },
+  { id: "sample6" },
   { id: "sample3" },
   { id: "sample4" },
+  { id: "sample1" },
+  { id: "sample2" },
   { id: "sample5" },
-  { id: "sample6" },
 ];
 
 function getSampleImages(id: string) {
@@ -29,7 +29,7 @@ function getSampleImages(id: string) {
 }
 
 export function SkinRetouch() {
-  const [selected, setSelected] = useState("sample1");
+  const [selected, setSelected] = useState("sample6");
   const { sliderPos, setSliderPos, sliderProps } = useSlider(70);
   const [hasInteracted, setHasInteracted] = useState(false);
   const sweepRef = useRef<HTMLDivElement>(null);
@@ -97,19 +97,19 @@ export function SkinRetouch() {
   return (
     <SectionWrapper className="pt-16 md:pt-20 bg-zinc-100 dark:bg-zinc-950/80">
       <div ref={sweepRef}>
-      <motion.div variants={fadeInUp} className="text-center mb-10">
+      <motion.div variants={fadeInUp} className="text-center mb-6">
         <h2 className="text-3xl md:text-h3 font-black text-foreground mb-3 font-display">
           보정, <span className="gradient-text">이 정도 차이</span>
         </h2>
         <p className="text-lg text-muted-foreground">
-          슬라이더를 드래그해서 보정 전후를 직접 확인해보세요.
+          보정 전후를 직접 비교해보세요.
         </p>
       </motion.div>
 
       {/* Tab buttons with thumbnails */}
       <motion.div
         variants={fadeInUp}
-        className="flex flex-wrap justify-center gap-2 mb-10"
+        className="flex flex-wrap justify-center gap-2 mb-6"
       >
         {samples.map((s) => (
           <button
@@ -268,7 +268,7 @@ export function SkinRetouch() {
               "text-xs text-center transition-colors duration-300",
               isHovering ? "text-primary" : "text-muted-foreground"
             )}>
-              {isHovering ? "마우스를 움직여 디테일 비교" : "슬라이더에 마우스를 올려보세요"}
+              {isHovering ? "마우스를 움직여 디테일 비교" : "슬라이더 위에서 마우스를 움직여보세요"}
             </p>
           </div>
         </motion.div>
@@ -278,10 +278,10 @@ export function SkinRetouch() {
       <motion.div variants={fadeInUp} className="text-center mt-6">
         <Link
           href="/retouching"
-          className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-base transition-all group"
         >
           내 사진으로 확인하기
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </motion.div>
 

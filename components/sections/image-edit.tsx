@@ -12,31 +12,31 @@ import Link from "next/link";
 
 const useCases = [
   {
+    id: "concept",
+    icon: Camera,
+    tag: "제품 컨셉 촬영",
+    title: "제품 하나로 상업용 컷 완성",
+    desc: "제품 사진 한 장과 설명 한 줄이면 스튜디오 촬영 수준의 컨셉 이미지를 생성합니다.",
+    prompt: "프로페셔널 헤어 제품 모델처럼 포즈를 바꿔줘. 배경은 깔끔하고 미니멀하게 유지.",
+    inputs: [
+      { label: "원본 사진", src: "/images/image-edit/sample1/input1.webp" },
+    ],
+    outputs: ["/images/image-edit/sample1/output1.webp"],
+    resultLabel: "컨셉 결과",
+  },
+  {
     id: "reference",
     icon: ImagePlus,
     tag: "레퍼런스 합성",
     title: "이미지를 조합해 새로운 결과물",
     desc: "모델 사진과 상품 사진을 넣고, 자연스럽게 합성된 결과를 받아보세요.",
-    prompt: "figure 1의 모델에 figure 2와 동일한 선글라스를 착용시켜줘. 스타일은 모던하게 유지.",
+    prompt: "첫 번째 사진의 모델에 두 번째 사진과 동일한 선글라스를 착용시켜줘. 스타일은 모던하게 유지.",
     inputs: [
       { label: "모델 사진", src: "/images/image-edit/sample2/input1.webp" },
       { label: "상품 사진", src: "/images/image-edit/sample2/input2.webp" },
     ],
-    output: "/images/image-edit/sample2/output1.webp",
+    outputs: ["/images/image-edit/sample2/output1.webp"],
     resultLabel: "합성 결과",
-  },
-  {
-    id: "concept",
-    icon: Camera,
-    tag: "제품 컨셉 촬영",
-    title: "제품 하나로 상업용 컷 완성",
-    desc: "제품 사진 한 장과 프롬프트만으로 스튜디오 촬영 수준의 컨셉 이미지를 생성합니다.",
-    prompt: "투명 블루 아크릴 위에 제품을 올리고, 위에서 물이 쏟아지는 하이스피드 촬영 컷. 깔끔한 스카이블루 배경, 8K 제품 촬영.",
-    inputs: [
-      { label: "제품 사진", src: "/images/image-edit/sample1/input1.webp" },
-    ],
-    output: "/images/image-edit/sample1/output1.webp",
-    resultLabel: "컨셉 결과",
   },
   {
     id: "modify",
@@ -44,21 +44,21 @@ const useCases = [
     tag: "연출 수정",
     title: "포즈, 배경, 스타일을 자유롭게",
     desc: "기존 촬영 이미지의 포즈를 바꾸거나 배경과 소품을 수정할 수 있습니다.",
-    prompt: "같은 제품을 화이트 세라믹 접시 위에 배치, 레스토랑 테이블 연출. 따뜻한 조명, 에디토리얼 스틸라이프 무드.",
+    prompt: "올리브 리넨 위에 허브와 밀줄기가 담긴 바구니 안에 제품을 배치. 탑뷰 구도, 자연광, 오가닉 웰니스 무드.",
     inputs: [
-      { label: "원본 사진", src: "/images/image-edit/sample4/input1.webp" },
+      { label: "제품 사진", src: "/images/image-edit/sample4/input1.webp" },
     ],
-    output: "/images/image-edit/sample4/output1.webp",
+    outputs: ["/images/image-edit/sample4/output1.webp"],
     resultLabel: "수정 결과",
   },
 ];
 
 export function ImageEdit() {
-  const [selected, setSelected] = useState("reference");
+  const [selected, setSelected] = useState("concept");
   const current = useCases.find((u) => u.id === selected)!;
 
   return (
-    <SectionWrapper>
+    <SectionWrapper className="pt-20 md:pt-28">
       <motion.div
         variants={staggerContainer}
         initial="hidden"
@@ -67,7 +67,7 @@ export function ImageEdit() {
       >
         <motion.div variants={fadeInUp} className="text-center mb-10">
           <h2 className="text-3xl md:text-h3 font-black text-foreground mb-3 font-display">
-            사진과 프롬프트만으로{" "}
+            사진과 설명 한 줄로{" "}
             <span className="gradient-text">새로운 이미지</span>
           </h2>
           <p className="text-lg text-muted-foreground">
@@ -134,9 +134,12 @@ export function ImageEdit() {
                         sizes="(max-width: 768px) 40vw, 200px"
                         unoptimized
                       />
-                      <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 text-[10px] font-bold text-white bg-black/50 backdrop-blur-sm rounded-md">
+                      <Badge
+                        variant="primary"
+                        className="absolute top-2 left-2 text-[10px] bg-black/50 backdrop-blur-sm text-white"
+                      >
                         {input.label}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                 ))}
@@ -148,7 +151,7 @@ export function ImageEdit() {
               {/* Result */}
               <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-primary/20">
                 <Image
-                  src={current.output}
+                  src={current.outputs[0]}
                   alt={current.resultLabel}
                   fill
                   className="object-cover"
@@ -157,9 +160,9 @@ export function ImageEdit() {
                 />
                 <Badge
                   variant="primary"
-                  className="absolute top-2 right-2 text-[10px] bg-black/50 backdrop-blur-sm border border-white/20 text-white"
+                  className="absolute top-2 right-2 text-[10px] bg-black/50 backdrop-blur-sm text-white"
                 >
-                  AI Generated
+                  AI 생성
                 </Badge>
               </div>
             </div>
@@ -168,7 +171,7 @@ export function ImageEdit() {
             <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-border p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="outline" className="text-[10px]">
-                  프롬프트 예시
+                  입력 예시
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -181,10 +184,10 @@ export function ImageEdit() {
         <motion.div variants={fadeInUp} className="text-center mt-6">
           <Link
             href="/image-edit"
-            className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-base transition-all group"
           >
             이미지 편집 시작하기
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </motion.div>
       </motion.div>

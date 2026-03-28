@@ -5,14 +5,16 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
-import { Scan, Layers, Sun, Sparkles } from "lucide-react";
+import { Scan, Layers, Sun, Sparkles, SlidersHorizontal, Palette } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
 
 const features = [
-  { icon: Scan, title: "정체성 보존", desc: "고유한 특성을 유지하면서 선명도 극대화" },
-  { icon: Layers, title: "실제 질감", desc: "실제 피부처럼 미세한 표면 패턴" },
-  { icon: Sun, title: "3D 음영", desc: "깊이감 있는 조명과 그림자" },
-  { icon: Sparkles, title: "자연스러운 하이라이트", desc: "사실적인 빛 산란과 반사" },
+  { icon: Scan, title: "정체성 보존", desc: "고유한 특성 유지" },
+  { icon: Layers, title: "실제 질감", desc: "미세한 피부 표면 재현" },
+  { icon: Sun, title: "3D 음영", desc: "자연스러운 조명과 그림자" },
+  { icon: Sparkles, title: "하이라이트", desc: "사실적인 빛 반사" },
+  { icon: SlidersHorizontal, title: "필터", desc: "분위기에 맞는 톤 조절" },
+  { icon: Palette, title: "메이크업 보정", desc: "스타일별 메이크업 적용" },
 ];
 
 export function SkinRealism() {

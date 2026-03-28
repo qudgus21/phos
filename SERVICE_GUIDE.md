@@ -32,17 +32,19 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 |---|---|
 | 필터 | 없음 / 스튜디오 / 흰피부 (각 강도 슬라이더 0~100) |
 | 보정 모드 | 보정(기본) / 보정(메이크업) / 보정(매트메이크업) / 물광보정 |
+| 얼굴 리쉐이프 | ON/OFF 토글 |
 | 성별 | 여성 / 남성 |
-| 인종 | 동양인 / 서양인 |
 | 보정 제외 영역 | 입술 / 눈썹 / 코 / 헤어 / 배경 / 의상 (체크박스) |
-| 이미지 스케일 | 0~2x |
+| 이미지 크기/비율 | 사이즈 + 비율 + 스케일 선택 |
 | 크레딧 | 80 / 생성 |
 
-**UI 레이아웃**: 3패널 (입력 | 결과 | 히스토리), 모바일은 탭 전환.
+**UI 레이아웃**: 6컴포넌트 (사이드바 | 입력 | 결과 | 히스토리 | 즐겨찾기 모달 | 모바일 탭).
 
 **AI 전략**: 유저에게 모델 선택을 노출하지 않음. 내부적으로 모드/필터에 따라 프롬프트 분기.
-- 추천 엔진: **Flux Pro 1.1** (img2img) via Replicate
-- 대안: Seedream 5.0, GPT Image 1.5
+- 엔진: **Flux Pro 1.1** (img2img) via Replicate
+- 프롬프트 빌더: `lib/services/ai/prompts/skin-retouch.ts`
+
+**API**: `POST /api/retouching/generate` — 인증 필수, 크레딧 선차감, 실패 시 환불
 
 ---
 
@@ -64,12 +66,13 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 - PNG blob + dataURL로 마스크 export
 - 1:1 픽셀 매핑 (CSS 크기 = Canvas 해상도)
 
-**UI 레이아웃**: 사이드바(샘플 5개) + 에디터 패널 + 히스토리 패널.
+**UI 레이아웃**: 6컴포넌트 (사이드바 | 입력+마스크에디터 | 결과 | 즐겨찾기 모달 | 모바일 탭).
 
 **AI 전략**:
-- 추천 엔진: **Easel AI Advanced Face Swap** via Fal.ai ($0.05/장, 상업 라이선스 OK)
-- 대안: Flux Pro + ControlNet Inpaint
-- **사용 불가**: InstantID, PuLID, IP-Adapter FaceID (InsightFace 비상업 라이선스)
+- 엔진: **FLUX Fill Pro** via Replicate (마스크 기반 인페인팅)
+- 프롬프트 빌더: `lib/services/ai/prompts/face-edit.ts`, `face-change.ts`
+
+**API**: `POST /api/face-edit/generate` — 인증 필수, 크레딧 선차감, 실패 시 환불
 
 ---
 
@@ -79,8 +82,8 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 
 | 설정 항목 | 옵션 |
 |---|---|
-| AI 모델 | Seedream 5.0 / GPT Image / Grok (xAI) / Flux Pro |
-| 이미지 크기 | 1K / 2K / 4K |
+| AI 모델 | Nano Banana Pro / SeedDream 5.0 / 기타 Replicate 모델 |
+| 이미지 크기 | 1K / 2K / 3K / 4K / 커스텀 |
 | 비율 | AUTO / 21:9 / 16:9 / 3:2 / 4:3 / 1:1 / 3:4 / 2:3 / 9:16 |
 | 커스텀 크기 | 1~4096px (가로/세로 직접 입력) |
 | 스케일 | -2 ~ +2 (×0.25 ~ ×4) |
@@ -93,13 +96,15 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 2. **제품 컨셉 촬영** — "물 스플래시 + 아크릴 배경, 8K 제품 촬영"
 3. **연출 수정** — "배경을 카페 인테리어로 변경"
 
-**UI 레이아웃**: 사이드바(샘플 6개) + 입력 패널(프롬프트+이미지) + 결과 패널 + 히스토리 패널.
+**UI 레이아웃**: 6컴포넌트 (사이드바 | 입력(프롬프트+이미지) | 결과 | 히스토리 | 즐겨찾기 모달 | 모바일 탭).
 
 **AI 전략**: 유저가 직접 모델을 선택하는 유일한 기능.
-- **Seedream 5.0** (기본값) — 고품질 실사, ~$0.03/장
-- **GPT Image 1.5** (프리미엄) — 프롬프트 이해력 최고, $0.02~0.25/장
-- **Grok Imagine** — 가성비, $0.02/장
-- **Flux Pro 1.1** — 아트 디렉션 자유도, $0.04/장
+- **Nano Banana Pro** (기본값) — 가성비 실사
+- **SeedDream 5.0** — 고품질 실사, ~$0.03/장
+- Provider: Replicate (폴링 기반 동기 생성)
+- 프롬프트 빌더: `lib/services/ai/prompts/image-edit.ts`, `seedream.ts`
+
+**API**: `POST /api/image-edit/generate` — 인증 필수, 크레딧 선차감, 실패 시 환불
 
 ---
 
@@ -107,11 +112,11 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 
 **목적**: 저해상도 이미지를 AI로 고해상도(2x~16x)로 변환.
 
-**현재 상태**: 랜딩 페이지에 섹션만 존재, 독립 페이지 미구현.
+**현재 상태**: 랜딩 페이지에 섹션 존재 + 업스케일러 서비스 코드 구현 완료, 독립 페이지 미구현.
 
 **AI 전략**:
-- 기본: **Real-ESRGAN** via Replicate (~$0.003/장)
-- 프리미엄: **Magnific AI** via Freepik API (~$0.10+/장)
+- 엔진: **Real-ESRGAN** via Replicate (~$0.003/장) — `lib/services/ai/upscaler.ts`에 구현 완료
+- 429 에러 자동 재시도 + 지수 백오프 포함
 
 ---
 
@@ -125,10 +130,18 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | 이미지 편집 (1K/2K) | 75 크레딧 |
 | 이미지 편집 (4K) | 150 크레딧 |
 
+### 크레딧 시스템 구현
+- **선차감 패턴**: AI 생성 전 `deduct_credits` RPC로 원자적 차감 → 실패 시 `refund_credits`로 환불
+- **이중 잔액**: `onetime_balance` + `subscription_balance` — onetime 우선 차감
+- **낙관적 UI**: `credits-updated` CustomEvent로 GNB 크레딧 즉시 반영
+- **쿨다운**: 플랜별 속도 제한 (FREE: 300초, 유료: 플랜별 상이)
+- **RPC 함수**: `deduct_credits`, `add_credits`, `refund_credits`
+- **서비스**: `lib/services/credits/index.ts` — `getUserCreditInfo`, `deductCredits`, `refundCredits`, `checkCooldown`
+
 ### 월간 구독 플랜
 | 플랜 | 가격 | 크레딧 | 비고 |
 |---|---|---|---|
-| Free | $0 | 200 | 속도 제한, 1장씩만 |
+| Free | $0 | 120 | 속도 제한 (300초 쿨다운), 1장씩만 |
 | Basic | $9 | 4,500 | |
 | Deluxe | $19 | 9,500 | 추천 |
 | Premium | $29 | 14,500 | 베타 기능 포함 |
@@ -158,7 +171,7 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | **클래스 결합** | clsx + tailwind-merge → `cn()` |
 | **유효성 검증** | Zod 4 |
 | **DB / Auth / Storage** | Supabase (PostgreSQL + Auth + Storage) |
-| **AI** | 다중 Provider (Replicate, Stability AI, Fal.ai, OpenAI, xAI 등) |
+| **AI** | 다중 Provider (Replicate, BytePlus Ark) |
 | **패키지 매니저** | Yarn (v1 classic) |
 | **상태관리** | React hooks + Context API (외부 라이브러리 없음) |
 | **테스트** | Playwright 1.58 (dev) |
@@ -171,6 +184,13 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 ```
 /
 ├── app/                              # Next.js App Router
+│   ├── api/
+│   │   ├── credits/balance/route.ts  # 크레딧 잔액 조회
+│   │   ├── history/route.ts          # 생성 이력 삭제
+│   │   ├── image-edit/generate/route.ts   # 이미지 편집 생성
+│   │   ├── retouching/generate/route.ts   # 스킨 리터칭 생성
+│   │   ├── face-edit/generate/route.ts    # 얼굴 편집 생성
+│   │   └── admin/users/route.ts      # 관리자 유저 관리
 │   ├── auth/callback/route.ts        # OAuth PKCE 콜백
 │   ├── data-deletion/page.tsx        # 데이터 삭제 정책
 │   ├── face-edit/page.tsx            # 얼굴 편집 도구
@@ -185,19 +205,19 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 │
 ├── components/
 │   ├── sections/                     # 페이지 섹션 컴포넌트
-│   │   ├── face-edit/                # 얼굴 편집 패널 5개
-│   │   ├── image-edit/               # 이미지 편집 패널 5개
-│   │   ├── retouching/              # 리터칭 패널 4개
-│   │   ├── pricing/                  # 가격 서브컴포넌트 4개
+│   │   ├── face-edit/                # 얼굴 편집 패널 6개
+│   │   ├── image-edit/               # 이미지 편집 패널 6개
+│   │   ├── retouching/               # 리터칭 패널 6개
+│   │   ├── pricing/                  # 가격 서브컴포넌트
 │   │   ├── legal/                    # 법률 페이지 레이아웃
-│   │   ├── hero.tsx                  # 히어로 (Before/After 슬라이더)
-│   │   ├── skin-retouch.tsx          # 스킨 리터칭 소개
-│   │   ├── skin-realism.tsx          # 리얼리즘 기술 소개
-│   │   ├── image-edit.tsx            # 이미지 편집 소개
-│   │   ├── face-swap.tsx             # 얼굴 교체 소개
-│   │   ├── upscale.tsx               # 업스케일 소개
+│   │   ├── hero.tsx                  # 히어로 (파티클 애니메이션)
+│   │   ├── skin-retouch.tsx          # 스킨 리터칭 소개 (Before/After 캐러셀)
+│   │   ├── skin-realism.tsx          # 리얼리즘 기술 소개 (마우스 트래킹 인터랙션)
+│   │   ├── image-edit.tsx            # 이미지 편집 소개 (유즈케이스 갤러리)
+│   │   ├── face-swap.tsx             # 얼굴 교체 소개 (Before/After 샘플)
+│   │   ├── upscale.tsx               # 업스케일 소개 (인터랙티브 슬라이더)
 │   │   ├── pricing.tsx               # 가격 미리보기
-│   │   ├── navigation.tsx            # 글로벌 네비게이션 (인증+스크롤바)
+│   │   ├── navigation.tsx            # 글로벌 네비게이션 (인증+크레딧+스크롤)
 │   │   └── footer.tsx                # 푸터
 │   │
 │   └── ui/                           # 재사용 UI 컴포넌트
@@ -217,36 +237,68 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 ├── hooks/
 │   ├── use-slider.ts                 # Before/After 슬라이더 (mouse+touch)
 │   ├── use-count-up.ts               # 숫자 카운트업 (IntersectionObserver)
-│   └── use-mask-canvas.ts            # 마스크 캔버스 (draw/erase/rect, undo/redo)
+│   ├── use-mask-canvas.ts            # 마스크 캔버스 (draw/erase/rect, undo/redo)
+│   ├── use-credits.ts                # 크레딧 잔액·구독·쿨다운 조회
+│   ├── use-history.ts                # 생성 이력 조회/삭제 (React Query)
+│   └── use-favorites.ts              # 즐겨찾기 저장/로드/삭제 (Supabase Storage)
 │
 ├── lib/
 │   ├── constants/
-│   │   └── samples.ts                # 샘플 이미지 데이터
+│   │   ├── samples.ts                # 이미지 편집 샘플 데이터
+│   │   └── retouching-samples.ts     # 리터칭 샘플 데이터
 │   ├── errors/
 │   │   └── index.ts                  # AppError → ApiError, AuthError, CreditError, ValidationError
-│   ├── services/ai/
-│   │   ├── providers/
-│   │   │   ├── replicate.ts          # ReplicateProvider (stub)
-│   │   │   └── stability.ts         # StabilityProvider (stub)
-│   │   ├── registry.ts              # Provider 팩토리 + 캐시 (싱글턴)
-│   │   └── types.ts                  # AI 타입 re-export
+│   ├── services/
+│   │   ├── credits/
+│   │   │   └── index.ts              # 크레딧 조회·차감·환불·쿨다운
+│   │   └── ai/
+│   │       ├── models.ts             # ModelDef, IMAGE_EDIT_MODELS 정의
+│   │       ├── registry.ts           # Provider 팩토리 + 싱글턴 캐시
+│   │       ├── types.ts              # AIProvider 인터페이스
+│   │       ├── upscaler.ts           # Real-ESRGAN 업스케일러 (Replicate)
+│   │       ├── replicate-files.ts    # Replicate 파일 업로드
+│   │       ├── providers/
+│   │       │   ├── replicate.ts      # ✅ Replicate Provider (Flux Pro, SeedDream 등)
+│   │       │   ├── byteplus.ts       # ✅ BytePlus Ark Provider
+│   │       │   └── stability.ts      # ❌ Stability Provider (stub)
+│   │       └── prompts/
+│   │           ├── index.ts          # 프롬프트 빌더 export
+│   │           ├── image-edit.ts     # 이미지 편집 프롬프트
+│   │           ├── seedream.ts       # SeedDream 프롬프트
+│   │           ├── skin-retouch.ts   # 스킨 리터칭 프롬프트
+│   │           ├── face-edit.ts      # 얼굴 편집 프롬프트
+│   │           └── face-change.ts    # 얼굴 변경 프롬프트
 │   ├── supabase/
 │   │   ├── client.ts                 # 브라우저 클라이언트
 │   │   ├── server.ts                 # 서버 컴포넌트 클라이언트
 │   │   ├── admin.ts                  # 서비스 롤 클라이언트 (RLS 우회)
-│   │   └── middleware.ts            # withAuth() HOF (API 라우트 보호)
+│   │   └── middleware.ts             # withAuth(), withAdminAuth() HOF
 │   ├── types/
 │   │   ├── ai.ts                     # AIProvider, ModelConfig, GenerationInput/Result
 │   │   ├── api.ts                    # ApiResponse<T>, ApiErrorResponse, PaginatedResponse<T>
+│   │   ├── credits.ts                # UserCreditInfo, PlanInfo, DeductResult
 │   │   └── database.ts              # Supabase 테이블 타입 (db-model이 자동 생성)
-│   ├── validations/                  # Zod 스키마 (api-builder가 생성)
-│   ├── animations.ts                # Framer Motion 프리셋 6종
+│   ├── validations/
+│   │   └── image-generation.ts       # Zod 스키마 (모델, 프롬프트, 크기, 비율 등)
+│   ├── utils/
+│   │   └── compress-image.ts         # WebP 이미지 압축
+│   ├── query-keys.ts                 # React Query 키 팩토리
+│   ├── animations.ts                 # Framer Motion 프리셋 6종
 │   └── utils.ts                      # cn() 유틸리티
 │
 ├── supabase/
-│   ├── migrations/
+│   ├── migrations/                   # 15개 마이그레이션
 │   │   ├── 001_create_users_and_credits.sql
-│   │   └── 002_add_user_updated_trigger.sql
+│   │   ├── 002_add_user_updated_trigger.sql
+│   │   ├── 003~004 (구독, 플랜)
+│   │   ├── 005~006 (크레딧 RPC 함수)
+│   │   ├── 007 (유저 역할/관리자)
+│   │   ├── 008 (Free 플랜 초기 크레딧)
+│   │   ├── 009 (인종 컬럼 등)
+│   │   ├── 010 (generation_history 테이블)
+│   │   ├── 011 (데이터 보존 기간)
+│   │   ├── 012~013 (WebP 이미지 최적화)
+│   │   └── 014~015 (즐겨찾기 시스템)
 │   └── templates/
 │       └── confirm-email.html        # 이메일 인증 템플릿
 │
@@ -274,6 +326,7 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | `name` | TEXT? | 표시명 |
 | `avatar_url` | TEXT? | 프로필 이미지 URL |
 | `auth_provider` | TEXT | 'email' / 'google' / 'facebook' |
+| `role` | TEXT | 'user' / 'admin' (기본: user) |
 | `created_at` | TIMESTAMPTZ | 가입일 |
 | `updated_at` | TIMESTAMPTZ | 수정일 |
 
@@ -282,22 +335,70 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 |---|---|---|
 | `id` | UUID (PK) | |
 | `user_id` | UUID (FK → users, UNIQUE) | 1:1 관계 |
-| `balance` | INTEGER | 잔여 크레딧 (기본값: 0) |
+| `onetime_balance` | INTEGER | 일회성 충전 크레딧 (우선 차감) |
+| `subscription_balance` | INTEGER | 구독 크레딧 |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | |
 
+#### `user_subscriptions`
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | UUID (PK) | |
+| `user_id` | UUID (FK → users) | |
+| `plan_id` | UUID (FK → subscription_plans) | |
+| `status` | TEXT | 구독 상태 |
+| `current_period_start` | TIMESTAMPTZ | 현재 구독 시작일 |
+| `current_period_end` | TIMESTAMPTZ | 현재 구독 종료일 |
+
+#### `subscription_plans`
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | UUID (PK) | |
+| `name` | TEXT | Free / Basic / Deluxe / Premium |
+| `credits` | INTEGER | 월간 크레딧 |
+| `price` | INTEGER | 월간 가격 (센트) |
+| `features` | JSONB | 기능 목록 (쿨다운, 배치 수 등) |
+| `retention_days` | INTEGER | 데이터 보존 기간 |
+
+#### `generation_history`
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | UUID (PK) | |
+| `user_id` | UUID (FK → users) | |
+| `feature_type` | TEXT | 'image-edit' / 'retouching' / 'face-edit' |
+| `model_id` | TEXT | 사용된 모델 ID |
+| `prompt` | TEXT (max 2000) | 입력 프롬프트 |
+| `input_urls` | TEXT[] | 입력 이미지 URL 배열 |
+| `output_urls` | TEXT[] | 생성 이미지 URL 배열 (WebP 포함) |
+| `credits_used` | INTEGER | 소모된 크레딧 |
+| `metadata` | JSONB | 기능별 추가 파라미터 |
+| `created_at` | TIMESTAMPTZ | |
+
+#### `favorites`
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | UUID (PK) | |
+| `user_id` | UUID (FK → users) | |
+| `feature_type` | TEXT | 기능 유형 |
+| `metadata` | JSONB | 즐겨찾기 설정 + 이미지 정보 |
+| `created_at` | TIMESTAMPTZ | |
+
 ### 트리거
-1. **`handle_new_user()`** — `auth.users` INSERT 시 → `users` + `user_credits` 행 자동 생성
+1. **`handle_new_user()`** — `auth.users` INSERT 시 → `users` + `user_credits` + Free 플랜 구독 자동 생성
 2. **`handle_user_updated()`** — `auth.users` UPDATE (메타데이터) 시 → `users` 프로필 동기화
+
+### RPC 함수
+| 함수 | 용도 |
+|---|---|
+| `deduct_credits(p_user_id, p_amount)` | 원자적 크레딧 차감 (onetime 우선) |
+| `add_credits(p_user_id, p_amount, p_type)` | 크레딧 추가 |
+| `refund_credits(p_user_id, p_onetime, p_subscription)` | 이중 잔액 환불 |
 
 ### RLS 정책
 - `users`: 본인 행만 SELECT / UPDATE
 - `user_credits`: 본인 크레딧만 SELECT
-
-### 미구현 테이블 (향후 필요)
-- `generations` — 생성 이력 (이미지 URL, 프롬프트, 모델, 소모 크레딧)
-- `credit_transactions` — 크레딧 충전/소모 로그
-- `subscriptions` — 구독 상태 관리
+- `generation_history`: 본인 이력만 SELECT, 서비스 롤만 INSERT
+- `favorites`: 본인 즐겨찾기만 CRUD
 
 ---
 
@@ -321,7 +422,7 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | Browser | `lib/supabase/client.ts` | 클라이언트 컴포넌트에서 사용 |
 | Server | `lib/supabase/server.ts` | 서버 컴포넌트 / API 라우트 |
 | Admin | `lib/supabase/admin.ts` | 서비스 롤 (RLS 우회, 관리자 작업) |
-| Middleware | `lib/supabase/middleware.ts` | `withAuth()` HOF로 API 라우트 보호 |
+| Middleware | `lib/supabase/middleware.ts` | `withAuth()`, `withAdminAuth()` HOF로 API 라우트 보호 |
 
 ---
 
@@ -332,9 +433,19 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 ```
 lib/services/ai/
 ├── providers/
-│   ├── replicate.ts       ← AIProvider 구현체
-│   └── stability.ts       ← AIProvider 구현체
+│   ├── replicate.ts       ← ✅ 구현 완료 (폴링 기반 동기 생성)
+│   ├── byteplus.ts        ← ✅ 구현 완료 (BytePlus Ark API)
+│   └── stability.ts       ← ❌ Stub (미구현)
+├── prompts/
+│   ├── image-edit.ts      ← 이미지 편집 프롬프트 빌더
+│   ├── seedream.ts        ← SeedDream 전용 프롬프트 빌더
+│   ├── skin-retouch.ts    ← 스킨 리터칭 프롬프트 빌더
+│   ├── face-edit.ts       ← 얼굴 편집 프롬프트 빌더
+│   └── face-change.ts     ← 얼굴 변경 프롬프트 빌더
+├── models.ts              ← ModelDef, IMAGE_EDIT_MODELS
 ├── registry.ts            ← getProvider(name), resolveProvider(model)
+├── upscaler.ts            ← Real-ESRGAN 업스케일러
+├── replicate-files.ts     ← Replicate 파일 업로드 유틸리티
 └── types.ts               ← 타입 re-export
 ```
 
@@ -342,37 +453,21 @@ lib/services/ai/
 
 ```typescript
 interface AIProvider {
-  readonly name: AIProviderName;           // "replicate" | "stability"
+  readonly name: AIProviderName;
   generate(model: ModelConfig, input: GenerationInput): Promise<GenerationResult>;
   getStatus(predictionId: string): Promise<"pending" | "processing" | "succeeded" | "failed">;
 }
-
-interface GenerationInput {
-  image?: string;          // base64 또는 URL
-  prompt?: string;
-  negativePrompt?: string;
-  params?: Record<string, unknown>;
-}
-
-interface GenerationResult {
-  outputUrl: string;
-  provider: AIProviderName;
-  modelId: string;
-  durationMs: number;
-  metadata?: Record<string, unknown>;
-}
 ```
 
-### 현재 상태
-- 두 Provider 모두 **stub** (501 에러 throw)
-- API 라우트 미구현 (`app/api/` 디렉토리 없음)
-- 실제 AI 호출 로직 개발 필요
-
-### 확장 계획
-Provider 추가 시 `AIProvider` 인터페이스 구현 후 `registry.ts`에 등록:
-- `FalProvider` — Fal.ai (얼굴 편집)
-- `OpenAIProvider` — GPT Image (이미지 편집)
-- `XAIProvider` — Grok Imagine (이미지 편집)
+### 지원 모델
+| 모델 | Provider | 용도 |
+|---|---|---|
+| Flux Pro 1.1 | Replicate | 리터칭, 이미지 편집 |
+| FLUX Fill Pro | Replicate | 얼굴 편집 (마스크 인페인팅) |
+| Nano Banana Pro | Replicate | 이미지 편집 (기본) |
+| SeedDream 5.0 | Replicate | 이미지 편집 (고품질) |
+| Real-ESRGAN | Replicate | 업스케일 |
+| BytePlus Ark | BytePlus | 텍스트→이미지 (레퍼런스 지원) |
 
 ---
 
@@ -475,10 +570,11 @@ PHOS는 **랜딩 테마**(마케팅 페이지)와 **에디터 테마**(도구 �
 
 ### 도구 페이지 (`/retouching`, `/face-edit`, `/image-edit`)
 - 페이지 래퍼에 `editor-theme` 클래스
-- 3패널 반응형 그리드: 입력 | 결과 | 히스토리
+- 6컴포넌트 구성: 사이드바 | 입력 | 결과 | 히스토리 | 즐겨찾기 모달 | 모바일 탭
 - 모바일: 탭 기반 전환 (`*-mobile-tabs.tsx`)
 - Client Component (`"use client"`)
-- 로컬 state + refs로 상태 관리
+- 로컬 state + refs + React Query로 상태 관리
+- 공통 훅: `use-credits`, `use-history`, `use-favorites`
 
 ### 법률 페이지 (`/terms`, `/privacy`, `/data-deletion`)
 - `LegalPageLayout` 공통 래퍼
@@ -544,16 +640,19 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=      # 퍼블릭 anon 키
 SUPABASE_SERVICE_ROLE_KEY=          # 서버 전용 서비스 롤 키
 SUPABASE_ACCESS_TOKEN=              # MCP 도구용 액세스 토큰
 
-# AI Providers (구현 시 필요)
-REPLICATE_API_TOKEN=
-STABILITY_API_KEY=
-FAL_AI_API_KEY=
-OPENAI_API_KEY=
-XAI_API_KEY=
+# AI Providers
+REPLICATE_API_TOKEN=                # ✅ Replicate (메인 Provider)
+ARK_API_KEY=                        # BytePlus Ark
 
-# 테스트
-TEST_USER_EMAIL=
-TEST_USER_PASSWORD=
+# 기타
+UNSPLASH_ACCESS_KEY=                # 샘플 이미지 소스
+
+# 기능 플래그
+NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER=   # 이미지 최적화 스킵 (테스트용)
+DRY_RUN=                            # API 드라이런 모드 (테스트용)
+
+# 미구현 (향후)
+STABILITY_API_KEY=
 ```
 
 ---
@@ -562,25 +661,28 @@ TEST_USER_PASSWORD=
 
 ### 완료된 것
 - [x] 랜딩 페이지 전체 (Hero, 기능 소개 6섹션, 프라이싱 미리보기, 푸터)
-- [x] 리터칭 페이지 UI (3패널 레이아웃, 설정 옵션 전체)
-- [x] 얼굴 편집 페이지 UI (마스크 에디터, 샘플 사이드바)
-- [x] 이미지 편집 페이지 UI (프롬프트 입력, 다중 이미지 업로드, 모델 선택)
+- [x] 리터칭 페이지 — UI + API + AI 생성 + 크레딧 차감 + 히스토리 + 즐겨찾기
+- [x] 얼굴 편집 페이지 — UI + 마스크 에디터 + API + AI 생성 + 크레딧 차감 + 즐겨찾기
+- [x] 이미지 편집 페이지 — UI + 다중 모델 선택 + API + AI 생성 + 크레딧 차감 + 히스토리 + 즐겨찾기
 - [x] 가격 페이지 (월간/일회성 탭, FAQ)
 - [x] 인증 시스템 (이메일 + Google + Facebook OAuth)
-- [x] DB 스키마 (users, user_credits)
+- [x] DB 스키마 (users, user_credits, user_subscriptions, subscription_plans, generation_history, favorites)
+- [x] 크레딧 시스템 (선차감 → 환불 패턴, 이중 잔액, 쿨다운, RPC 함수)
+- [x] AI Provider 구현 (Replicate + BytePlus, 프롬프트 빌더 5종)
+- [x] API 라우트 6개 (3개 생성 + 크레딧 조회 + 히스토리 삭제 + 관리자)
+- [x] 생성 이력 시스템 (DB + 훅 + UI)
+- [x] 즐겨찾기 시스템 (DB + Storage + 훅 + UI)
+- [x] 업스케일러 서비스 코드 (Real-ESRGAN)
+- [x] 이미지 압축 유틸리티 (WebP)
 - [x] 디자인 시스템 (랜딩 테마 + 에디터 테마)
 - [x] 에러 처리 체계
-- [x] AI Provider 아키텍처 (인터페이스 + 레지스트리)
 - [x] 반응형 모바일 대응
+- [x] 관리자 API
 
 ### 미구현 (다음 단계)
-- [ ] AI Provider 실제 구현 (Replicate, Fal.ai, OpenAI, xAI 연동)
-- [ ] API 라우트 (`/api/generate/retouching`, `/api/generate/face-edit`, `/api/generate/image-edit`)
-- [ ] 프롬프트 빌더 (모드/필터 → 시스템 프롬프트 조합 로직)
-- [ ] 크레딧 차감 로직
-- [ ] 생성 이력 저장 (DB 테이블 + Storage)
-- [ ] 결제 연동 (Stripe 또는 Toss)
-- [ ] 구독 관리
+- [ ] 결제 연동 (Stripe 또는 Toss Payments)
+- [ ] 구독 관리 UI (플랜 변경, 해지)
 - [ ] 업스케일 독립 페이지
+- [ ] 이미지 저장 최적화 Lambda 연동 (AWS Lambda → WebP 변환 → Supabase Storage)
 - [ ] 배치 처리 (일괄 보정)
-- [ ] 샘플 이미지 교체 (글로벌 다양성 반영, 실제 AI 생성 결과물)
+- [ ] Stability AI Provider 구현

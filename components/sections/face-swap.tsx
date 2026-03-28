@@ -19,12 +19,6 @@ const samples = [
   { id: "sample6" },
 ];
 
-const availableOptions = [
-  { label: "성별", values: "여성 · 남성" },
-  { label: "변화 강도", values: "0.5 ~ 1.0" },
-  { label: "분위기", values: "내추럴 · 시크 · 프렌들리" },
-];
-
 export function FaceSwap() {
   const [selected, setSelected] = useState("sample1");
 
@@ -43,7 +37,7 @@ export function FaceSwap() {
             <span className="gradient-text">새로운 얼굴</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            사진 한 장과 옵션 선택만으로 상업용 모델 이미지를 생성합니다.
+            영역을 지정하고, 새로운 얼굴을 만들어보세요.
           </p>
         </motion.div>
 
@@ -88,7 +82,7 @@ export function FaceSwap() {
             <div className="rounded-2xl border border-border bg-white dark:bg-zinc-900/50 p-5 md:p-8 shadow-card-light dark:shadow-card-dark">
               {/* Visual: Original → Result */}
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-6 mb-6">
-                {/* Original */}
+                {/* Original + Mask overlay */}
                 <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-border">
                   <Image
                     src={`/images/face-edit/${selected}/before.webp`}
@@ -98,9 +92,22 @@ export function FaceSwap() {
                     sizes="(max-width: 768px) 40vw, 250px"
                     unoptimized
                   />
-                  <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 text-[10px] font-bold text-white bg-black/50 backdrop-blur-sm rounded-md">
-                    원본
-                  </span>
+                  <div className="absolute inset-0 mix-blend-multiply opacity-40">
+                    <Image
+                      src={`/images/face-edit/${selected}/mask.webp`}
+                      alt="마스크 영역"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 40vw, 250px"
+                      unoptimized
+                    />
+                  </div>
+                  <Badge
+                    variant="primary"
+                    className="absolute top-2 left-2 md:top-3 md:left-3 text-[10px] bg-black/50 backdrop-blur-sm text-white"
+                  >
+                    마스크 지정
+                  </Badge>
                 </div>
 
                 {/* Arrow */}
@@ -118,31 +125,13 @@ export function FaceSwap() {
                   />
                   <Badge
                     variant="primary"
-                    className="absolute top-2 right-2 md:top-3 md:right-3 text-[10px] bg-black/50 backdrop-blur-sm border border-white/20 text-white"
+                    className="absolute top-2 right-2 md:top-3 md:right-3 text-[10px] bg-black/50 backdrop-blur-sm text-white"
                   >
-                    AI Generated
+                    AI 생성
                   </Badge>
                 </div>
               </div>
 
-              {/* Available options — static info */}
-              <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-border p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge variant="outline" className="text-[10px]">
-                    조절 가능한 옵션
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                  {availableOptions.map((opt) => (
-                    <div key={opt.label}>
-                      <p className="text-xs font-bold text-muted-foreground mb-1">
-                        {opt.label}
-                      </p>
-                      <p className="text-sm text-foreground">{opt.values}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -151,10 +140,10 @@ export function FaceSwap() {
         <motion.div variants={fadeInUp} className="text-center mt-6">
           <Link
             href="/face-edit"
-            className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 font-bold text-sm transition-colors group"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-base transition-all group"
           >
             얼굴 변경 시작하기
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </motion.div>
       </motion.div>
