@@ -31,13 +31,19 @@ export default function FaceEditPage() {
     setDisplayUrls([]);
     setOriginalUrls([]);
     setBeforeImage(null);
+    setGeneratingInputImage(null);
   }, []);
 
   const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[], inputUrls?: string[]) => {
     setDisplayUrls(histDisplayUrls);
     setOriginalUrls(histOriginalUrls);
     setBeforeImage(inputUrls?.[0] ?? null);
+    setGeneratingInputImage(null);
     setMobileTab("result");
+  }, []);
+
+  const handleAddToInput = useCallback((src: string) => {
+    inputPanelRef.current?.addImageFromUrl(src);
   }, []);
 
   return (
@@ -81,6 +87,7 @@ export default function FaceEditPage() {
               generatingInputImage={generatingInputImage}
               generatingScale={generatingScale}
               historyBeforeImage={beforeImage}
+              onAddToInput={handleAddToInput}
             />
           </div>
           <div className={cn("min-h-0", mobileTab !== "history" && "hidden lg:block")}>

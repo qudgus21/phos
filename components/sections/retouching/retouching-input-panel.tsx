@@ -17,6 +17,7 @@ import { prependHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
+import { compressImageForInput } from "@/lib/utils/compress-image";
 
 /* ── Filter Chips ── */
 const FILTERS = [
@@ -204,46 +205,19 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
 
   const hasImage = !!uploadedImage;
 
-  const processFile = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      const img = new window.Image();
-      img.onload = () => {
-        if (img.width < 100 || img.height < 100) {
-          toast("이미지가 너무 작습니다 (100×100px 이상)", "warning");
-          return;
-        }
-        if (img.width > 8192 || img.height > 8192) {
-          toast("이미지가 너무 큽니다 (8192px 이하)", "warning");
-          return;
-        }
+  const [isImageLoading, setIsImageLoading] = useState(false);
 
-        // 항상 WebP 변환 (≤1024px: 포맷만, >1024px: 리사이즈+포맷)
-        const MAX = 1024;
-        const needsResize = img.width > MAX || img.height > MAX;
-        const resizeScale = needsResize ? MAX / Math.max(img.width, img.height) : 1;
-        const w = Math.round(img.width * resizeScale);
-        const h = Math.round(img.height * resizeScale);
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0, w, h);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) return;
-            const webpFile = new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" });
-            setUploadedFile(webpFile);
-            setUploadedImage(canvas.toDataURL("image/webp"));
-          },
-          "image/webp",
-          0.85
-        );
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
+  const processFile = useCallback(async (file: File) => {
+    setIsImageLoading(true);
+    try {
+      const compressed = await compressImageForInput(file);
+      setUploadedFile(compressed);
+      setUploadedImage(URL.createObjectURL(compressed));
+    } catch {
+      toast("이미지 처리에 실패했습니다", "warning");
+    } finally {
+      setIsImageLoading(false);
+    }
   }, [toast]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -287,7 +261,6 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     if (!sampleId) return;
     const sample = RETOUCHING_SAMPLES.find((s) => s.id === sampleId);
     if (!sample) return;
-    const controller = new AbortController();
     setActiveFilter(sample.settings.filter);
     setFilterIntensity(sample.settings.filterIntensity);
     setGender(sample.settings.gender);
@@ -297,42 +270,47 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     setExcludedAreas(sample.settings.excludedAreas);
     setScale(sample.settings.scale);
     setRatio(sample.settings.ratio);
-    // before 이미지를 업로드 영역에 표시
+    // 샘플 이미지는 이미 최적화된 로컬 파일 → 직접 세팅
     setUploadedImage(sample.before);
+    setUploadedFile(null);
     // File 객체 생성 (생성 시 필요)
+    let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(sample.before, { signal: controller.signal });
+        const res = await fetch(sample.before);
         const blob = await res.blob();
         const ext = sample.before.endsWith(".webp") ? "webp" : "png";
         const file = new File([blob], `sample-${sampleId}.${ext}`, { type: blob.type || `image/${ext}` });
-        if (!controller.signal.aborted) setUploadedFile(file);
+        if (!cancelled) setUploadedFile(file);
       } catch {
         // fetch 취소 또는 실패 시 무시
       }
     })();
-    return () => controller.abort();
+    return () => { cancelled = true; };
   }, [sampleId]);
 
   // 외부에서 이미지 URL 주입 (결과 → 입력 재사용)
   useEffect(() => {
     if (!externalImageUrl) return;
-    const controller = new AbortController();
+    let cancelled = false;
     const cleanUrl = externalImageUrl.replace(/#.*$/, "");
-    // 즉시 미리보기 반영
-    setUploadedImage(cleanUrl);
-    // 백그라운드에서 File 객체 생성
+    setIsImageLoading(true);
+    setUploadedImage(null);
+    setUploadedFile(null);
     (async () => {
       try {
-        const res = await fetch(cleanUrl, { signal: controller.signal });
-        const blob = await res.blob();
-        const file = new File([blob], `input-${Date.now()}.png`, { type: blob.type || "image/png" });
-        if (!controller.signal.aborted) setUploadedFile(file);
+        const compressed = await compressImageForInput(cleanUrl);
+        if (!cancelled) {
+          setUploadedFile(compressed);
+          setUploadedImage(URL.createObjectURL(compressed));
+        }
       } catch {
-        // fetch 취소 또는 실패 시 무시
+        // fetch 실패 시 무시
+      } finally {
+        if (!cancelled) setIsImageLoading(false);
       }
     })();
-    return () => controller.abort();
+    return () => { cancelled = true; };
   }, [externalImageUrl]);
 
   const toggleArea = useCallback((id: string) => {
@@ -358,15 +336,18 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       // 참조 이미지 복원
       if (fav.reference_image_urls.length > 0) {
         const url = fav.reference_image_urls[0];
-        setUploadedImage(url);
+        setIsImageLoading(true);
+        setUploadedImage(null);
+        setUploadedFile(null);
         (async () => {
           try {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            setUploadedFile(new File([blob], `fav-${Date.now()}.webp`, { type: blob.type || "image/webp" }));
+            const compressed = await compressImageForInput(url);
+            setUploadedFile(compressed);
+            setUploadedImage(URL.createObjectURL(compressed));
           } catch {
             toast("이미지를 불러오지 못했습니다. 다시 업로드해주세요", "warning");
-            setUploadedImage(null);
+          } finally {
+            setIsImageLoading(false);
           }
         })();
       }
@@ -393,6 +374,10 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       return;
     }
     if (isGenerating) return;
+    if (isImageLoading) {
+      toast("이미지 처리 중입니다. 잠시 후 다시 시도해주세요", "warning");
+      return;
+    }
 
     setIsGenerating(true);
     onGenerateStart?.(1, uploadedImage, scale);
@@ -502,7 +487,13 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
                 : "border-primary/30 dark:border-white/[0.18] bg-muted/30 hover:border-primary dark:hover:border-primary hover:bg-primary/5")
           )}
         >
-          {hasImage ? (
+          {isImageLoading ? (
+            <div className="flex-1 w-full flex items-center justify-center">
+              <div className="w-full h-full bg-muted animate-pulse rounded-lg flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+              </div>
+            </div>
+          ) : hasImage ? (
             <>
               <img
                 src={uploadedImage!}

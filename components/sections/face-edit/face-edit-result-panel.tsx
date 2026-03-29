@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Sparkles, Paintbrush, ZoomIn, Download, X, Loader2, Columns2, ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, Paintbrush, ZoomIn, Download, X, Loader2, Columns2, ImageIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
@@ -108,12 +108,15 @@ function DownloadButton({ src }: { src: string }) {
   );
 }
 
-function ImageActionBar({ src, onZoom }: { src: string; onZoom: () => void }) {
+function ImageActionBar({ src, onZoom, onAddToInput }: { src: string; onZoom: () => void; onAddToInput?: (src: string) => void }) {
   return (
     <div className="absolute inset-x-0 bottom-0 flex justify-center p-6 opacity-0 group-hover:opacity-100 transition-opacity z-10">
       <div className="flex items-center gap-2 px-3 py-2 bg-black/70 backdrop-blur-md rounded-xl">
         <ActionButton icon={ZoomIn} label="확대" onClick={(e) => { e.stopPropagation(); onZoom(); }} />
         <DownloadButton src={src} />
+        {onAddToInput && (
+          <ActionButton icon={Plus} label="입력에 추가" onClick={(e) => { e.stopPropagation(); onAddToInput(src); }} />
+        )}
       </div>
     </div>
   );
@@ -417,9 +420,10 @@ interface FaceEditResultPanelProps {
   generatingInputImage?: string | null;
   generatingScale?: string;
   historyBeforeImage?: string | null;
+  onAddToInput?: (src: string) => void;
 }
 
-export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGenerating, generatingInputImage, generatingScale = "auto", historyBeforeImage }: FaceEditResultPanelProps) {
+export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGenerating, generatingInputImage, generatingScale = "auto", historyBeforeImage, onAddToInput }: FaceEditResultPanelProps) {
   const activeSample = FACE_EDIT_SAMPLES.find((s) => s.id === sampleId);
 
   const outputs = displayUrls && displayUrls.length > 0
@@ -476,7 +480,7 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
   return (
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="hidden lg:flex items-center justify-between px-4 h-[49px] shrink-0 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
           <Sparkles className="w-4 h-4 text-secondary" />
           결과
@@ -510,6 +514,7 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
             <ImageActionBar
               src={originals[0]}
               onZoom={() => setLightboxSrc(originals[0])}
+              onAddToInput={onAddToInput}
             />
           </div>
         )

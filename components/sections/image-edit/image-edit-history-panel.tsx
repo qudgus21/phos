@@ -28,18 +28,21 @@ function HistoryThumbnail({ src }: { src: string }) {
   );
 }
 
-/** 화면에 보이면 display URL을 프리로드하는 래퍼 */
-function PreloadOnVisible({ url, children }: { url?: string; children: React.ReactNode }) {
+/** 화면에 보이면 URL들을 프리로드하는 래퍼 */
+function PreloadOnVisible({ urls, children }: { urls: (string | undefined)[]; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!url || !ref.current) return;
+    const validUrls = urls.filter(Boolean) as string[];
+    if (validUrls.length === 0 || !ref.current) return;
     const el = ref.current;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          const img = new window.Image();
-          img.src = url;
+          validUrls.forEach((u) => {
+            const img = new window.Image();
+            img.src = u;
+          });
           observer.disconnect();
         }
       },
@@ -47,7 +50,7 @@ function PreloadOnVisible({ url, children }: { url?: string; children: React.Rea
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [url]);
+  }, [urls]);
 
   return <div ref={ref}>{children}</div>;
 }
@@ -210,7 +213,7 @@ export function ImageEditHistoryPanel({
           <AnimatePresence mode="popLayout">
             <div className="flex flex-col gap-1.5">
               {history.map((item, i) => (
-                <PreloadOnVisible key={item.id} url={item.display_urls?.[0]}>
+                <PreloadOnVisible key={item.id} urls={[item.display_urls?.[0], item.input_urls?.[0]]}>
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}

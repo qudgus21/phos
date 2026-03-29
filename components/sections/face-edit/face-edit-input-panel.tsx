@@ -11,7 +11,7 @@ import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
 import { prependHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { createClient } from "@/lib/supabase/client";
-import { compressImageForFavorite } from "@/lib/utils/compress-image";
+import { compressImageForFavorite, compressImageForInput } from "@/lib/utils/compress-image";
 
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
@@ -30,6 +30,7 @@ const sliderThumb =
 
 export interface FaceEditInputPanelHandle {
   loadSample: (sampleId: string) => void;
+  addImageFromUrl: (url: string) => Promise<void>;
   loadFavorite: (fav: {
     metadata: Record<string, unknown>;
     scale: number;
@@ -99,20 +100,50 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       setScale(String(activeSample.settings.scale));
 
       if (activeSample.mask) {
-        fetch(activeSample.mask)
-          .then((res) => res.blob())
-          .then((blob) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              setMaskDataUrl(reader.result as string);
-              setMaskBlob(blob);
-            };
-            reader.readAsDataURL(blob);
-          })
-          .catch(() => {
+        (async () => {
+          try {
+            const res = await fetch(activeSample.mask!);
+            const blob = await res.blob();
+            // 프리뷰용 dataUrl
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            setMaskDataUrl(dataUrl);
+            // API용 흑백 변환 (흰=변경, 검정=보존) — before 이미지 크기에 맞춤
+            const maskBitmap = await createImageBitmap(blob);
+            const beforeRes = await fetch(activeSample.before);
+            const beforeBitmap = await createImageBitmap(await beforeRes.blob());
+            const tw = beforeBitmap.width;
+            const th = beforeBitmap.height;
+            beforeBitmap.close();
+            const canvas = document.createElement("canvas");
+            canvas.width = tw;
+            canvas.height = th;
+            const ctx = canvas.getContext("2d")!;
+            ctx.drawImage(maskBitmap, 0, 0, tw, th);
+            maskBitmap.close();
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imageData.data;
+            for (let i = 0; i < d.length; i += 4) {
+              if (d[i + 3] > 20) {
+                d[i] = d[i + 1] = d[i + 2] = d[i + 3] = 255;
+              } else {
+                d[i] = d[i + 1] = d[i + 2] = 0;
+                d[i + 3] = 255;
+              }
+            }
+            ctx.putImageData(imageData, 0, 0);
+            const apiBlob = await new Promise<Blob>((resolve) =>
+              canvas.toBlob((b) => resolve(b!), "image/png")
+            );
+            setMaskBlob(apiBlob);
+          } catch {
             setMaskDataUrl(null);
             setMaskBlob(null);
-          });
+          }
+        })();
       } else {
         setMaskDataUrl(null);
         setMaskBlob(null);
@@ -155,6 +186,23 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         }
       }
     },
+    addImageFromUrl: async (url: string) => {
+      setIsImageLoading(true);
+      setMaskDataUrl(null);
+      setMaskBlob(null);
+      setUploadedImage(null);
+      setUploadedFile(null);
+      try {
+        const compressed = await compressImageForInput(url);
+        setUploadedFile(compressed);
+        setUploadedImage(URL.createObjectURL(compressed));
+        setFileName("결과 이미지");
+      } catch {
+        setUploadedImage(url);
+      } finally {
+        setIsImageLoading(false);
+      }
+    },
     loadFavorite: (fav) => {
       const meta = fav.metadata ?? {};
       if (meta.gender === "female" || meta.gender === "male") setGender(meta.gender);
@@ -179,16 +227,29 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     }),
   }), [gender, strength, scale, uploadedFile, uploadedImage, maskBlob, toast]);
 
-  const processFile = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setUploadedImage(ev.target?.result as string);
-      setUploadedFile(file);
+  const [isImageLoading, setIsImageLoading] = useState(false);
+
+  const processFile = useCallback(async (file: File) => {
+    setIsImageLoading(true);
+    setMaskDataUrl(null);
+    setMaskBlob(null);
+    try {
+      const compressed = await compressImageForInput(file);
+      setUploadedFile(compressed);
+      setUploadedImage(URL.createObjectURL(compressed));
       setFileName(file.name);
-      setMaskDataUrl(null);
-      setMaskBlob(null);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      // 압축 실패 시 원본 사용
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setUploadedImage(ev.target?.result as string);
+        setUploadedFile(file);
+        setFileName(file.name);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsImageLoading(false);
+    }
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -255,6 +316,10 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       return;
     }
     if (isGenerating) return;
+    if (isImageLoading) {
+      toast("이미지 처리 중입니다. 잠시 후 다시 시도해주세요", "warning");
+      return;
+    }
 
     setIsGenerating(true);
     onGenerateStart?.(uploadedImage, scale);
@@ -372,7 +437,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     <>
       <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center justify-between px-4 h-[49px] shrink-0 border-b border-border">
           <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
             <Paintbrush className="w-4 h-4 text-muted-foreground" />
             얼굴 변경
@@ -401,7 +466,13 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                     : "border-primary/30 dark:border-white/[0.18] bg-muted/30 hover:border-primary dark:hover:border-primary hover:bg-primary/5")
               )}
             >
-              {hasImage ? (
+              {isImageLoading ? (
+                <div className="flex-1 w-full flex items-center justify-center">
+                  <div className="w-full h-full bg-muted animate-pulse rounded-lg flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+                  </div>
+                </div>
+              ) : hasImage ? (
                 <>
                   <div className="relative max-h-full max-w-full p-2">
                     <img

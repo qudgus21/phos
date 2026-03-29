@@ -12,10 +12,12 @@ import { SAMPLES } from "@/lib/constants/samples";
 import { IMAGE_EDIT_MODELS, getImageEditCredits } from "@/lib/services/ai/models";
 import { prependHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { compressImageForInput } from "@/lib/utils/compress-image";
 
 interface UploadedImage {
   file: File | null;
   previewUrl: string;
+  loading?: boolean;
 }
 
 const MODEL_OPTIONS = [
@@ -147,20 +149,17 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       if (img.file) URL.revokeObjectURL(img.previewUrl);
     });
 
-    if (activeSample && activeSample.inputs.length > 0) {
-      skipModelResetRef.current = true;
-      setImages(
-        activeSample.inputs.map((src) => ({ file: null, previewUrl: src }))
-      );
-      if (activeSample.model) setModel(activeSample.model);
-      if (activeSample.prompt) setPrompt(activeSample.prompt);
-      if (activeSample.imageSize) setImageSize(activeSample.imageSize);
-      if (activeSample.ratio) setRatio(activeSample.ratio);
-      if (activeSample.scale != null) setScale(activeSample.scale);
-      if (activeSample.imageCount != null) setImageCount(activeSample.imageCount);
-    } else {
-      setImages([]);
-    }
+    if (!activeSample || activeSample.inputs.length === 0) return;
+    skipModelResetRef.current = true;
+    setImages(
+      activeSample.inputs.map((src) => ({ file: null, previewUrl: src }))
+    );
+    if (activeSample.model) setModel(activeSample.model);
+    if (activeSample.prompt) setPrompt(activeSample.prompt);
+    if (activeSample.imageSize) setImageSize(activeSample.imageSize);
+    if (activeSample.ratio) setRatio(activeSample.ratio);
+    if (activeSample.scale != null) setScale(activeSample.scale);
+    if (activeSample.imageCount != null) setImageCount(activeSample.imageCount);
   }, [sampleId, activeSample]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── 드래그 중 자동 스크롤 ── */
@@ -222,6 +221,10 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       return;
     }
     if (isGenerating) return;
+    if (images.some((img) => img.loading)) {
+      toast("이미지 처리 중입니다. 잠시 후 다시 시도해주세요", "warning");
+      return;
+    }
     setIsGenerating(true);
     onGenerateStart?.(imageCount, images[0]?.previewUrl ?? null, scale);
     window.dispatchEvent(
@@ -312,11 +315,39 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
         ACCEPTED_TYPES.includes(f.type)
       );
       const remaining = maxImages - images.length;
-      const toAdd = validFiles.slice(0, remaining).map((file) => ({
-        file,
-        previewUrl: URL.createObjectURL(file),
+      const filesToAdd = validFiles.slice(0, remaining);
+      if (filesToAdd.length === 0) return;
+
+      // 로딩 placeholder 즉시 추가
+      const placeholders = filesToAdd.map((_, i) => ({
+        file: null,
+        previewUrl: `__loading__${Date.now()}_${i}`,
+        loading: true,
       }));
-      if (toAdd.length > 0) setImages((prev) => [...prev, ...toAdd]);
+      setImages((prev) => [...prev, ...placeholders]);
+
+      // 백그라운드에서 2K WebP 압축 후 교체
+      filesToAdd.forEach((file, i) => {
+        const placeholderUrl = placeholders[i].previewUrl;
+        compressImageForInput(file).then((compressed) => {
+          setImages((prev) =>
+            prev.map((img) =>
+              img.previewUrl === placeholderUrl
+                ? { file: compressed, previewUrl: URL.createObjectURL(compressed) }
+                : img
+            )
+          );
+        }).catch(() => {
+          // 압축 실패 시 원본 사용
+          setImages((prev) =>
+            prev.map((img) =>
+              img.previewUrl === placeholderUrl
+                ? { file, previewUrl: URL.createObjectURL(file) }
+                : img
+            )
+          );
+        });
+      });
     },
     [images.length, maxImages]
   );
@@ -324,15 +355,27 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   useImperativeHandle(ref, () => ({
     addImageFromUrl: async (url: string) => {
       if (images.length >= maxImages) return;
+      // 로딩 placeholder 즉시 추가
+      const placeholderUrl = `__loading__${Date.now()}`;
+      setImages((prev) => [...prev, { file: null, previewUrl: placeholderUrl, loading: true }]);
       try {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        const ext = blob.type.split("/")[1] || "png";
-        const file = new File([blob], `ref-${Date.now()}.${ext}`, { type: blob.type });
-        addFiles([file]);
+        const compressed = await compressImageForInput(url);
+        setImages((prev) =>
+          prev.map((img) =>
+            img.previewUrl === placeholderUrl
+              ? { file: compressed, previewUrl: URL.createObjectURL(compressed) }
+              : img
+          )
+        );
       } catch {
-        // 외부 URL fetch 실패 시 previewUrl만으로 추가
-        setImages((prev) => [...prev, { file: null, previewUrl: url }]);
+        // 실패 시 원본 URL로 fallback
+        setImages((prev) =>
+          prev.map((img) =>
+            img.previewUrl === placeholderUrl
+              ? { file: null, previewUrl: url }
+              : img
+          )
+        );
       }
     },
     loadFavorite: (fav) => {
@@ -347,7 +390,32 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       // 참조이미지 복원
       images.forEach((img) => { if (img.file) URL.revokeObjectURL(img.previewUrl); });
       if (fav.reference_image_urls.length > 0) {
-        setImages(fav.reference_image_urls.map((url) => ({ file: null, previewUrl: url })));
+        const placeholders = fav.reference_image_urls.map((_, i) => ({
+          file: null,
+          previewUrl: `__loading__fav_${Date.now()}_${i}`,
+          loading: true,
+        }));
+        setImages(placeholders);
+        fav.reference_image_urls.forEach((url, i) => {
+          const placeholderUrl = placeholders[i].previewUrl;
+          compressImageForInput(url).then((compressed) => {
+            setImages((prev) =>
+              prev.map((img) =>
+                img.previewUrl === placeholderUrl
+                  ? { file: compressed, previewUrl: URL.createObjectURL(compressed) }
+                  : img
+              )
+            );
+          }).catch(() => {
+            setImages((prev) =>
+              prev.map((img) =>
+                img.previewUrl === placeholderUrl
+                  ? { file: null, previewUrl: url }
+                  : img
+              )
+            );
+          });
+        });
       } else {
         setImages([]);
       }
@@ -557,30 +625,39 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                     className="h-full"
                   >
                     <div
-                      draggable
+                      draggable={!img.loading}
                       onDragStart={(e) => handleReorderStart(e, i)}
                       onDragOver={(e) => handleReorderOver(e, i)}
                       onDragEnd={handleReorderEnd}
                       className={cn(
-                        "relative aspect-square h-full rounded-lg overflow-hidden group cursor-grab active:cursor-grabbing transition-[opacity,transform] duration-200",
+                        "relative aspect-square h-full rounded-lg overflow-hidden group transition-[opacity,transform] duration-200",
+                        img.loading ? "cursor-default" : "cursor-grab active:cursor-grabbing",
                         dragIdx === i && "opacity-30 scale-[0.85] ring-2 ring-[#818CF8]/50"
                       )}
                     >
-                      <img
-                        src={img.previewUrl}
-                        alt={`참조 이미지 ${i + 1}`}
-                        className="w-full h-full object-cover pointer-events-none"
-                      />
+                      {img.loading ? (
+                        <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                        </div>
+                      ) : (
+                        <img
+                          src={img.previewUrl}
+                          alt={`참조 이미지 ${i + 1}`}
+                          className="w-full h-full object-cover pointer-events-none"
+                        />
+                      )}
                       <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-center pb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <GripVertical className="w-3 h-3 text-white/70" />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeImage(i)}
-                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-black/80"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      {!img.loading && (
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute top-1 right-1 p-0.5 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-black/80"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
                       <span className="absolute top-1 left-1 text-[10px] font-bold text-white/80 bg-black/50 rounded px-1 leading-4">{i + 1}</span>
                     </div>
                   </motion.div>
