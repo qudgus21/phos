@@ -336,7 +336,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         <Sparkles className="w-7 h-7 text-white" />
                       </motion.div>
                       <h2 className="text-2xl font-extrabold text-white font-display tracking-tight">
-                        {mode === "login" ? "Sign in to Phos" : "Get started with Phos"}
+                        {mode === "login" ? "Sign in to Phos AI" : "Get started with Phos AI"}
                       </h2>
                       <p className="text-sm text-indigo-300 mt-1.5 font-medium">
                         {mode === "login"
