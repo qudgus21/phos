@@ -33,7 +33,7 @@
 
           <!-- CTA Button -->
           <div style="margin:0 0 32px;">
-            <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:16px 48px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#ffffff!important;font-size:16px;font-weight:700;text-decoration:none;border-radius:14px;letter-spacing:0.2px;">
+            <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup" target="_blank" style="display:inline-block;padding:16px 48px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#ffffff!important;font-size:16px;font-weight:700;text-decoration:none;border-radius:14px;letter-spacing:0.2px;">
               Verify Email
             </a>
           </div>

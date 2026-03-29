@@ -312,12 +312,14 @@ export function Navigation() {
                   >
                     <div className="px-4 py-3 border-b border-border">
                       <p className="text-sm font-semibold text-foreground truncate">{user.email}</p>
-                      <div className="mt-1">
-                        <PlanBadge
-                          planId={creditInfo?.plan.id ?? "free"}
-                          planName={creditInfo?.plan.name ?? "Free"}
-                        />
-                      </div>
+                      {creditInfo && (
+                        <div className="mt-1">
+                          <PlanBadge
+                            planId={creditInfo.plan.id}
+                            planName={creditInfo.plan.name}
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="p-1.5">
                       <button
@@ -451,12 +453,14 @@ export function Navigation() {
                         )}
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm text-muted-foreground font-medium truncate">{user.email}</span>
-                          <span className="mt-0.5">
-                            <PlanBadge
-                              planId={creditInfo?.plan.id ?? "free"}
-                              planName={creditInfo?.plan.name ?? "Free"}
-                            />
-                          </span>
+                          {creditInfo && (
+                            <span className="mt-0.5">
+                              <PlanBadge
+                                planId={creditInfo.plan.id}
+                                planName={creditInfo.plan.name}
+                              />
+                            </span>
+                          )}
                         </div>
                       </div>
                       <button
