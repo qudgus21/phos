@@ -20,22 +20,56 @@ PSI API로 프로덕션 사이트 성능을 측정하고, 코드 레벨에서 �
 - **구조**: 단일 Next.js 프로젝트 (yarn)
 - **프레임워크**: Next.js 15 (App Router), React 18
 - **스타일링**: Tailwind CSS v3 + Framer Motion
+- **폰트**: next/font (Space Grotesk + Pretendard Variable)
 - **배포**: Vercel
 - **프로덕션 URL**: `https://phos.studio`
 - **로컬 서버**: `yarn dev` (port 3000)
-- **E2E**: Playwright (Chromium)
 - **PSI API 키**: `.env.local`의 `PSI_API_KEY`
-- **백엔드**: Supabase (Auth/DB), AWS Lambda (이미지 최적화)
+- **백엔드**: Supabase (Auth/DB), AWS Lambda (이미지 처리)
 - **페이지 라우트**:
   - `app/page.tsx` — 홈/랜딩
   - `app/image-edit/` — AI 이미지 편집
   - `app/retouching/` — AI 피부 보정
   - `app/face-edit/` — AI 얼굴 편집
   - `app/pricing/` — 가격 페이지
+  - `app/terms/` — 이용약관
+  - `app/privacy/` — 개인정보처리방침
+  - `app/data-deletion/` — 데이터 삭제 안내
 
 ---
 
-## Phase 0: 환경 확인 & 인자 파싱
+## web.dev 레퍼런스
+
+감사/최적화 시 아래 문서를 근거로 판단한다. 이슈 리포트에 관련 문서 링크를 반드시 첨부한다.
+
+### Core Web Vitals
+- https://web.dev/articles/vitals — Web Vitals 개요
+- https://web.dev/articles/lcp — Largest Contentful Paint
+- https://web.dev/articles/fcp — First Contentful Paint
+- https://web.dev/articles/cls — Cumulative Layout Shift
+- https://web.dev/articles/tbt — Total Blocking Time
+- https://web.dev/articles/tti — Time to Interactive
+- https://web.dev/articles/speed-index — Speed Index
+
+### 최적화 기법
+- https://web.dev/articles/optimize-lcp — LCP 최적화
+- https://web.dev/articles/optimize-cls — CLS 최적화
+- https://web.dev/articles/optimize-fid — FID/TBT 최적화
+- https://web.dev/articles/render-blocking-resources — 렌더 블로킹 리소스
+- https://web.dev/articles/unused-javascript — 미사용 JavaScript
+- https://web.dev/articles/uses-responsive-images — 반응형 이미지
+- https://web.dev/articles/font-display — 폰트 표시 전략
+
+### Next.js 성능
+- https://nextjs.org/docs/app/building-your-application/optimizing — Next.js 최적화 가이드
+- https://nextjs.org/docs/app/building-your-application/optimizing/images — next/image
+- https://nextjs.org/docs/app/building-your-application/optimizing/fonts — next/font
+- https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading — Dynamic imports
+- https://nextjs.org/docs/app/building-your-application/optimizing/scripts — next/script
+
+---
+
+## Phase 0: 환경 확인 & 대상 결정
 
 ### 0-1. 환경 확인
 
@@ -56,38 +90,50 @@ PSI API로 프로덕션 사이트 성능을 측정하고, 코드 레벨에서 �
 | `retouching` | AI 피부 보정 페이지 감사 |
 | `face-edit` | AI 얼굴 편집 페이지 감사 |
 | `pricing` | 가격 페이지 감사 |
-| `all` | 모든 페이지 순차 감사 |
-| `https://phos.studio/image-edit` | 지정 URL 감사 |
+| `all` | 주요 페이지 전체 감사 (홈 + 에디터 3개 + 가격) |
+| `https://phos.studio/...` | 지정 URL 감사 |
 | (인자 없음) | 사용자에게 페이지 선택 요청 |
 
-**홈 페이지는 항상 가장 먼저, 가장 중요하게 검사한다.**
+### 실행 옵션
 
-- 홈 URL: `https://phos.studio`
-- 페이지 URL 패턴: `https://phos.studio/{page}` (예: `https://phos.studio/image-edit`, `https://phos.studio/pricing`)
+인자에 아래 키워드가 포함되어 있으면 해당 옵션을 활성화한다. 대상 페이지와 조합 가능 (예: `/lighthouse all infinite`).
+
+| 키워드 | 옵션 | 설명 |
+|--------|------|------|
+| `infinite` / `loop` / `auto` | **무한 루프 모드** | 감사 → 자동 수정 → 빌드 검증 → 재감사를 ALL Green이 될 때까지 반복 |
+
+### 무한 루프 모드 동작
+
+```
+반복 {
+  1. PSI 감사 실행
+  2. 모든 카테고리가 90+ (ALL Green)이면 → 루프 종료
+  3. 수정 가능한 이슈를 자동 수정
+  4. yarn build로 빌드 검증
+  5. 빌드 실패 시 에러 수정
+  6. 다시 1번부터 재감사
+}
+루프 종료 후 → 최종 리포트 출력
+```
+
+**중요 원칙:**
+- 기존 로직, 디자인, 기능을 **절대 해치지 않는** 선에서만 수정
+- 수정 후 반드시 빌드 검증
+- 최종 리포트에 총 라운드 수와 수정된 이슈 목록을 포함
 
 ### 0-3. 감사 대상 페이지 결정
 
-페이지가 결정되면 `app/` 라우트 구조를 Glob으로 탐색:
+페이지가 결정되면 `app/` 라우트 구조를 Glob으로 탐색하여 실제 존재하는 페이지만 포함:
 
 ```
 Glob: app/**/page.tsx
 ```
 
+URL 매핑:
 - 홈: `app/page.tsx` → `https://phos.studio`
-- 에디터 페이지: `app/{page}/page.tsx` → `https://phos.studio/{page}`
+- 서브 페이지: `app/{page}/page.tsx` → `https://phos.studio/{page}`
 
-**감사 대상 목록을 사용자에게 보여주고 확인받는다:**
-
-```
-감사 대상 페이지:
-1. [홈] https://phos.studio
-2. https://phos.studio/image-edit
-3. https://phos.studio/retouching
-4. https://phos.studio/face-edit
-5. https://phos.studio/pricing
-
-이대로 진행할까요?
-```
+**감사 대상 목록을 사용자에게 보여주고 확인받는다.**
 
 ---
 
@@ -98,15 +144,16 @@ Glob: app/**/page.tsx
 각 페이지에 대해 **mobile + desktop 병렬** 호출.
 
 ```bash
-# PSI_API_KEY는 .env.local에서 읽어온다
 PSI_KEY=$(grep PSI_API_KEY .env.local | cut -d= -f2)
 
 # Mobile
-curl -s "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={URL}&key=${PSI_KEY}&category=performance&category=accessibility&category=best-practices&category=seo&strategy=mobile" \
+curl -s --max-time 60 \
+  "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={URL}&key=${PSI_KEY}&category=performance&category=accessibility&category=best-practices&category=seo&strategy=mobile" \
   > /tmp/lighthouse-psi-{page}-mobile.json
 
 # Desktop
-curl -s "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={URL}&key=${PSI_KEY}&category=performance&category=accessibility&category=best-practices&category=seo&strategy=desktop" \
+curl -s --max-time 60 \
+  "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url={URL}&key=${PSI_KEY}&category=performance&category=accessibility&category=best-practices&category=seo&strategy=desktop" \
   > /tmp/lighthouse-psi-{page}-desktop.json
 ```
 
@@ -170,18 +217,18 @@ console.log(JSON.stringify({ scores, cwv, opportunities, diagnostics, failed, cr
 
 ## Phase 2: 리포트 출력
 
-**앱 홈이 가장 먼저, 가장 상세하게.**
+**홈 페이지가 가장 먼저, 가장 상세하게.**
 
 ### 리포트 형식
 
 ```markdown
-# Lighthouse 리포트 — {앱명}
+# Lighthouse 리포트 — Phos AI
 
 > 측정: {날짜} | PSI API (프로덕션)
 
 ---
 
-## 📊 {페이지 URL}
+## {페이지 URL}
 
 ### 종합 점수
 
@@ -206,14 +253,14 @@ console.log(JSON.stringify({ scores, cwv, opportunities, diagnostics, failed, cr
 | TTI | 5.2s | 2.1s | <3.8s | 완전 인터랙티브 시점 | 🔴/🟢 |
 ```
 
-### Green이 아닌 메트릭에 대해 추가 분석
+### Non-Green 메트릭 상세 분석
 
-각 non-green 메트릭마다:
+Green이 아닌 각 메트릭마다:
 
 ```markdown
 #### ⚠️ LCP 3.1s (Mobile) — 개선 필요
 
-**의미**: 사용자가 페이지에서 가장 큰 콘텐츠(히어로 이미지, 큰 텍스트 블록 등)를 볼 수 있게 되는 시점.
+**의미**: 사용자가 페이지에서 가장 큰 콘텐츠를 볼 수 있게 되는 시점.
 **영향**: 2.5초 이상이면 Google Core Web Vitals "Poor" 판정 → 검색 순위에 부정적 영향.
 **개선 방향**:
 - LCP 후보 요소 식별 → `priority` / `preload` 적용
@@ -222,8 +269,6 @@ console.log(JSON.stringify({ scores, cwv, opportunities, diagnostics, failed, cr
 - 이미지 최적화 (next/image, WebP/AVIF, 적절한 sizes)
 **참고**: https://web.dev/articles/lcp
 ```
-
-TBT, SI, FCP, CLS, TTI에 대해서도 동일 패턴으로.
 
 ### 나머지 섹션
 
@@ -234,14 +279,12 @@ TBT, SI, FCP, CLS, TTI에 대해서도 동일 패턴으로.
 |---|------|------------|-------------|
 | 1 | Reduce unused JavaScript | 1,200ms / 350KB | 800ms / 350KB |
 | 2 | Eliminate render-blocking resources | 600ms | 200ms |
-| 3 | Properly size images | — / 120KB | — / 120KB |
 
 ### 진단 항목
 
 | # | 항목 | Mobile 값 | Desktop 값 | 설명 |
 |---|------|-----------|-----------|------|
 | 1 | DOM size | 1,245 nodes | 1,245 nodes | 권장: 1,500 이하 |
-| 2 | Third-party code | 1.2s blocking | 0.8s blocking | Google Ads, Analytics |
 
 ### 실패한 감사 (Accessibility / Best Practices / SEO)
 
@@ -262,7 +305,6 @@ TBT, SI, FCP, CLS, TTI에 대해서도 동일 패턴으로.
 | 지표 | Good | NI | Poor | 판정 |
 |------|------|----|------|------|
 | LCP | 62% | 25% | 13% | AVERAGE |
-| FCP | 78% | 15% | 7% | GOOD |
 ```
 
 ---
@@ -275,22 +317,24 @@ TBT, SI, FCP, CLS, TTI에 대해서도 동일 패턴으로.
 
 | PSI 항목 | 탐색 방법 |
 |----------|----------|
-| `render-blocking-resources` | `Grep: <script|<link.*stylesheet` in layout/page 파일 |
+| `render-blocking-resources` | `Grep: <script\|<link.*stylesheet` in layout/page 파일 |
 | `unused-javascript` | `Grep: "use client"` → dynamic import 가능 여부 확인 |
-| `uses-responsive-images` | `Grep: <img|<Image` → next/image, sizes prop 확인 |
+| `uses-responsive-images` | `Grep: <img\|<Image` → next/image, sizes prop 확인 |
 | `uses-optimized-images` | 이미지 포맷 (WebP/AVIF) + next/image 사용 여부 |
-| `font-display` | `Grep: @font-face|next/font` |
+| `font-display` | `Grep: @font-face\|next/font` → display: swap 확인 |
 | `largest-contentful-paint-element` | 해당 페이지에서 히어로 영역 식별 |
 | `layout-shift-elements` | 동적 콘텐츠 삽입, 이미지 width/height 누락 |
-| `third-party-summary` | `Grep: googletagmanager|googlesyndication|analytics` |
+| `third-party-summary` | `Grep: googletagmanager\|analytics\|gtag` |
 | `dom-size` | 컴포넌트 트리 복잡도 분석 |
-| `efficient-animated-content` | `Grep: framer-motion|motion\.` |
+| `efficient-animated-content` | `Grep: framer-motion\|motion\.` → 불필요한 애니메이션 확인 |
 
 ### 3-2. 심각도 분류
 
-- **Critical**: 카테고리 90 미만에 직접 영향, 절약 500ms+ / 50KB+
-- **Warning**: 절약 100ms+ / 10KB+, A11y/BP/SEO 실패
-- **Info**: 경미한 개선
+| 심각도 | 기준 | 예시 |
+|--------|------|------|
+| **Critical** | 카테고리 90 미만에 직접 영향, 절약 500ms+ / 50KB+ | LCP 이미지 priority 누락, 미사용 JS 번들 |
+| **Warning** | 절약 100ms+ / 10KB+, A11y/BP/SEO 실패 | font-display 미설정, 이미지 alt 누락 |
+| **Info** | 경미한 개선 | DOM 노드 수 최적화, 사소한 CLS |
 
 ### 3-3. 수정 계획 출력
 
@@ -315,17 +359,6 @@ TBT, SI, FCP, CLS, TTI에 대해서도 동일 패턴으로.
 
 ---
 
-**Green이 아닌 메트릭을 위한 추가 제안:**
-
-{Phase 2에서 non-green으로 표시된 메트릭에 대해, 위 기회 항목 외에 추가로 할 수 있는 것들을 제안}
-
-예:
-- LCP가 여전히 느리다면: `<link rel="preload">` 추가, TTFB 개선을 위한 ISR/SSG 전환 고려
-- TBT가 높다면: 무거운 라이브러리의 dynamic import, Web Worker 분리
-- CLS가 높다면: 이미지/광고 슬롯에 고정 크기 지정, font-display: swap
-
----
-
 이 계획을 진행할까요?
 - **"전부"** — 모든 항목 수정
 - **"Critical만"** — Critical 항목만 수정
@@ -333,6 +366,7 @@ TBT, SI, FCP, CLS, TTI에 대해서도 동일 패턴으로.
 ```
 
 **⛔ 반드시 여기서 STOP. 사용자 응답을 기다린다.**
+**단, `infinite` 모드에서는 자동으로 전부 수정 후 계속 진행한다.**
 
 ---
 
@@ -343,22 +377,23 @@ TBT, SI, FCP, CLS, TTI에 대해서도 동일 패턴으로.
 ### 4-1. 로컬 서버 확인
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/{app}
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/{path}
 ```
 
-- 200이 아니면: "로컬 서버를 시작해주세요 (`yarn dev`)" 안내.
+200이 아니면: "로컬 서버를 시작해주세요 (`yarn dev`)" 안내 후 대기.
 
 ### 4-2. Lighthouse CLI로 Before 측정
 
 ```bash
+# Desktop
 npx lighthouse http://localhost:3000/{path} \
   --output=json \
-  --output-path=/tmp/lighthouse-before-{page}.json \
+  --output-path=/tmp/lighthouse-before-{page}-desktop.json \
   --chrome-flags="--headless --no-sandbox" \
   --only-categories=performance,accessibility,best-practices,seo \
   --preset=desktop
 
-# Mobile도
+# Mobile (preset 미지정 = mobile 기본)
 npx lighthouse http://localhost:3000/{path} \
   --output=json \
   --output-path=/tmp/lighthouse-before-{page}-mobile.json \
@@ -366,9 +401,9 @@ npx lighthouse http://localhost:3000/{path} \
   --only-categories=performance,accessibility,best-practices,seo
 ```
 
-### 4-3. Fallback (lighthouse CLI 실패 시)
+### 4-3. Fallback (Lighthouse CLI 실패 시)
 
-Playwright + Chrome DevTools Protocol로 부분 측정:
+Playwright + CDP로 부분 측정:
 
 ```javascript
 const { chromium } = require('playwright');
@@ -377,14 +412,11 @@ const { chromium } = require('playwright');
   const page = await browser.newPage();
   const client = await page.context().newCDPSession(page);
   await client.send('Performance.enable');
-
   await page.goto('http://localhost:3000/{path}', { waitUntil: 'networkidle' });
-
   const metrics = await client.send('Performance.getMetrics');
-  const paint = await page.evaluate(() => {
-    return performance.getEntriesByType('paint').map(e => ({ name: e.name, time: e.startTime }));
-  });
-
+  const paint = await page.evaluate(() =>
+    performance.getEntriesByType('paint').map(e => ({ name: e.name, time: e.startTime }))
+  );
   console.log(JSON.stringify({ metrics: metrics.metrics, paint }, null, 2));
   await browser.close();
 })();
@@ -404,6 +436,22 @@ const { chromium } = require('playwright');
 - 성능을 위해 SEO를 희생하지 않는다 (SSR 제거, 메타데이터 삭제 금지)
 - 성능을 위해 접근성을 희생하지 않는다 (aria 속성 제거 금지)
 - 성능을 위해 기능을 제거하지 않는다 (애니메이션 전면 삭제 금지)
+- Framer Motion 애니메이션은 최적화하되, 삭제하지 않는다
+- next/image, next/font 패턴을 적극 활용한다
+
+### Phos 프로젝트 특화 점검 항목
+
+이 프로젝트에서 자주 발생하는 성능 병목:
+
+| 영역 | 점검 포인트 |
+|------|-----------|
+| **Framer Motion** | `motion.div`가 뷰포트 밖에서 불필요하게 애니메이트되는지, `whileInView`로 지연 가능한지 |
+| **이미지 처리** | 에디터 페이지의 캔버스/프리뷰 이미지가 과도하게 큰지, WebP/AVIF 변환 여부 |
+| **Supabase Client** | `@supabase/ssr` 클라이언트 번들 크기, 불필요한 클라이언트 임포트 |
+| **React Query** | `@tanstack/react-query` devtools 프로덕션 포함 여부 |
+| **폰트** | Pretendard Variable (로컬) + Space Grotesk (Google) — display: swap 적용 확인 |
+| **서드파티 스크립트** | GA, GTM 등 — `next/script` strategy="afterInteractive" 또는 "lazyOnload" 사용 여부 |
+| **`"use client"` 범위** | 불필요하게 넓은 client boundary → 서버 컴포넌트로 분리 가능한지 |
 
 ### 5-2. 빌드 검증
 
@@ -435,7 +483,7 @@ yarn build
 
 ### 6-1. After 측정
 
-Phase 4와 동일 방법으로 `/tmp/lighthouse-after-{page}.json` 저장.
+Phase 4와 동일 방법으로 `/tmp/lighthouse-after-{page}-{strategy}.json` 저장.
 
 ### 6-2. Before/After 비교 출력
 
@@ -464,63 +512,36 @@ Phase 4와 동일 방법으로 `/tmp/lighthouse-after-{page}.json` 저장.
 | TBT | 450ms | 180ms | -270ms | 🔴→🟢 |
 
 ### ✅ 개선된 항목
-- LCP: 3.1s → 1.8s (42% 개선) — 히어로 이미지 priority 적용
-- TBT: 450ms → 180ms (60% 개선) — 서드파티 스크립트 defer
+- LCP: 3.1s → 1.8s (42% 개선) — {수정 내용}
 
 ### ⚠️ 미개선 항목
-- Speed Index: 변화 없음 — 서드파티 스크립트의 영향, 코드 수정으로는 한계
+- Speed Index: 변화 없음 — {원인 분석}
 
 ### 남은 과제
 - {추가 수정이 필요한 항목과 이유}
-- {프로덕션 배포 후 PSI 재측정 권장}
+- 프로덕션 배포 후 PSI 재측정 권장
 ```
 
 ---
 
 ## Phase 7: 학습 저장
 
-프로젝트 메모리의 `lighthouse-lessons.md`에 기록:
+작업 완료 후, 새로 알게 된 성능 패턴이나 교훈이 있으면 프로젝트 메모리의 `lighthouse-lessons.md`에 저장한다.
 
+예시:
 - 어떤 수정이 가장 효과적이었는지
 - 프로젝트 특유의 성능 병목 패턴
 - PSI vs 로컬 측정의 차이점
-- 특정 Next.js / React 패턴의 성능 영향
+- 특정 Next.js / React / Framer Motion 패턴의 성능 영향
 
 ---
 
 ## 절대 하지 않는 것
 
-- ❌ Phase 3에서 사용자 확인 없이 코드 수정
+- ❌ Phase 3에서 사용자 확인 없이 코드 수정 (`infinite` 모드 제외)
 - ❌ 성능을 위해 SEO / 접근성 / 기능 희생
 - ❌ `.env.local`의 API 키를 출력에 포함
 - ❌ 커밋 (`/commit-and-push`로 별도 진행)
 - ❌ PSI 점수 조작 트릭 (UA 스푸핑 등)
-
----
-
-## web.dev 레퍼런스
-
-### Core Web Vitals
-- https://web.dev/articles/vitals — Web Vitals 개요
-- https://web.dev/articles/lcp — Largest Contentful Paint
-- https://web.dev/articles/fcp — First Contentful Paint
-- https://web.dev/articles/cls — Cumulative Layout Shift
-- https://web.dev/articles/tbt — Total Blocking Time
-- https://web.dev/articles/tti — Time to Interactive
-- https://web.dev/articles/speed-index — Speed Index
-
-### 최적화 기법
-- https://web.dev/articles/optimize-lcp — LCP 최적화
-- https://web.dev/articles/optimize-cls — CLS 최적화
-- https://web.dev/articles/optimize-fid — FID/TBT 최적화
-- https://web.dev/articles/render-blocking-resources — 렌더 블로킹 리소스
-- https://web.dev/articles/unused-javascript — 미사용 JavaScript
-- https://web.dev/articles/uses-responsive-images — 반응형 이미지
-- https://web.dev/articles/font-display — 폰트 표시 전략
-
-### Next.js 성능
-- https://nextjs.org/docs/app/building-your-application/optimizing — Next.js 최적화 가이드
-- https://nextjs.org/docs/app/building-your-application/optimizing/images — next/image
-- https://nextjs.org/docs/app/building-your-application/optimizing/fonts — next/font
-- https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading — Dynamic imports
-- https://nextjs.org/docs/app/building-your-application/optimizing/scripts — next/script
+- ❌ Framer Motion 애니메이션 전면 삭제
+- ❌ 사용자 확인 없이 SSR → CSR 전환 (SEO 영향)
