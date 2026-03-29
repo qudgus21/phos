@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { prependHistoryItem } from "@/hooks/use-history";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 
@@ -199,6 +200,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
   /* Generation */
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const { requireAuth, loginModal } = useRequireAuth();
 
   const hasImage = !!uploadedImage;
 
@@ -703,7 +705,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
           <button
             type="button"
             disabled={isGenerating}
-            onClick={handleGenerate}
+            onClick={() => requireAuth(handleGenerate)}
             className={cn(
               "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-bold text-white transition-all duration-300",
               isGenerating
@@ -756,6 +758,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
           </div>
         )}
       </div>
+      {loginModal}
     </div>
   );
 });

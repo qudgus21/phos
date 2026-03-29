@@ -9,6 +9,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { FavoriteSaveModal } from "@/components/sections/image-edit/favorite-save-modal";
 import { SAMPLES } from "@/lib/constants/samples";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 import type { ImageEditInputPanelHandle } from "@/components/sections/image-edit/image-edit-input-panel";
 
 const TABS = [
@@ -28,6 +29,7 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
   const { toast } = useToast();
 
   const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("image-edit");
+  const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);
 
@@ -123,14 +125,14 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
             {/* 저장 버튼 */}
             <button
               type="button"
-              onClick={() => {
+              onClick={() => requireAuth(() => {
                 const settings = inputPanelRef.current?.getCurrentSettings();
                 if (!settings?.prompt?.trim()) {
                   toast("프롬프트를 입력해주세요", "warning");
                   return;
                 }
                 setShowSaveModal(true);
-              }}
+              })}
               disabled={favFull}
               className={cn(
                 "w-full flex items-center justify-center gap-1 py-2.5 rounded-lg border transition-colors cursor-pointer text-[11px] font-semibold",
@@ -236,6 +238,7 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
       confirmLabel="삭제"
       variant="danger"
     />
+    {loginModal}
     </>
   );
 }

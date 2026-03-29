@@ -11,6 +11,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { SAMPLES } from "@/lib/constants/samples";
 import { IMAGE_EDIT_MODELS, getImageEditCredits } from "@/lib/services/ai/models";
 import { prependHistoryItem } from "@/hooks/use-history";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 
 interface UploadedImage {
   file: File | null;
@@ -76,6 +77,7 @@ interface ImageEditInputPanelProps {
 export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd }, ref) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { requireAuth, loginModal } = useRequireAuth();
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
 
   const [model, setModelRaw] = useState(MODEL_OPTIONS[0].value);
@@ -708,7 +710,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             <button
               type="button"
               disabled={isGenerating}
-              onClick={handleGenerate}
+              onClick={() => requireAuth(handleGenerate)}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
                 prompt.trim() && !isGenerating
@@ -756,6 +758,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
         confirmLabel="초기화"
         variant="danger"
       />
+      {loginModal}
     </>
   );
 });

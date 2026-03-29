@@ -5,6 +5,7 @@ import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 
 type PricingTab = "monthly" | "onetime";
 
@@ -101,8 +102,17 @@ interface PricingCardsProps {
 }
 
 export function PricingCards({ activeTab }: PricingCardsProps) {
+  const { requireAuth, loginModal } = useRequireAuth();
+
+  const handlePurchase = () => {
+    requireAuth(() => {
+      // TODO: 결제 플로우
+    });
+  };
+
   if (activeTab === "onetime") {
     return (
+      <>
       <motion.div
         variants={staggerContainer}
         initial="hidden"
@@ -122,16 +132,22 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
             <p className="text-sm text-muted-foreground mb-6">
               {pack.credits} 크레딧
             </p>
-            <button className="w-full py-3 rounded-xl text-base font-bold transition-all cursor-pointer bg-gradient-to-r from-indigo-600 to-violet-500 text-white hover:brightness-110 btn-glow">
+            <button
+              onClick={handlePurchase}
+              className="w-full py-3 rounded-xl text-base font-bold transition-all cursor-pointer bg-gradient-to-r from-indigo-600 to-violet-500 text-white hover:brightness-110 btn-glow"
+            >
               구매하기
             </button>
           </motion.div>
         ))}
       </motion.div>
+      {loginModal}
+      </>
     );
   }
 
   return (
+    <>
     <motion.div
       variants={staggerContainer}
       initial="hidden"
@@ -189,6 +205,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
           {/* CTA 버튼 */}
           <button
             disabled={plan.disabled}
+            onClick={plan.disabled ? undefined : handlePurchase}
             className={cn(
               "w-full py-3 rounded-xl text-base font-bold transition-all cursor-pointer",
               plan.disabled
@@ -201,5 +218,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
         </motion.div>
       ))}
     </motion.div>
+    {loginModal}
+    </>
   );
 }

@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast";
 import { FaceEditMaskEditor } from "./face-edit-mask-editor";
 import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
 import { prependHistoryItem } from "@/hooks/use-history";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 import { createClient } from "@/lib/supabase/client";
 import { compressImageForFavorite } from "@/lib/utils/compress-image";
 
@@ -53,6 +54,7 @@ interface FaceEditInputPanelProps {
 export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditInputPanelProps>(function FaceEditInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd }, ref) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { requireAuth, loginModal } = useRequireAuth();
   const activeSample = FACE_EDIT_SAMPLES.find((s) => s.id === sampleId);
 
   const [gender, setGender] = useState<"female" | "male">("female");
@@ -591,7 +593,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
             <button
               type="button"
               disabled={isGenerating}
-              onClick={handleGenerate}
+              onClick={() => requireAuth(handleGenerate)}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
                 isGenerating
@@ -658,6 +660,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
           </div>
         </div>
       )}
+      {loginModal}
 </>
   );
 });

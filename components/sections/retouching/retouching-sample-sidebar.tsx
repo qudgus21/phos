@@ -9,6 +9,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { RetouchingFavoriteSaveModal } from "@/components/sections/retouching/retouching-favorite-save-modal";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 import type { RetouchingInputPanelHandle } from "@/components/sections/retouching/retouching-input-panel";
 
 const TABS = [
@@ -31,6 +32,7 @@ export function RetouchingSampleSidebar({
   const { toast } = useToast();
 
   const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("retouching");
+  const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);
 
@@ -137,7 +139,7 @@ export function RetouchingSampleSidebar({
             {/* 저장 버튼 */}
             <button
               type="button"
-              onClick={() => setShowSaveModal(true)}
+              onClick={() => requireAuth(() => setShowSaveModal(true))}
               disabled={favFull}
               className={cn(
                 "w-full flex items-center justify-center gap-1 py-2.5 rounded-lg border transition-colors cursor-pointer text-[11px] font-semibold",
@@ -239,6 +241,7 @@ export function RetouchingSampleSidebar({
       confirmLabel="삭제"
       variant="danger"
     />
+    {loginModal}
     </>
   );
 }

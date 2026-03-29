@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { FaceEditFavoriteSaveModal } from "@/components/sections/face-edit/face-edit-favorite-save-modal";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 import type { FaceEditInputPanelHandle } from "./face-edit-input-panel";
 
 type Gender = "female" | "male";
@@ -108,6 +109,7 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
   const { toast } = useToast();
 
   const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("face-edit");
+  const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);
 
@@ -207,12 +209,14 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
             <button
               type="button"
               onClick={() => {
-                const settings = inputPanelRef.current?.getCurrentSettings();
-                if (!settings?.image) {
-                  toast("이미지를 업로드해주세요", "warning");
-                  return;
-                }
-                setShowSaveModal(true);
+                requireAuth(() => {
+                  const settings = inputPanelRef.current?.getCurrentSettings();
+                  if (!settings?.image) {
+                    toast("이미지를 업로드해주세요", "warning");
+                    return;
+                  }
+                  setShowSaveModal(true);
+                })
               }}
               disabled={favFull}
               className={cn(
@@ -315,6 +319,7 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
       confirmLabel="삭제"
       variant="danger"
     />
+    {loginModal}
     </>
   );
 }
