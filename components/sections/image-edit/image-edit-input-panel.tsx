@@ -55,7 +55,7 @@ const DEFAULT_MAX_IMAGES = 14;
 
 /* ── 디자인 시스템 기반 공통 스타일 ── */
 const fieldBase =
-  "rounded-lg border border-white/[0.15] bg-white/[0.12] text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors";
+  "rounded-lg border border-border bg-muted text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors";
 const sliderThumb =
   "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer";
 
@@ -457,7 +457,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
-            <PenLine className="w-4 h-4 text-white/50" />
+            <PenLine className="w-4 h-4 text-muted-foreground" />
             입력
           </h2>
         <div className="flex items-center gap-2">
@@ -486,7 +486,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
               }}
               maxLength={2000}
               placeholder="예시: 미니멀 카페, 자연광, 따뜻한 톤"
-              className={cn(fieldBase, "focus:ring-0 focus:border-transparent w-full px-3.5 py-3 min-h-[110px] resize-y placeholder:text-white/50")}
+              className={cn(fieldBase, "focus:ring-0 focus:border-transparent w-full px-3.5 py-3 min-h-[110px] resize-y placeholder:text-muted-foreground/70 dark:placeholder:text-muted-foreground/50")}
             />
           </div>
           <div className="flex items-center justify-between">
@@ -613,10 +613,10 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                         setInsertIdx(images.length);
                       }
                     }}
-                    className="flex flex-col items-center justify-center gap-1 aspect-square h-full rounded-lg border border-dashed border-white/[0.18] bg-white/[0.16] hover:border-[#818CF8] hover:bg-[#A5B4FC]/10 transition-colors cursor-pointer"
+                    className="flex flex-col items-center justify-center gap-1 aspect-square h-full rounded-lg border-2 border-dashed border-primary/30 dark:border-white/[0.18] bg-muted/30 hover:border-primary dark:hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4 text-[#A5B4FC]" />
-                    <span className="text-[10px] text-muted-foreground/60">이미지 추가</span>
+                    <span className="text-[10px] text-muted-foreground dark:text-muted-foreground/60">이미지 추가</span>
                   </button>
                 ))}
             </div>
@@ -639,7 +639,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                 setScale(1);
                 setImageCount(1);
               }}
-              className="p-1 text-white/30 hover:text-white/70 transition-colors cursor-pointer"
+              className="p-1 text-muted-foreground/70 dark:text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-pointer"
               title="추가 설정 초기화"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -659,15 +659,15 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                 {isCustomSize && (
                   <>
                     <input type="number" min={1024} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[62px] px-1.5 py-1.5 text-center text-sm ml-1")} />
-                    <span className="text-sm text-white/40">×</span>
+                    <span className="text-sm text-muted-foreground">×</span>
                     <input type="number" min={1024} max={4096} value={height} onChange={(e) => setHeight(Number(e.target.value))} className={cn(fieldBase, "w-[62px] px-1.5 py-1.5 text-center text-sm")} />
                     <button
                       type="button"
                       onClick={() => { setWidth(1024); setHeight(1024); }}
-                      className="relative w-7 h-7 rounded border border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center"
+                      className="relative w-7 h-7 rounded border border-border bg-muted/50 hover:border-border/80 hover:bg-muted transition-colors cursor-pointer flex items-center justify-center"
                       title="크기 초기화"
                     >
-                      <Ruler className="w-3 h-3 text-white/40" />
+                      <Ruler className="w-3 h-3 text-muted-foreground" />
                     </button>
                   </>
                 )}
@@ -696,14 +696,14 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       {/* ── Actions Footer ── */}
       <div className="px-4 py-2.5 border-t border-border">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-white/50">
+          <span className="text-xs text-muted-foreground">
             이미지당 {creditCost} 크레딧
           </span>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setShowResetConfirm(true)}
-              className="text-xs text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               초기화
             </button>
@@ -712,9 +712,9 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
               disabled={isGenerating}
               onClick={() => requireAuth(handleGenerate)}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
+                "flex items-center gap-2 px-5 py-2.5 text-[15px] font-extrabold rounded-xl transition-all duration-300 cursor-pointer tracking-wide",
                 prompt.trim() && !isGenerating
-                  ? "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110"
+                  ? "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.03]"
                   : "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
               )}
             >

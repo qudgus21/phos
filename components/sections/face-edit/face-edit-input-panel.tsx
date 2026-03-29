@@ -374,7 +374,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
-            <Paintbrush className="w-4 h-4 text-white/50" />
+            <Paintbrush className="w-4 h-4 text-muted-foreground" />
             얼굴 변경
           </h2>
         </div>
@@ -393,12 +393,12 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
               className={cn(
                 "relative flex-1 min-h-[200px] rounded-xl border-2 flex flex-col items-center justify-center gap-3 transition-all",
                 hasImage
-                  ? "border-white/[0.1] bg-white/[0.02]"
+                  ? "border-border bg-muted/20"
                   : "border-dashed cursor-pointer",
                 !hasImage &&
                   (isDragging
-                    ? "border-[#818CF8] bg-primary/10"
-                    : "border-white/[0.15] bg-white/[0.03] hover:border-[#818CF8] hover:bg-[#A5B4FC]/10")
+                    ? "border-primary bg-primary/10"
+                    : "border-primary/30 dark:border-white/[0.18] bg-muted/30 hover:border-primary dark:hover:border-primary hover:bg-primary/5")
               )}
             >
               {hasImage ? (
@@ -486,7 +486,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                 </>
               ) : (
                 <>
-                  <Upload className="w-10 h-10 text-muted-foreground/50" />
+                  <Upload className="w-10 h-10 text-muted-foreground/70 dark:text-muted-foreground/50" />
                   <p className="text-[15px] font-extrabold text-card-foreground">
                     이미지를 드래그하거나 클릭하여 업로드
                   </p>
@@ -529,7 +529,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                   setStrength(1);
                   setScale("auto");
                 }}
-                className="p-1 text-white/30 hover:text-white/70 transition-colors cursor-pointer"
+                className="p-1 text-muted-foreground/70 dark:text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-pointer"
                 title="설정 초기화"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -549,7 +549,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                       "flex items-center justify-center py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer border",
                       gender === g
                         ? "border-primary bg-gradient-to-r from-primary to-[#818CF8] text-primary-foreground"
-                        : "border-white/[0.08] bg-white/[0.03] text-muted-foreground hover:border-white/[0.15] hover:text-card-foreground"
+                        : "border-border bg-muted/30 text-muted-foreground hover:border-border/80 hover:text-card-foreground"
                     )}
                   >
                     {g === "female" ? "여성" : "남성"}
@@ -595,12 +595,12 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
               disabled={isGenerating}
               onClick={() => requireAuth(handleGenerate)}
               className={cn(
-                "flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
+                "flex items-center gap-2 px-5 py-2.5 text-[15px] font-extrabold rounded-xl transition-all duration-300 cursor-pointer tracking-wide",
                 isGenerating
                   ? "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
                   : !(hasImage && hasMask)
                     ? "text-white bg-gradient-to-r from-primary to-secondary opacity-60"
-                    : "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110"
+                    : "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.03]"
               )}
             >
               {isGenerating ? (

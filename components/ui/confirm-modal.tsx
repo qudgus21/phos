@@ -62,14 +62,14 @@ export function ConfirmModal({
         <h3 className="text-base font-bold text-foreground mb-1.5">{title}</h3>
 
         {/* Description */}
-        <p className="text-sm text-white/50 mb-6">{description}</p>
+        <p className="text-sm text-muted-foreground mb-6">{description}</p>
 
         {/* Actions */}
         <div className="flex items-center gap-2.5 w-full">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2 text-sm font-semibold text-white/70 rounded-lg border border-white/[0.12] bg-white/[0.06] hover:bg-white/[0.1] transition-colors cursor-pointer"
+            className="flex-1 py-2 text-sm font-semibold text-muted-foreground rounded-lg border border-border bg-muted hover:bg-muted/80 transition-colors cursor-pointer"
           >
             {cancelLabel}
           </button>

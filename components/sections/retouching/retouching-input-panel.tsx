@@ -124,7 +124,7 @@ function ExcludeAreasDropdown({
             exit={{ opacity: 0, y: direction === "above" ? 4 : -4, scale: 0.97 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             className={cn(
-              "absolute z-[9999] w-full rounded-lg border border-white/[0.14] bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
+              "absolute z-[9999] w-full rounded-lg border border-border bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.25)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
               direction === "above" ? "bottom-full mb-1" : "top-full mt-1"
             )}
           >
@@ -135,7 +135,7 @@ function ExcludeAreasDropdown({
                   key={area.id}
                   type="button"
                   onClick={() => onToggle(area.id)}
-                  className="flex items-center gap-2 w-full px-2.5 py-1.5 text-sm cursor-pointer transition-colors hover:bg-white/[0.08] text-card-foreground"
+                  className="flex items-center gap-2 w-full px-2.5 py-1.5 text-sm cursor-pointer transition-colors hover:bg-muted text-card-foreground"
                 >
                   <div
                     className={cn(
@@ -494,12 +494,12 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
           className={cn(
             "relative flex-1 min-h-[120px] rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all",
             hasImage
-              ? "border-primary/30 bg-white/[0.02]"
+              ? "border-primary/30 bg-muted/20"
               : "border-dashed cursor-pointer",
             !hasImage &&
               (isDragging
                 ? "border-primary bg-primary/10"
-                : "border-primary/40 bg-white/[0.03] hover:border-primary hover:bg-primary/5")
+                : "border-primary/30 dark:border-white/[0.18] bg-muted/30 hover:border-primary dark:hover:border-primary hover:bg-primary/5")
           )}
         >
           {hasImage ? (
@@ -522,7 +522,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             </>
           ) : (
             <>
-              <Upload className="w-8 h-8 text-muted-foreground/50" />
+              <Upload className="w-8 h-8 text-muted-foreground/70 dark:text-muted-foreground/50" />
               <p className="text-sm font-bold text-card-foreground">
                 Drop image here or click to upload
               </p>
@@ -573,7 +573,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
                   "py-1.5 rounded-lg text-[13px] font-bold transition-all cursor-pointer border",
                   activeFilter === filter.id
                     ? "border-primary bg-gradient-to-r from-primary to-[#818CF8] text-primary-foreground"
-                    : "border-border bg-white/[0.03] text-card-foreground hover:border-white/[0.15]"
+                    : "border-border bg-muted/30 text-card-foreground hover:border-border/80"
                 )}
               >
                 {filter.label}
@@ -607,7 +607,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             />
             <span className={cn(
               "text-[13px] font-bold w-7 text-right",
-              activeFilter === "none" ? "text-muted-foreground/40" : "text-primary"
+              activeFilter === "none" ? "text-muted-foreground/60 dark:text-muted-foreground/40" : "text-primary"
             )}>
               {activeFilter === "none" ? "0.0" : filterIntensity.toFixed(1)}
             </span>
@@ -678,7 +678,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             />
             <span className={cn(
               "text-[13px] font-bold w-7 text-right",
-              faceReshape ? "text-primary" : "text-muted-foreground/40"
+              faceReshape ? "text-primary" : "text-muted-foreground/60 dark:text-muted-foreground/40"
             )}>
               {faceReshape ? faceReshapeIntensity.toFixed(1) : "0.0"}
             </span>
@@ -696,7 +696,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
 
       {/* ── 하단 고정: 비율/해상도 + 생성 버튼 ── */}
       <div className="shrink-0 px-3 pb-3 space-y-2">
-        <div className="rounded-xl border border-border bg-white/[0.02] p-2.5 space-y-2.5">
+        <div className="rounded-xl border border-border bg-muted/20 p-2.5 space-y-2.5">
           <div className="flex gap-1.5">
             <Dropdown options={SCALE_OPTIONS} value={String(scale)} onChange={(v) => setScale(Number(v))} className="flex-1" />
             <Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="flex-1" />
@@ -707,12 +707,12 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             disabled={isGenerating}
             onClick={() => requireAuth(handleGenerate)}
             className={cn(
-              "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-bold text-white transition-all duration-300",
+              "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[16px] font-extrabold tracking-wide text-white transition-all duration-300",
               isGenerating
                 ? "bg-muted cursor-not-allowed opacity-50"
                 : !hasImage
                   ? "bg-gradient-to-r from-primary to-secondary opacity-60 cursor-pointer"
-                  : "bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110 cursor-pointer"
+                  : "bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.02] cursor-pointer"
             )}
           >
             {isGenerating ? (

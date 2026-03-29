@@ -107,7 +107,7 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
                 "w-full aspect-square rounded-lg overflow-hidden border transition-colors cursor-pointer",
                 selectedId === sample.id
                   ? "border-indigo-500 ring-1 ring-indigo-500/50"
-                  : "border-white/10 hover:border-white/25"
+                  : "border-border hover:border-border/80"
               )}
             >
               <Image
@@ -137,8 +137,8 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
               className={cn(
                 "w-full flex items-center justify-center gap-1 py-2.5 rounded-lg border transition-colors cursor-pointer text-[11px] font-semibold",
                 favFull
-                  ? "border-white/10 text-white/20 cursor-not-allowed"
-                  : "border-indigo-500/40 text-white bg-indigo-500/20 hover:bg-indigo-500/35 hover:border-indigo-500/60"
+                  ? "border-border text-muted-foreground/60 dark:text-muted-foreground/40 cursor-not-allowed"
+                  : "border-indigo-500/40 text-foreground bg-indigo-500/20 hover:bg-indigo-500/35 hover:border-indigo-500/60"
               )}
               title={favFull ? `최대 ${maxFavorites}개` : "현재 설정 저장"}
             >
@@ -149,12 +149,12 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
             {/* 즐겨찾기 리스트 */}
             {favLoading ? (
               <div className="flex items-center justify-center pt-6">
-                <Loader2 className="w-4 h-4 text-white/30 animate-spin" />
+                <Loader2 className="w-4 h-4 text-muted-foreground/70 dark:text-muted-foreground/50 animate-spin" />
               </div>
             ) : favorites.length === 0 ? (
               <div className="flex flex-col items-center justify-center pt-6 gap-1.5">
-                <Star className="w-5 h-5 text-white/15" />
-                <p className="text-[10px] text-white/30 text-center leading-tight">
+                <Star className="w-5 h-5 text-muted-foreground/50 dark:text-muted-foreground/30" />
+                <p className="text-[10px] text-muted-foreground/70 dark:text-muted-foreground/50 text-center leading-tight">
                   설정을 저장하면<br />여기에 표시됩니다
                 </p>
               </div>
@@ -162,7 +162,7 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
               favorites.map((fav) => (
                 <div
                   key={fav.id}
-                  className="group relative w-full rounded-lg overflow-hidden border border-white/10 hover:border-white/25 transition-colors cursor-pointer"
+                  className="group relative w-full rounded-lg overflow-hidden border border-border hover:border-border/80 transition-colors cursor-pointer"
                   onClick={() => handleLoadFavorite(fav)}
                 >
                   {/* 썸네일 */}
@@ -184,7 +184,7 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
                     </div>
                   ) : (
                     <div className="w-full aspect-square bg-muted/20 flex items-center justify-center">
-                      <Star className="w-5 h-5 text-white/10" />
+                      <Star className="w-5 h-5 text-muted-foreground/40 dark:text-muted-foreground/20" />
                     </div>
                   )}
                   {/* 이름 오버레이 */}

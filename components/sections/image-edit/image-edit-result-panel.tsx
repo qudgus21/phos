@@ -314,7 +314,7 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
             {Array.from({ length: count }).map((_, i) => (
               <div
                 key={i}
-                className="relative aspect-square rounded-lg border border-white/10 overflow-hidden"
+                className="relative aspect-square rounded-lg border border-border overflow-hidden"
                 style={{ filter: `blur(${blur}px)`, transition: "filter 1s ease-out" }}
               >
                 {renderBlurContent(i)}
@@ -498,7 +498,7 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
               <div
                 key={i}
                 className={cn(
-                  "relative aspect-square rounded-lg border border-white/10 bg-muted/30 flex items-center justify-center",
+                  "relative aspect-square rounded-lg border border-border bg-muted/30 flex items-center justify-center",
                   outputs[i] && "group"
                 )}
               >
@@ -528,7 +528,7 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
         /* Empty State */
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
           <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-muted-foreground/50" />
+            <Sparkles className="w-8 h-8 text-muted-foreground/70 dark:text-muted-foreground/50" />
           </div>
           <div className="text-center space-y-1.5">
             <p className="text-sm font-semibold text-foreground">AI 생성 결과</p>
@@ -550,7 +550,7 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
                   </span>
                 </div>
                 {i < WORKFLOW_STEPS.length - 1 && (
-                  <span className="text-muted-foreground/30 text-xs mb-5">→</span>
+                  <span className="text-muted-foreground/50 dark:text-muted-foreground/30 text-xs mb-5">→</span>
                 )}
               </div>
             ))}

@@ -180,7 +180,7 @@ export function Dropdown({
             exit={{ opacity: 0, y: direction === "above" ? 4 : -4, scale: 0.97 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             className={cn(
-              "absolute z-[9999] min-w-[100px] rounded-lg border border-white/[0.14] bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
+              "absolute z-[9999] min-w-[100px] rounded-lg border border-border bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
               columns === 1 ? "w-full max-h-52 overflow-y-auto" : "w-max",
               direction === "above" ? "bottom-full mb-1" : "top-full mt-1",
               align === "right" ? "right-0" : "left-0"
@@ -196,7 +196,7 @@ export function Dropdown({
                 onMouseLeave={() => setFocusIndex(-1)}
                 onClick={() => select(opt.value)}
                 className={cn(
-                  "px-2.5 py-1.5 text-sm cursor-pointer transition-colors hover:bg-white/[0.08]",
+                  "px-2.5 py-1.5 text-sm cursor-pointer transition-colors hover:bg-muted",
                   opt.value === value
                     ? "bg-muted text-foreground font-medium"
                     : "text-card-foreground"

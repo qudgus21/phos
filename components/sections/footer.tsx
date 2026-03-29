@@ -81,7 +81,7 @@ export function Footer() {
               support@anelo.kr
             </a>
           </div>
-          <div className="space-y-1 text-xs text-muted-foreground/70">
+          <div className="space-y-1 text-xs text-muted-foreground">
             <p>상호명 anelo | 대표 성재훈</p>
             <p>주소 경기도 수원시 영통구 광교마을로 156</p>
             <p>대표전화 031-235-0447</p>

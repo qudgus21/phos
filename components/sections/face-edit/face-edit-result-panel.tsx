@@ -378,14 +378,14 @@ function CompareSlider({ beforeSrc, afterSrc }: { beforeSrc: string; afterSrc: s
 /* ── 모드 토글 ── */
 function ViewModeToggle({ mode, onChange }: { mode: "single" | "compare"; onChange: (m: "single" | "compare") => void }) {
   return (
-    <div className="flex items-center bg-white/[0.06] border border-white/[0.1] rounded-lg p-0.5">
+    <div className="flex items-center bg-muted border border-border rounded-lg p-0.5">
       <button
         type="button"
         onClick={() => onChange("single")}
         className={cn(
           "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer",
           mode === "single"
-            ? "bg-white/[0.12] text-foreground"
+            ? "bg-background text-foreground"
             : "text-muted-foreground hover:text-foreground"
         )}
       >
@@ -398,7 +398,7 @@ function ViewModeToggle({ mode, onChange }: { mode: "single" | "compare"; onChan
         className={cn(
           "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer",
           mode === "compare"
-            ? "bg-white/[0.12] text-foreground"
+            ? "bg-background text-foreground"
             : "text-muted-foreground hover:text-foreground"
         )}
       >
@@ -517,7 +517,7 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
         /* Empty State */
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
           <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-muted-foreground/50" />
+            <Sparkles className="w-8 h-8 text-muted-foreground/70 dark:text-muted-foreground/50" />
           </div>
           <div className="text-center space-y-1.5">
             <p className="text-sm font-semibold text-foreground">AI 생성 결과</p>
@@ -539,7 +539,7 @@ export function FaceEditResultPanel({ sampleId, displayUrls, originalUrls, isGen
                   </span>
                 </div>
                 {i < WORKFLOW_STEPS.length - 1 && (
-                  <span className="text-muted-foreground/30 text-xs mb-5">→</span>
+                  <span className="text-muted-foreground/50 dark:text-muted-foreground/30 text-xs mb-5">→</span>
                 )}
               </div>
             ))}

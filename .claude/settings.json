@@ -16,7 +16,10 @@
       "Bash(mv sample6 sample4)",
       "Bash(mv sample_tmp sample6)",
       "Bash(mv sample4/smaple6.webp sample4/smaple4.webp)",
-      "Bash(mv sample6/smaple4.webp sample6/smaple6.webp)"
+      "Bash(mv sample6/smaple4.webp sample6/smaple6.webp)",
+      "Edit(/.claude/**)",
+      "Write(/.claude/**)",
+      "Read(/.claude/**)"
     ],
     "additionalDirectories": [
       "/Applications/hbh/dev/revoa/public/images/image-edit",

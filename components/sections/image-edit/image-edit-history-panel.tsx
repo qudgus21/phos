@@ -199,11 +199,11 @@ export function ImageEditHistoryPanel({
       <div className="flex-1 overflow-y-auto p-2">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center pt-12 gap-2">
-            <Loader2 className="w-5 h-5 text-muted-foreground/50 animate-spin" />
+            <Loader2 className="w-5 h-5 text-muted-foreground/70 dark:text-muted-foreground/50 animate-spin" />
           </div>
         ) : history.length === 0 ? (
           <div className="flex flex-col items-center justify-center pt-12 gap-2">
-            <Clock className="w-6 h-6 text-muted-foreground/30" />
+            <Clock className="w-6 h-6 text-muted-foreground/50 dark:text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">기록이 없습니다</p>
           </div>
         ) : (

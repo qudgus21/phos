@@ -54,7 +54,7 @@ export function FaceSwap() {
                 "relative w-10 h-10 rounded-full overflow-hidden border-2 transition-all cursor-pointer",
                 selected === s.id
                   ? "border-primary shadow-[0_0_8px_rgba(99,102,241,0.4)] scale-110"
-                  : "border-white/20 opacity-60 hover:opacity-100"
+                  : "border-border opacity-60 hover:opacity-100"
               )}
             >
               <Image

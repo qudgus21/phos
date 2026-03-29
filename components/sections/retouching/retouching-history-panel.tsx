@@ -21,7 +21,7 @@ export function RetouchingHistoryPanel() {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex flex-col items-center justify-center pt-8 gap-4">
           <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center">
-            <Clock className="w-6 h-6 text-muted-foreground/40" />
+            <Clock className="w-6 h-6 text-muted-foreground/60 dark:text-muted-foreground/40" />
           </div>
           <div className="text-center space-y-1">
             <p className="text-sm font-semibold text-card-foreground">

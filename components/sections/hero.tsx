@@ -10,7 +10,7 @@ export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background base */}
-      <div className="absolute inset-0 bg-[#090A14]" />
+      <div className="absolute inset-0 bg-background dark:bg-[#090A14]" />
 
       {/* Ambient glow particles */}
       <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden">
@@ -39,7 +39,7 @@ export function Hero() {
           unoptimized
         />
         {/* Left fade */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1a1b2e] from-5% via-[#1a1b2e]/40 via-30% to-transparent to-60%" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white from-5% via-white/40 via-30% to-transparent to-60% dark:from-[#1a1b2e] dark:via-[#1a1b2e]/40 dark:to-transparent" />
       </div>
 
       {/* Content */}
@@ -55,7 +55,7 @@ export function Hero() {
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="px-3 py-1 text-xs font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded-full"
+                className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-500/10 border border-indigo-500/20 rounded-full dark:text-indigo-300"
               >
                 {tag}
               </span>
@@ -65,11 +65,11 @@ export function Hero() {
           {/* Headline — A */}
           <motion.h1
             variants={fadeInUp}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-8 font-display leading-[1.1] tracking-tight"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-8 font-display leading-[1.1] tracking-tight"
           >
             편집, 보정, 생성
             <br />
-            <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">
               스튜디오 퀄리티를
               <br />
               누구나
@@ -79,11 +79,11 @@ export function Hero() {
           {/* Subtitle — A */}
           <motion.p
             variants={fadeInUp}
-            className="text-lg md:text-xl text-white/60 mb-12 leading-relaxed"
+            className="text-lg md:text-xl text-foreground/70 mb-12 leading-relaxed"
           >
             이미지 편집 · 피부 보정 · 얼굴 변경
             <br className="hidden md:block" />
-            하이엔드 실사 이미지, <span className="text-white/80">클릭 한 번</span>이면 충분합니다
+            하이엔드 실사 이미지, <span className="text-foreground/80">클릭 한 번</span>이면 충분합니다
           </motion.p>
 
           {/* CTA — E */}
@@ -94,14 +94,14 @@ export function Hero() {
             >
               무료로 시작하기
             </Link>
-            <span className="text-sm text-white/50">
+            <span className="text-sm text-muted-foreground">
               카드 등록 없이 · 무료 체험
             </span>
           </motion.div>
 
           {/* Trust Bar */}
           <motion.div variants={fadeInUp}>
-            <p className="text-[11px] text-white/35 leading-relaxed">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
               포토그래퍼 · 디자이너 · 마케터 · 인플루언서 · 셀러를 위한 AI 이미지 도구
             </p>
           </motion.div>

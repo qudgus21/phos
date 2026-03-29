@@ -69,7 +69,7 @@ export function FaceEditFavoriteSaveModal({
           </div>
           <div>
             <h3 className="text-base font-bold text-foreground">즐겨찾기 저장</h3>
-            <p className="text-xs text-white/40">{currentCount}/{maxCount} 사용 중</p>
+            <p className="text-xs text-muted-foreground">{currentCount}/{maxCount} 사용 중</p>
           </div>
         </div>
 
@@ -79,7 +79,7 @@ export function FaceEditFavoriteSaveModal({
           value={name}
           onChange={(e) => setName(e.target.value.slice(0, 30))}
           placeholder="즐겨찾기 이름 (최대 30자)"
-          className="w-full px-3 py-2 mb-3 rounded-lg border border-white/[0.15] bg-white/[0.08] text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors placeholder:text-white/30"
+          className="w-full px-3 py-2 mb-3 rounded-lg border border-border bg-muted text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors placeholder:text-muted-foreground/70 dark:placeholder:text-muted-foreground/50"
           autoFocus
           onKeyDown={(e) => {
             if (e.key === "Enter" && !isSaving) handleSave();
@@ -106,7 +106,7 @@ export function FaceEditFavoriteSaveModal({
             type="button"
             onClick={handleClose}
             disabled={isSaving}
-            className="flex-1 py-2 text-sm font-semibold text-white/70 rounded-lg border border-white/[0.12] bg-white/[0.06] hover:bg-white/[0.1] transition-colors cursor-pointer disabled:opacity-50"
+            className="flex-1 py-2 text-sm font-semibold text-muted-foreground rounded-lg border border-border bg-muted hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50"
           >
             취소
           </button>
@@ -133,7 +133,7 @@ export function FaceEditFavoriteSaveModal({
 
 function Badge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="px-2 py-0.5 text-[10px] font-medium text-white/60 bg-white/[0.08] border border-white/[0.1] rounded-md">
+    <span className="px-2 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted border border-border rounded-md">
       {children}
     </span>
   );

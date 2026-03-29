@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sparkles, LogOut, Zap, Plus } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LoginModal } from "@/components/ui/login-modal";
 import { createClient } from "@/lib/supabase/client";
 import { useCreditsBalance } from "@/hooks/use-credits";
@@ -22,7 +23,7 @@ const navItems = [
 ];
 
 const PLAN_BADGE: Record<string, { label: string; className: string }> = {
-  free: { label: "Free", className: "text-slate-400 bg-slate-500/15" },
+  free: { label: "Free", className: "text-slate-500 dark:text-slate-400 bg-slate-500/15" },
   basic: { label: "Basic", className: "text-blue-400 bg-blue-500/15" },
   deluxe: { label: "Deluxe", className: "text-violet-400 bg-violet-500/15" },
   premium: { label: "Premium", className: "text-amber-300 bg-amber-400/15 ring-1 ring-amber-400/30" },
@@ -258,6 +259,8 @@ export function Navigation() {
           <div className="hidden md:block w-[100px]" />
         ) : user ? (
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
+
             {/* 크레딧 뱃지 */}
             {creditInfo && (
               <Link
@@ -265,7 +268,7 @@ export function Navigation() {
                 className="group flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25 hover:border-indigo-400/40 transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]"
               >
                 <Zap className="w-4 h-4 text-indigo-400" />
-                <span className="text-sm font-bold text-white tabular-nums">
+                <span className="text-sm font-bold text-foreground tabular-nums">
                   {creditInfo.balance.total.toLocaleString()}
                 </span>
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
@@ -275,7 +278,7 @@ export function Navigation() {
             )}
 
             {/* 구분선 */}
-            <div className="w-px h-6 bg-white/10" />
+            <div className="w-px h-6 bg-border" />
 
             {/* 유저 프로필 드롭다운 */}
             <div className="relative">
@@ -284,7 +287,7 @@ export function Navigation() {
                   e.stopPropagation();
                   setDropdownOpen(!dropdownOpen);
                 }}
-                className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-white/8 transition-colors cursor-pointer"
+                className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-muted transition-colors cursor-pointer"
               >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" referrerPolicy="no-referrer" />
@@ -293,7 +296,7 @@ export function Navigation() {
                     {userInitial}
                   </div>
                 )}
-                <span className="text-sm text-slate-300 font-medium max-w-[140px] truncate">
+                <span className="text-sm text-muted-foreground font-medium max-w-[140px] truncate">
                   {user.email}
                 </span>
               </button>
@@ -305,10 +308,10 @@ export function Navigation() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-[#1e2040] shadow-2xl shadow-black/40 overflow-hidden"
+                    className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card shadow-2xl shadow-black/20 dark:shadow-black/40 overflow-hidden"
                   >
-                    <div className="px-4 py-3 border-b border-white/10">
-                      <p className="text-sm font-semibold text-white truncate">{user.email}</p>
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="text-sm font-semibold text-foreground truncate">{user.email}</p>
                       <div className="mt-1">
                         <PlanBadge
                           planId={creditInfo?.plan.id ?? "free"}
@@ -319,7 +322,7 @@ export function Navigation() {
                     <div className="p-1.5">
                       <button
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/8 transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
                         Sign out
@@ -331,12 +334,15 @@ export function Navigation() {
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setLoginOpen(true)}
-            className="hidden md:inline-flex items-center px-6 py-2.5 text-[15px] font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-500 rounded-xl hover:brightness-110 transition-all cursor-pointer"
-          >
-            로그인하기
-          </button>
+          <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
+            <button
+              onClick={() => setLoginOpen(true)}
+              className="inline-flex items-center px-6 py-2.5 text-[15px] font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-500 rounded-xl hover:brightness-110 transition-all cursor-pointer"
+            >
+              로그인하기
+            </button>
+          </div>
         )}
 
         {/* Mobile: 크레딧 뱃지 */}
@@ -346,7 +352,7 @@ export function Navigation() {
             className="md:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25"
           >
             <Zap className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-xs font-bold text-white tabular-nums">
+            <span className="text-xs font-bold text-foreground tabular-nums">
               {creditInfo.balance.total.toLocaleString()}
             </span>
           </Link>
@@ -425,6 +431,11 @@ export function Navigation() {
                   </motion.div>
                 );
               })}
+              <motion.div variants={mobileItemVariants}>
+                <div className="flex justify-center mt-2">
+                  <ThemeToggle />
+                </div>
+              </motion.div>
               {authReady && (
               <motion.div variants={mobileItemVariants}>
                 <div className="mt-3 pt-3 border-t border-border">
@@ -439,7 +450,7 @@ export function Navigation() {
                           </div>
                         )}
                         <div className="flex flex-col min-w-0">
-                          <span className="text-sm text-slate-300 font-medium truncate">{user.email}</span>
+                          <span className="text-sm text-muted-foreground font-medium truncate">{user.email}</span>
                           <span className="mt-0.5">
                             <PlanBadge
                               planId={creditInfo?.plan.id ?? "free"}
@@ -449,7 +460,7 @@ export function Navigation() {
                         </div>
                       </div>
                       <button
-                        className="w-full flex items-center justify-center gap-2 px-5 py-3 text-[15px] font-semibold text-slate-400 hover:text-white rounded-xl hover:bg-white/8 transition-colors cursor-pointer min-h-[48px]"
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 text-[15px] font-semibold text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors cursor-pointer min-h-[48px]"
                         onClick={() => {
                           setMobileOpen(false);
                           handleSignOut();

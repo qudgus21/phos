@@ -3,6 +3,7 @@ import { Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/ui/toast";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Navigation } from "@/components/sections/navigation";
 import "./globals.css";
 
@@ -51,14 +52,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="dark" suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning>
       <body
         className={`${spaceGrotesk.variable} ${pretendard.variable} font-sans antialiased`}
       >
-        <QueryProvider>
-          <Navigation />
-          <ToastProvider>{children}</ToastProvider>
-        </QueryProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            <Navigation />
+            <ToastProvider>{children}</ToastProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

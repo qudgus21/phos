@@ -448,7 +448,7 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isG
         /* Empty State */
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
           <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-muted-foreground/50" />
+            <Sparkles className="w-8 h-8 text-muted-foreground/70 dark:text-muted-foreground/50" />
           </div>
           <div className="text-center space-y-1.5">
             <p className="text-sm font-semibold text-foreground">AI 보정 결과</p>
@@ -470,7 +470,7 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isG
                   </span>
                 </div>
                 {i < WORKFLOW_STEPS.length - 1 && (
-                  <span className="text-muted-foreground/30 text-xs mb-5">→</span>
+                  <span className="text-muted-foreground/50 dark:text-muted-foreground/30 text-xs mb-5">→</span>
                 )}
               </div>
             ))}
