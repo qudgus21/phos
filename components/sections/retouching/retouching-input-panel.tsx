@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHand
 import {
   Upload,
   X,
-  Gem,
+  Zap,
   Loader2,
   ChevronDown,
   Check,
@@ -51,7 +51,7 @@ const MODE_OPTIONS = [
   { value: "matte", label: "보정(매트메이크업)" },
 ];
 
-const CREDIT_COST = 80;
+const CREDIT_COST = 110;
 
 const SCALE_OPTIONS = [
   { value: "1", label: "1K" },
@@ -702,13 +702,15 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
 
           <button
             type="button"
-            disabled={isGenerating || !hasImage}
+            disabled={isGenerating}
             onClick={handleGenerate}
             className={cn(
               "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[15px] font-bold text-white transition-all duration-300",
-              isGenerating || !hasImage
+              isGenerating
                 ? "bg-muted cursor-not-allowed opacity-50"
-                : "bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110 cursor-pointer"
+                : !hasImage
+                  ? "bg-gradient-to-r from-primary to-secondary opacity-60 cursor-pointer"
+                  : "bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110 cursor-pointer"
             )}
           >
             {isGenerating ? (
@@ -719,8 +721,10 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             ) : (
               <>
                 생성하기
-                <Gem className="w-4 h-4" />
-                {CREDIT_COST} 크레딧
+                <span className="ml-1.5 inline-flex items-center gap-0.5 bg-white/20 rounded-full px-1.5 py-0.5 text-[11px] font-semibold">
+                  <Zap className="w-2.5 h-2.5" />
+                  {CREDIT_COST}
+                </span>
               </>
             )}
           </button>

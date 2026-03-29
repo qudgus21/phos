@@ -19,7 +19,7 @@ const lambda: LambdaClient =
   (globalThis as Record<string, unknown>).__lambdaClient as LambdaClient ??
   ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
 
-const CREDIT_COST = 85;
+const CREDIT_COST = 40;
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const REPLICATE_MODEL = "black-forest-labs/flux-fill-pro";

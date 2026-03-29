@@ -21,7 +21,7 @@ const lambda: LambdaClient =
   (globalThis as Record<string, unknown>).__lambdaClient as LambdaClient ??
   ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
 
-const CREDIT_COST = 80;
+const CREDIT_COST = 110;
 const DEFAULT_MODEL_ID = "retouching-gpt-image-1.5";
 
 interface GenerateResponse {

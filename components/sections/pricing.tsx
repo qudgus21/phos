@@ -18,7 +18,7 @@ const monthlyPlans = [
     price: 9,
     recommended: false,
     features: [
-      "4,500 크레딧",
+      "2,000 크레딧",
       "업스케일링",
       "피부 보정 (기본)",
       "고해상도 변환",
@@ -31,7 +31,7 @@ const monthlyPlans = [
     price: 19,
     recommended: true,
     features: [
-      "9,500 크레딧",
+      "4,400 크레딧",
       "업스케일링",
       "피부 보정 (기본)",
       "피부 보정 (메이크업)",
@@ -46,7 +46,7 @@ const monthlyPlans = [
     price: 29,
     recommended: false,
     features: [
-      "14,500 크레딧",
+      "7,100 크레딧",
       "업스케일링",
       "피부 보정 (기본)",
       "피부 보정 (메이크업)",
@@ -58,11 +58,11 @@ const monthlyPlans = [
 ];
 
 const onetimePacks = [
-  { price: 5, credits: "1,500" },
-  { price: 10, credits: "3,000" },
-  { price: 15, credits: "4,800" },
-  { price: 20, credits: "6,450" },
-  { price: 30, credits: "9,750" },
+  { price: 5, credits: "700" },
+  { price: 10, credits: "1,500" },
+  { price: 15, credits: "2,400" },
+  { price: 20, credits: "3,300" },
+  { price: 30, credits: "5,100" },
 ];
 
 export function Pricing() {

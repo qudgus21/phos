@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
-import { getModelDef } from "@/lib/services/ai/models";
+import { getModelDef, getImageEditCredits, UPSCALE_CREDITS } from "@/lib/services/ai/models";
 import { resolveProvider } from "@/lib/services/ai/registry";
 import { buildImageEditPrompt, buildSeedreamPrompt } from "@/lib/services/ai/prompts";
 import {
@@ -41,8 +41,14 @@ export const POST = withAuth(async (request, { user }) => {
   const imageCount = Number(formData.get("imageCount"));
 
   // 기본 검증
-  if (!modelId || !prompt || prompt.length < 1 || prompt.length > 2000) {
-    throw new ValidationError("입력값이 올바르지 않습니다");
+  if (!modelId) {
+    throw new ValidationError("모델을 선택해주세요");
+  }
+  if (!prompt || prompt.length < 1) {
+    throw new ValidationError("프롬프트를 입력해주세요");
+  }
+  if (prompt.length > 2000) {
+    throw new ValidationError("프롬프트는 2,000자 이내로 입력해주세요");
   }
   if (!["1K", "2K", "3K", "4K", "custom"].includes(imageSize)) {
     throw new ValidationError("이미지 크기가 올바르지 않습니다");
@@ -90,13 +96,9 @@ export const POST = withAuth(async (request, { user }) => {
   }
 
   // 4. 크레딧 + 플랜 정보 조회
-  const CREDIT_HIGH_RES = 150;
-  const CREDIT_STANDARD = 75;
-  const HIGH_RES_THRESHOLD = 2048;
-
   const creditInfo = await getUserCreditInfo(user.id);
-  const creditCost =
-    (Math.max(width, height) > HIGH_RES_THRESHOLD ? CREDIT_HIGH_RES : CREDIT_STANDARD) * imageCount;
+  const perImage = getImageEditCredits(modelId, imageSize);
+  const creditCost = perImage * imageCount;
 
   // 쿨다운 검증
   const cooldownRemaining = checkCooldown(

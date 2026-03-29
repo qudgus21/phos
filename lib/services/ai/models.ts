@@ -138,7 +138,6 @@ export const IMAGE_EDIT_MODELS: ModelDef[] = [
             ? "match_input_image"
             : "1:1"
           : ratio,
-      output_format: "png",
       sequential_image_generation: "disabled",
       ...(images && images.length > 0 && { image_input: images }),
     }),
@@ -227,4 +226,32 @@ export const RETOUCHING_MODELS: ModelDef[] = [
 
 export function getRetouchingModelDef(id: string): ModelDef | undefined {
   return RETOUCHING_MODELS.find((m) => m.id === id);
+}
+
+/* ── Credit Costs (67% 마진, Basic $9/2,000cr 기준) ── */
+
+/** 이미지 편집: 모델+해상도별 크레딧 (1장 기준) */
+const IMAGE_EDIT_CREDITS: Record<string, Record<string, number>> = {
+  "nano-banana-pro": { "1K": 115, "2K": 115, "4K": 230 },
+  "nano-banana-2":   { "1K": 80,  "2K": 80,  "4K": 115 },
+  "nano-banana":     { "1K": 35 },
+  "seedream-5.0":    { "2K": 35,  "3K": 35 },
+  "seedream-4.5":    { "2K": 35,  "4K": 35 },
+  "seedream-4.0":    { "1K": 25,  "2K": 25,  "4K": 25 },
+};
+
+/** 업스케일러 추가 크레딧 (Real-ESRGAN 1회) */
+export const UPSCALE_CREDITS = 10;
+
+/** 피부 보정 크레딧 (1장, GPT Image 1.5) */
+export const RETOUCH_CREDITS = 110;
+
+/** 얼굴 변경 크레딧 (1장, flux-fill-pro) */
+export const FACE_EDIT_CREDITS = 40;
+
+/** 이미지 편집 크레딧 조회 */
+export function getImageEditCredits(modelId: string, imageSize: string): number {
+  const modelCosts = IMAGE_EDIT_CREDITS[modelId];
+  if (!modelCosts) return 35; // fallback
+  return modelCosts[imageSize] ?? modelCosts[Object.keys(modelCosts)[0]] ?? 35;
 }

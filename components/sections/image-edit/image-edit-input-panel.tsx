@@ -9,7 +9,7 @@ import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { SAMPLES } from "@/lib/constants/samples";
-import { IMAGE_EDIT_MODELS } from "@/lib/services/ai/models";
+import { IMAGE_EDIT_MODELS, getImageEditCredits } from "@/lib/services/ai/models";
 import { prependHistoryItem } from "@/hooks/use-history";
 
 interface UploadedImage {
@@ -209,7 +209,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   }, [isGenerating]);
 
   const scaleDisplay = `×${scale.toFixed(1)}`;
-  const creditCost = imageSize === "4K" ? 150 : 75;
+  const creditCost = getImageEditCredits(model, imageSize);
 
   const isCustomSize = imageSize === "custom";
 
@@ -479,12 +479,20 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
           <div className="gradient-border-wrap rounded-lg flex">
             <textarea
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value.length <= 2000) setPrompt(e.target.value);
+              }}
+              maxLength={2000}
               placeholder="예시: 미니멀 카페, 자연광, 따뜻한 톤"
               className={cn(fieldBase, "focus:ring-0 focus:border-transparent w-full px-3.5 py-3 min-h-[110px] resize-y placeholder:text-white/50")}
             />
           </div>
-          <p className="text-[13px] text-muted-foreground">장소, 스타일, 조명을 구체적으로 입력하세요</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[13px] text-muted-foreground">장소, 스타일, 조명을 구체적으로 입력하세요</p>
+            <span className={cn("text-[12px] tabular-nums", prompt.length >= 2000 ? "text-error" : "text-muted-foreground")}>
+              {prompt.length}/2,000
+            </span>
+          </div>
         </div>
 
         {/* Reference Images */}
@@ -687,7 +695,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       <div className="px-4 py-2.5 border-t border-border">
         <div className="flex items-center justify-between">
           <span className="text-xs text-white/50">
-            4K: 이미지당 80 크레딧 (≈ $0.16)
+            이미지당 {creditCost} 크레딧
           </span>
           <div className="flex items-center gap-3">
             <button
@@ -709,11 +717,19 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
               )}
             >
               {isGenerating ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  생성 중...
+                </>
               ) : (
-                <Zap className="w-3.5 h-3.5" />
+                <>
+                  생성하기
+                  <span className="ml-2 inline-flex items-center gap-0.5 bg-white/20 rounded-full px-1.5 py-0.5 text-[11px] font-semibold">
+                    <Zap className="w-2.5 h-2.5" />
+                    {creditCost * imageCount}
+                  </span>
+                </>
               )}
-              {isGenerating ? "생성 중..." : `실행 / ${creditCost * imageCount} 크레딧`}
             </button>
           </div>
         </div>

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHOS 가격 계산기</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --card: #141414;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e8e8;
+    --muted: #888;
+    --primary: #6366f1;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Pretendard Variable', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 20px;
+    line-height: 1.6;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #6366f1, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  h1 + p { color: var(--muted); margin-bottom: 40px; font-size: 14px; }
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 40px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--primary);
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  .group-header td {
+    padding-top: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 13px;
+    border-bottom: 1px solid rgba(99,102,241,0.2);
+  }
+  input[type="number"] {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 12px;
+    width: 100px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="number"]:focus { border-color: var(--primary); }
+  input[type="number"]::placeholder { color: #555; }
+  .input-prefix {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--muted);
+  }
+  .input-prefix span { font-size: 14px; }
+  .result { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .margin-good { color: var(--green); }
+  .margin-ok { color: var(--yellow); }
+  .margin-bad { color: var(--red); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-yellow { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .summary-item {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .summary-item .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .summary-item .value { font-size: 24px; font-weight: 800; }
+  .note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .section-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .sub-label { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>PHOS 가격 계산기</h1>
+  <p>API 원가 기반으로 모델·해상도별 적정 크레딧 소모량을 자동 계산합니다.</p>
+
+  <!-- ① API 원가 입력 -->
+  <h2><span class="num">1</span> API 원가 입력</h2>
+  <p class="section-desc">Replicate 테스트 결과를 입력하세요. 업스케일러는 별도 추가 비용입니다.</p>
+  <div class="card" id="cost-inputs"></div>
+
+  <!-- ② 마진 설정 -->
+  <h2><span class="num">2</span> 마진 설정</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>항목</th><th>값</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Polar 수수료</td>
+          <td><strong>10%</strong> (고정)</td>
+          <td style="color:var(--muted)">6% + $0.40 → 보수적으로 10% 적용</td>
+        </tr>
+        <tr>
+          <td>목표 마진율</td>
+          <td><div class="input-prefix"><input type="number" id="margin-pct" step="5" min="0" max="95" value="67" oninput="calc()" style="width:80px"><span>%</span></div></td>
+          <td style="color:var(--muted)">순이익 비율 (50%=2배, 67%=3배, 80%=5배)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ③ 적정 크레딧 소모량 -->
+  <h2><span class="num">3</span> 적정 크레딧 소모량</h2>
+  <p class="section-desc">Basic 기준으로 적정 크레딧 산출. 다른 플랜/단건은 마진율과 차이(%p)를 표시합니다.</p>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>기능</th>
+          <th>API 원가</th>
+          <th>적정 크레딧</th>
+          <th>Basic</th>
+          <th>Deluxe</th>
+          <th>Premium</th>
+          <th>단건 $5</th>
+          <th>단건 $15</th>
+          <th>단건 $30</th>
+          <th>판정</th>
+        </tr>
+      </thead>
+      <tbody id="recommend-body"></tbody>
+    </table>
+  </div>
+
+  <!-- ④ 구독 플랜 시뮬레이션 -->
+  <h2><span class="num">4</span> 구독 플랜 시뮬레이션</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>플랜</th>
+          <th>가격</th>
+          <th>크레딧</th>
+          <th>Polar 수수료</th>
+          <th>실수령</th>
+          <th>cr당 실수령</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Free</td><td>$0</td><td>100</td><td>-</td><td>-</td><td>-</td>
+        </tr>
+        <tr>
+          <td><strong>Basic</strong></td><td>$9</td><td>2,000</td>
+          <td id="sub-fee-basic">-</td><td id="sub-net-basic" class="result">-</td><td id="sub-percr-basic">-</td>
+        </tr>
+        <tr>
+          <td><strong>Deluxe</strong></td><td>$19</td><td>4,400</td>
+          <td id="sub-fee-deluxe">-</td><td id="sub-net-deluxe" class="result">-</td><td id="sub-percr-deluxe">-</td>
+        </tr>
+        <tr>
+          <td><strong>Premium</strong></td><td>$29</td><td>7,100</td>
+          <td id="sub-fee-premium">-</td><td id="sub-net-premium" class="result">-</td><td id="sub-percr-premium">-</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ⑤ 단건 크레딧팩 시뮬레이션 -->
+  <h2><span class="num">5</span> 단건 크레딧팩 시뮬레이션</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>가격</th><th>크레딧</th><th>Polar 수수료</th><th>실수령</th><th>cr당 실수령</th><th>수수료율</th></tr>
+      </thead>
+      <tbody id="onetime-body"></tbody>
+    </table>
+  </div>
+
+  <!-- ⑥ 수익성 검증 -->
+  <h2><span class="num">6</span> 수익성 검증</h2>
+  <p class="section-desc">적정 크레딧 적용 시 플랜별 생성 가능 횟수와 건당 수익.</p>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>기능</th>
+          <th>적정 cr</th>
+          <th>Basic (2,000)</th>
+          <th>Deluxe (4,400)</th>
+          <th>Premium (7,100)</th>
+          <th>건당 수익 (구독)</th>
+          <th>건당 수익 (단건$10)</th>
+        </tr>
+      </thead>
+      <tbody id="verify-body"></tbody>
+    </table>
+  </div>
+
+  <!-- ⑦ 요약 -->
+  <h2><span class="num">7</span> 요약</h2>
+  <div class="card">
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="label">최소 마진 기능</div>
+        <div class="value" id="sum-worst">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">평균 API 원가</div>
+        <div class="value" id="sum-avg-cost">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">Basic 손익분기</div>
+        <div class="value" id="sum-bep">-</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">고정비 커버 구독자</div>
+        <div class="value" id="sum-fixed">-</div>
+      </div>
+    </div>
+    <p class="note">* 손익분기 = 실수령 전액이 API 원가로 소진되는 생성 횟수 (가장 비싼 기능 기준)</p>
+  </div>
+</div>
+
+<script>
+const PLANS = [
+  { key: 'basic', price: 9, credits: 2000 },
+  { key: 'deluxe', price: 19, credits: 4400 },
+  { key: 'premium', price: 29, credits: 7100 },
+];
+
+const ONETIME = [
+  { price: 5, credits: 700 },
+  { price: 10, credits: 1500 },
+  { price: 15, credits: 2400 },
+  { price: 20, credits: 3300 },
+  { price: 30, credits: 5100 },
+];
+
+// 모델·해상도별 API 비용 (테스트 결과 반영)
+const FEATURES = [
+  // 이미지 편집
+  { id: 'nb-pro-1k',  group: '이미지 편집', name: 'Nano Banana Pro',   res: '1K', cost: 0.15 },
+  { id: 'nb-pro-2k',  group: '이미지 편집', name: 'Nano Banana Pro',   res: '2K', cost: 0.15 },
+  { id: 'nb-pro-4k',  group: '이미지 편집', name: 'Nano Banana Pro',   res: '4K', cost: 0.30 },
+  { id: 'nb2-1k',     group: '이미지 편집', name: 'Nano Banana 2',     res: '1K', cost: 0.10 },
+  { id: 'nb2-2k',     group: '이미지 편집', name: 'Nano Banana 2',     res: '2K', cost: 0.10 },
+  { id: 'nb2-4k',     group: '이미지 편집', name: 'Nano Banana 2',     res: '4K', cost: 0.15 },
+  { id: 'nb-1k',      group: '이미지 편집', name: 'Nano Banana',       res: '1K', cost: 0.04 },
+  { id: 'sd50-2k',    group: '이미지 편집', name: 'Seedream 5.0',      res: '2K', cost: 0.04 },
+  { id: 'sd50-3k',    group: '이미지 편집', name: 'Seedream 5.0',      res: '3K', cost: 0.04 },
+  { id: 'sd45-2k',    group: '이미지 편집', name: 'Seedream 4.5',      res: '2K', cost: 0.04 },
+  { id: 'sd45-4k',    group: '이미지 편집', name: 'Seedream 4.5',      res: '4K', cost: 0.04 },
+  { id: 'sd40-1k',    group: '이미지 편집', name: 'Seedream 4.0',      res: '1K', cost: 0.03 },
+  { id: 'sd40-2k',    group: '이미지 편집', name: 'Seedream 4.0',      res: '2K', cost: 0.03 },
+  { id: 'sd40-4k',    group: '이미지 편집', name: 'Seedream 4.0',      res: '4K', cost: 0.03 },
+  // 업스케일러
+  { id: 'upscale',    group: '업스케일러',  name: 'Real-ESRGAN',       res: '-',  cost: 0.01 },
+  // 피부 보정
+  { id: 'retouch',    group: '피부 보정',   name: 'GPT Image 1.5',     res: '~1K', cost: 0.14 },
+  // 얼굴 변경
+  { id: 'face',       group: '얼굴 변경',   name: 'flux-fill-pro',     res: '-',  cost: 0.05 },
+];
+
+function polarFee(price, isSub) {
+  return price * (0.04 + 0.015 + (isSub ? 0.005 : 0)) + 0.40;
+}
+
+function $(id) { return document.getElementById(id); }
+function fmt(n) { return n < 0.01 ? n.toFixed(4) : n.toFixed(2); }
+
+// ① 입력 테이블 생성
+function buildInputs() {
+  let html = '<table><thead><tr><th>기능</th><th>모델</th><th>해상도</th><th>API 비용 (1회)</th></tr></thead><tbody>';
+  let lastGroup = '';
+  FEATURES.forEach(f => {
+    if (f.group !== lastGroup) {
+      html += `<tr class="group-header"><td colspan="4">${f.group}</td></tr>`;
+      lastGroup = f.group;
+    }
+    html += `<tr>
+      <td></td>
+      <td>${f.name}</td>
+      <td style="color:var(--muted)">${f.res}</td>
+      <td><div class="input-prefix"><span>$</span><input type="number" id="cost-${f.id}" step="0.01" min="0" value="${f.cost}" oninput="calc()"></div></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('cost-inputs').innerHTML = html;
+}
+
+function calc() {
+  const marginPct = parseFloat($('margin-pct').value) || 67;
+  const margin = 1 / (1 - marginPct / 100);
+
+  // 플랜별 cr당 실수령
+  const perCrByPlan = {};
+  PLANS.forEach(p => {
+    const net = p.price - polarFee(p.price, true);
+    perCrByPlan[p.key] = net / p.credits;
+  });
+  ONETIME.forEach(p => {
+    const net = p.price - polarFee(p.price, false);
+    perCrByPlan['ot-' + p.price] = net / p.credits;
+  });
+
+  const basicPerCr = perCrByPlan['basic'];
+  const basicNet = PLANS[0].price - polarFee(PLANS[0].price, true);
+  const ot10PerCr = perCrByPlan['ot-10'];
+
+  // 구독 플랜 시뮬레이션
+  PLANS.forEach(plan => {
+    const fee = polarFee(plan.price, true);
+    const net = plan.price - fee;
+    const perCr = net / plan.credits;
+    $(`sub-fee-${plan.key}`).textContent = `$${fee.toFixed(2)}`;
+    $(`sub-net-${plan.key}`).textContent = `$${net.toFixed(2)}`;
+    $(`sub-percr-${plan.key}`).textContent = `$${perCr.toFixed(5)}`;
+  });
+
+  // 단건팩
+  const otBody = $('onetime-body');
+  otBody.innerHTML = '';
+  ONETIME.forEach(pack => {
+    const fee = polarFee(pack.price, false);
+    const net = pack.price - fee;
+    const perCr = net / pack.credits;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>$${pack.price}</td>
+      <td>${pack.credits.toLocaleString()}</td>
+      <td>$${fee.toFixed(2)}</td>
+      <td class="result">$${net.toFixed(2)}</td>
+      <td>$${perCr.toFixed(5)}</td>
+      <td>${(fee / pack.price * 100).toFixed(1)}%</td>
+    `;
+    otBody.appendChild(tr);
+  });
+
+  // ③ 적정 크레딧 역산
+  const recommendBody = $('recommend-body');
+  recommendBody.innerHTML = '';
+  const verifyBody = $('verify-body');
+  verifyBody.innerHTML = '';
+
+  let worstMargin = Infinity, worstName = '-';
+  let totalCost = 0, costCount = 0;
+  let highestCost = 0;
+  const recommended = {};
+  let lastGroup = '';
+
+  FEATURES.forEach(feat => {
+    const cost = parseFloat($('cost-' + feat.id).value) || 0;
+
+    const rawCredits = cost > 0 ? (cost * margin) / basicPerCr : 0;
+    const rounded = Math.ceil(rawCredits / 5) * 5;
+    recommended[feat.id] = rounded;
+
+    const actualMarginPct = cost > 0 && rounded > 0 ? (1 - cost / (rounded * basicPerCr)) * 100 : 0;
+
+    let badgeClass, badgeText;
+    if (cost === 0) { badgeClass = ''; badgeText = '-'; }
+    else if (actualMarginPct >= 50) { badgeClass = 'badge-green'; badgeText = '건강'; }
+    else if (actualMarginPct >= 30) { badgeClass = 'badge-yellow'; badgeText = '주의'; }
+    else { badgeClass = 'badge-red'; badgeText = '위험'; }
+
+    if (cost > 0) {
+      totalCost += cost; costCount++;
+      if (actualMarginPct < worstMargin) { worstMargin = actualMarginPct; worstName = `${feat.name} ${feat.res}`; }
+      if (cost > highestCost) highestCost = cost;
+    }
+
+    function mFor(perCr) {
+      return cost > 0 && rounded > 0 ? (1 - cost / (rounded * perCr)) * 100 : 0;
+    }
+    function diffBadge(pct) {
+      if (cost === 0) return '-';
+      const diff = pct - actualMarginPct;
+      const cls = pct >= 50 ? 'margin-good' : pct >= 30 ? 'margin-ok' : 'margin-bad';
+      return `<span class="${cls}">${pct.toFixed(0)}%</span> <span style="color:var(--muted);font-size:11px">(${diff >= 0 ? '+' : ''}${diff.toFixed(0)})</span>`;
+    }
+
+    // 그룹 헤더
+    if (feat.group !== lastGroup) {
+      const gh = document.createElement('tr');
+      gh.className = 'group-header';
+      gh.innerHTML = `<td colspan="10">${feat.group}</td>`;
+      recommendBody.appendChild(gh);
+      lastGroup = feat.group;
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${feat.name} <span class="sub-label">${feat.res}</span></td>
+      <td>${cost > 0 ? '$' + fmt(cost) : '<span style="color:#555">-</span>'}</td>
+      <td class="result">${cost > 0 ? rounded + ' cr' : '-'}</td>
+      <td class="${actualMarginPct >= 50 ? 'margin-good' : actualMarginPct >= 30 ? 'margin-ok' : cost > 0 ? 'margin-bad' : ''}">${cost > 0 ? actualMarginPct.toFixed(0) + '%' : '-'}</td>
+      <td>${cost > 0 ? diffBadge(mFor(perCrByPlan['deluxe'])) : '-'}</td>
+      <td>${cost > 0 ? diffBadge(mFor(perCrByPlan['premium'])) : '-'}</td>
+      <td>${cost > 0 ? diffBadge(mFor(perCrByPlan['ot-5'])) : '-'}</td>
+      <td>${cost > 0 ? diffBadge(mFor(perCrByPlan['ot-15'])) : '-'}</td>
+      <td>${cost > 0 ? diffBadge(mFor(perCrByPlan['ot-30'])) : '-'}</td>
+      <td>${badgeText !== '-' ? `<span class="badge ${badgeClass}">${badgeText}</span>` : '-'}</td>
+    `;
+    recommendBody.appendChild(tr);
+  });
+
+  // ⑥ 수익성 검증
+  let lastGroup2 = '';
+  FEATURES.forEach(feat => {
+    const cost = parseFloat($('cost-' + feat.id).value) || 0;
+    const cr = recommended[feat.id];
+
+    if (feat.group !== lastGroup2) {
+      const gh = document.createElement('tr');
+      gh.className = 'group-header';
+      gh.innerHTML = `<td colspan="7">${feat.group}</td>`;
+      verifyBody.appendChild(gh);
+      lastGroup2 = feat.group;
+    }
+
+    if (cost === 0 || cr === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${feat.name} <span class="sub-label">${feat.res}</span></td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>`;
+      verifyBody.appendChild(tr);
+      return;
+    }
+
+    const bG = Math.floor(PLANS[0].credits / cr);
+    const dG = Math.floor(PLANS[1].credits / cr);
+    const pG = Math.floor(PLANS[2].credits / cr);
+    const subProfit = (cr * basicPerCr) - cost;
+    const otProfit = (cr * ot10PerCr) - cost;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${feat.name} <span class="sub-label">${feat.res}</span></td>
+      <td class="result">${cr} cr</td>
+      <td>~${bG}회</td>
+      <td>~${dG}회</td>
+      <td>~${pG}회</td>
+      <td class="margin-good">+$${subProfit.toFixed(3)}</td>
+      <td class="${otProfit >= 0 ? 'margin-good' : 'margin-bad'}">${otProfit >= 0 ? '+' : ''}$${otProfit.toFixed(3)}</td>
+    `;
+    verifyBody.appendChild(tr);
+  });
+
+  // 요약
+  $('sum-worst').textContent = costCount > 0 ? `${worstName} (${worstMargin.toFixed(0)}%)` : '-';
+  $('sum-avg-cost').textContent = costCount > 0 ? `$${(totalCost / costCount).toFixed(3)}` : '-';
+  $('sum-bep').textContent = highestCost > 0 ? `${Math.floor(basicNet / highestCost)}회` : '-';
+  $('sum-fixed').textContent = costCount > 0 ? `${Math.ceil(30 / basicNet)}명` : '-';
+}
+
+buildInputs();
+calc();
+</script>
+</body>
+</html>

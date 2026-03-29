@@ -22,7 +22,7 @@ const SCALE_OPTIONS = [
   { value: "4", label: "4K" },
 ];
 
-const CREDIT_COST = 85;
+const CREDIT_COST = 40;
 
 const sliderThumb =
   "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:cursor-pointer";
@@ -587,27 +587,34 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
 
         {/* Actions Footer */}
         <div className="px-4 py-2.5 border-t border-border">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-white/50">
-              {CREDIT_COST} 크레딧/장
-            </span>
+          <div className="flex items-center justify-end">
             <button
               type="button"
               disabled={isGenerating}
               onClick={handleGenerate}
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
-                hasImage && hasMask && !isGenerating
-                  ? "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110"
-                  : "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
+                isGenerating
+                  ? "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
+                  : !(hasImage && hasMask)
+                    ? "text-white bg-gradient-to-r from-primary to-secondary opacity-60"
+                    : "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_24px_rgba(99,102,241,0.5)] hover:brightness-110"
               )}
             >
               {isGenerating ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  생성 중...
+                </>
               ) : (
-                <Zap className="w-3.5 h-3.5" />
+                <>
+                  생성하기
+                  <span className="ml-1.5 inline-flex items-center gap-0.5 bg-white/20 rounded-full px-1.5 py-0.5 text-[11px] font-semibold">
+                    <Zap className="w-2.5 h-2.5" />
+                    {CREDIT_COST}
+                  </span>
+                </>
               )}
-              {isGenerating ? "생성 중..." : `실행 / ${CREDIT_COST} 크레딧`}
             </button>
           </div>
         </div>

@@ -22,8 +22,8 @@ const monthlyPlans: Plan[] = [
     name: "Free",
     price: 0,
     features: [
-      "200 크레딧",
-      "회원가입 시 200 크레딧 무료",
+      "100 크레딧",
+      "회원가입 시 100 크레딧 무료",
       "⏱️ 5분당 1회 생성 제한",
       "한 번에 1장 생성 가능",
       "AI 업스케일링",
@@ -37,7 +37,7 @@ const monthlyPlans: Plan[] = [
     name: "Basic",
     price: 9,
     features: [
-      "4,500 크레딧",
+      "2,000 크레딧",
       "⚡ 생성 쿨타임 없음",
       "한 번에 4장까지 생성 가능",
       "AI 업스케일링",
@@ -52,7 +52,7 @@ const monthlyPlans: Plan[] = [
     price: 19,
     recommended: true,
     features: [
-      "9,500 크레딧",
+      "4,400 크레딧",
       "⚡ 생성 쿨타임 없음",
       "한 번에 4장까지 생성 가능",
       "AI 업스케일링",
@@ -68,7 +68,7 @@ const monthlyPlans: Plan[] = [
     name: "Premium",
     price: 29,
     features: [
-      "14,500 크레딧",
+      "7,100 크레딧",
       "⚡ 생성 쿨타임 없음",
       "한 번에 4장까지 생성 가능",
       "AI 업스케일링",
@@ -89,11 +89,11 @@ interface CreditPack {
 }
 
 const onetimePacks: CreditPack[] = [
-  { price: 5, credits: "1,500" },
-  { price: 10, credits: "3,000" },
-  { price: 15, credits: "4,800" },
-  { price: 20, credits: "6,450" },
-  { price: 30, credits: "9,750" },
+  { price: 5, credits: "700" },
+  { price: 10, credits: "1,500" },
+  { price: 15, credits: "2,400" },
+  { price: 20, credits: "3,300" },
+  { price: 30, credits: "5,100" },
 ];
 
 interface PricingCardsProps {
