@@ -311,7 +311,7 @@ export function Navigation() {
                     className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card shadow-2xl shadow-black/20 dark:shadow-black/40 overflow-hidden"
                   >
                     <div className="px-4 py-3 border-b border-border">
-                      <p className="text-sm font-semibold text-foreground truncate">{user.email}</p>
+                      <p className="text-sm font-semibold text-foreground break-all">{user.email}</p>
                       {creditInfo && (
                         <div className="mt-1">
                           <PlanBadge
@@ -452,7 +452,7 @@ export function Navigation() {
                           </div>
                         )}
                         <div className="flex flex-col min-w-0">
-                          <span className="text-sm text-muted-foreground font-medium truncate">{user.email}</span>
+                          <span className="text-sm text-muted-foreground font-medium break-all">{user.email}</span>
                           {creditInfo && (
                             <span className="mt-0.5">
                               <PlanBadge
