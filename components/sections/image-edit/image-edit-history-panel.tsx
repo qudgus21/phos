@@ -140,11 +140,13 @@ function getFaceEditSummary(meta: Record<string, unknown> | null): string {
 interface ImageEditHistoryPanelProps {
   featureType?: string;
   onSelect?: (displayUrls: string[], originalUrls: string[], inputUrls?: string[]) => void;
+  onSelectPending?: (inputUrls: string[]) => void;
 }
 
 export function ImageEditHistoryPanel({
   featureType = "image-edit",
   onSelect,
+  onSelectPending,
 }: ImageEditHistoryPanelProps) {
   const { history, isLoading, deleteHistory } = useHistory(featureType);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -212,13 +214,15 @@ export function ImageEditHistoryPanel({
         ) : (
           <AnimatePresence mode="popLayout">
             <div className="flex flex-col gap-1.5">
-              {history.map((item, i) => (
-                <PreloadOnVisible key={item.id} urls={[item.display_urls?.[0], item.input_urls?.[0]]}>
+              {history.filter((item) => item.status !== "failed").map((item, i) => {
+                const isPending = item.status === "pending";
+                return (
+                <PreloadOnVisible key={item.id} urls={isPending ? [] : [item.display_urls?.[0], item.input_urls?.[0]]}>
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03, duration: 0.2 }}
-                  onClick={() => handleSelect(item)}
+                  onClick={isPending ? () => { setSelectedId(item.id); onSelectPending?.(item.input_urls ?? []); } : () => handleSelect(item)}
                   className={cn(
                     "group relative w-full flex gap-2 p-1.5 rounded-lg text-left transition-colors cursor-pointer",
                     selectedId === item.id
@@ -228,14 +232,18 @@ export function ImageEditHistoryPanel({
                 >
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 shrink-0 rounded-md overflow-hidden bg-muted/30">
-                    {(item.thumb_urls?.[0] || item.display_urls?.[0]) ? (
+                    {isPending ? (
+                      <div className="absolute inset-0 bg-muted/50 animate-pulse flex items-center justify-center">
+                        <Loader2 className="w-3.5 h-3.5 text-primary/60 animate-spin" />
+                      </div>
+                    ) : (item.thumb_urls?.[0] || item.display_urls?.[0]) ? (
                       <HistoryThumbnail src={item.thumb_urls?.[0] || item.display_urls?.[0]} />
                     ) : (
                       <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
                         <Loader2 className="w-3 h-3 text-muted-foreground/50 animate-spin" />
                       </div>
                     )}
-                    {(item.display_urls?.length ?? 0) > 1 && (
+                    {!isPending && (item.display_urls?.length ?? 0) > 1 && (
                       <span className="absolute bottom-0.5 right-0.5 text-[9px] font-bold bg-black/60 text-white px-1 rounded">
                         +{item.display_urls.length - 1}
                       </span>
@@ -244,19 +252,22 @@ export function ImageEditHistoryPanel({
                   {/* Info */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                     <p className="text-[11px] text-foreground truncate leading-tight">
-                      {item.feature_type === "retouching"
-                        ? getRetouchingSummary(item.metadata as Record<string, unknown> | null)
-                        : item.feature_type === "face-edit"
-                          ? getFaceEditSummary(item.metadata as Record<string, unknown> | null)
-                          : item.prompt.length > 40
-                            ? item.prompt.slice(0, 40) + "..."
-                            : item.prompt}
+                      {isPending
+                        ? "생성 중..."
+                        : item.feature_type === "retouching"
+                          ? getRetouchingSummary(item.metadata as Record<string, unknown> | null)
+                          : item.feature_type === "face-edit"
+                            ? getFaceEditSummary(item.metadata as Record<string, unknown> | null)
+                            : item.prompt.length > 40
+                              ? item.prompt.slice(0, 40) + "..."
+                              : item.prompt}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {formatTime(item.created_at)}
+                      {isPending ? "잠시만 기다려주세요" : formatTime(item.created_at)}
                     </p>
                   </div>
                   {/* Delete */}
+                  {!isPending && (
                   <button
                     type="button"
                     onClick={(e) => handleDeleteClick(e, item.id)}
@@ -264,9 +275,11 @@ export function ImageEditHistoryPanel({
                   >
                     <X className="w-2 h-2 text-white" />
                   </button>
+                  )}
                 </motion.div>
                 </PreloadOnVisible>
-              ))}
+                );
+              })}
             </div>
           </AnimatePresence>
         )}

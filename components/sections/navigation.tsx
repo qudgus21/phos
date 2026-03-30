@@ -146,7 +146,11 @@ export function Navigation() {
   /* 크레딧 변동 이벤트 수신 (낙관적 업데이트) */
   useEffect(() => {
     const handler = (e: Event) => {
-      const { total, delta } = (e as CustomEvent).detail;
+      const { total, delta, refresh } = (e as CustomEvent).detail;
+      if (refresh) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.credits.balance });
+        return;
+      }
       queryClient.setQueryData<UserCreditInfo>(queryKeys.credits.balance, (prev) => {
         if (!prev) return prev;
         const newTotal = delta != null

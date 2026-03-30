@@ -13,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
-import { prependHistoryItem } from "@/hooks/use-history";
+import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
@@ -171,13 +171,14 @@ export interface RetouchingInputPanelHandle {
 
 interface RetouchingInputPanelProps {
   sampleId?: string | null;
-  onGenerate?: (outputUrls: string[], inputImageUrl?: string | null, ratio?: string) => void;
-  onGenerateStart?: (count: number, inputImage?: string | null, scale?: number) => void;
-  onGenerateEnd?: () => void;
+  isGenerating?: boolean;
+  onSubmit?: (inputImage?: string | null, scale?: number) => void;
+  onSubmitError?: () => void;
+  onPendingStart?: (historyId: string) => void;
   externalImageUrl?: string | null;
 }
 
-export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, RetouchingInputPanelProps>(function RetouchingInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd, externalImageUrl }, ref) {
+export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, RetouchingInputPanelProps>(function RetouchingInputPanel({ sampleId, isGenerating: isGeneratingExternal, onSubmit, onSubmitError, onPendingStart, externalImageUrl }, ref) {
   const queryClient = useQueryClient();
   /* Image upload */
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -380,7 +381,17 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     }
 
     setIsGenerating(true);
-    onGenerateStart?.(1, uploadedImage, scale);
+    const tempId = crypto.randomUUID();
+    prependHistoryItem(queryClient, "retouching", {
+      id: tempId,
+      model_id: "retouching-gpt-image-1.5",
+      prompt: "",
+      credits_used: CREDIT_COST,
+      metadata: { filter: activeFilter, filterIntensity, gender, mode, faceReshape, faceReshapeIntensity },
+      status: "pending",
+      input_urls: uploadedImage ? [uploadedImage] : [],
+    });
+    onSubmit?.(uploadedImage, scale);
 
     window.dispatchEvent(
       new CustomEvent("credits-updated", {
@@ -410,17 +421,8 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       if (!data.success) {
         throw new Error(data.error?.message ?? "생성에 실패했습니다");
       }
-      prependHistoryItem(queryClient, "retouching", {
-        id: data.data.historyId,
-        display_urls: data.data.outputUrls,
-        original_urls: data.data.outputUrls,
-        input_urls: data.data.inputImageUrl ? [data.data.inputImageUrl] : [],
-        model_id: "retouching-gpt-image-1.5",
-        prompt: "",
-        credits_used: CREDIT_COST,
-        metadata: { filter: activeFilter, filterIntensity, gender, mode, faceReshape, faceReshapeIntensity },
-      });
-      onGenerate?.(data.data.outputUrls, data.data.inputImageUrl, ratio);
+      replaceHistoryId(queryClient, "retouching", tempId, data.data.historyId);
+      onPendingStart?.(data.data.historyId);
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
           new CustomEvent("credits-updated", {
@@ -429,6 +431,8 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
         );
       }
     } catch (err) {
+      removeHistoryItem(queryClient, "retouching", tempId);
+      onSubmitError?.();
       window.dispatchEvent(
         new CustomEvent("credits-updated", {
           detail: { delta: CREDIT_COST },
@@ -440,19 +444,9 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       );
     } finally {
       setIsGenerating(false);
-      onGenerateEnd?.();
     }
-  }, [uploadedFile, uploadedImage, isGenerating, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, scale, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
+  }, [uploadedFile, uploadedImage, isGenerating, isGeneratingExternal, activeFilter, filterIntensity, gender, mode, excludedAreas, faceReshape, faceReshapeIntensity, outputSize, ratio, scale, onSubmit, onSubmitError, onPendingStart, toast, queryClient]);
 
-  /* ── beforeunload 가드 ── */
-  useEffect(() => {
-    if (!isGenerating) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isGenerating]);
 
   /* ── Cmd+Enter 단축키 ── */
   useEffect(() => {

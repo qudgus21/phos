@@ -187,6 +187,10 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
+  const [imgFailed, setImgFailed] = useState(false);
+
+  // inputImage가 바뀌면 실패 상태 리셋
+  useEffect(() => { setImgFailed(false); }, [inputImage]);
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -217,10 +221,10 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
 
   /* 블러 셀 내부 콘텐츠: input 이미지가 있으면 사용, 없으면 gradient blob */
   const renderBlurContent = (index: number) => {
-    if (inputImage) {
+    if (inputImage && !imgFailed) {
       return (
         <>
-          <img src={inputImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img src={inputImage} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setImgFailed(true)} />
           <div className="absolute inset-0 bg-black/20" />
         </>
       );
@@ -288,7 +292,7 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
                 고해상도로 변환하고 있습니다...
               </motion.span>
             ) : (
-              <RotatingText texts={["잠시만 기다려 주세요", "페이지를 벗어나지 마세요"]} interval={5000} />
+              <RotatingText texts={["잠시만 기다려 주세요", "이미지를 만들고 있어요"]} interval={5000} />
             )}
           </AnimatePresence>
         </motion.p>

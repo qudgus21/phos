@@ -1,23 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
 import { resolveProvider } from "@/lib/services/ai/registry";
 import { buildFaceEditPrompt } from "@/lib/services/ai/prompts";
 import {
   getUserCreditInfo,
   deductCredits,
-  refundCredits,
   checkCooldown,
 } from "@/lib/services/credits";
 import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
+import { runGenerationInBackground } from "@/lib/services/generation/background";
 import { CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
-
-const lambda: LambdaClient =
-  (globalThis as Record<string, unknown>).__lambdaClient as LambdaClient ??
-  ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
 
 const CREDIT_COST = 40;
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
@@ -25,10 +20,10 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const REPLICATE_MODEL = "black-forest-labs/flux-fill-pro";
 
 interface GenerateResponse {
-  outputUrls: string[];
+  historyId: string;
   creditsUsed: number;
   balanceAfter: number;
-  historyId: string | null;
+  status: "pending";
 }
 
 export const POST = withAuth(async (request, { user }) => {
@@ -56,7 +51,6 @@ export const POST = withAuth(async (request, { user }) => {
     throw new ValidationError("변경할 영역을 선택해주세요");
   }
 
-  // 파일 크기 검증
   if (imageEntry instanceof File && imageEntry.size > MAX_FILE_SIZE) {
     throw new ValidationError(`파일 크기는 최대 ${MAX_FILE_SIZE / 1024 / 1024}MB까지 허용됩니다`);
   }
@@ -77,22 +71,31 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 4. dry-run 모드
+  // 4. 이미지 & 마스크 업로드 (after() 전에 완료)
+  const imageUrl = imageEntry instanceof File
+    ? await uploadFileToReplicate(imageEntry, imageEntry.name)
+    : imageEntry as string;
+
+  const maskUrl = maskEntry instanceof File
+    ? await uploadFileToReplicate(maskEntry, "mask.png")
+    : maskEntry as string;
+
+  // 5. dry-run 모드
   const isDryRun = process.env.DRY_RUN === "true";
   if (isDryRun) {
     const body: ApiResponse<GenerateResponse> = {
       success: true,
       data: {
-        outputUrls: ["https://placehold.co/1024x1024/1a1a2e/white?text=DRY+RUN"],
+        historyId: crypto.randomUUID(),
         creditsUsed: 0,
-        historyId: null,
         balanceAfter: creditInfo.balance.total,
+        status: "pending",
       },
     };
     return NextResponse.json(body);
   }
 
-  // 5. 선차감
+  // 6. 선차감
   const deductResult = await deductCredits(
     user.id,
     CREDIT_COST,
@@ -108,122 +111,94 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 6. AI 생성
-  // 이미지 & 마스크 업로드 (히스토리 input_urls에도 사용하므로 try 밖에서)
-  const imageUrl = imageEntry instanceof File
-    ? await uploadFileToReplicate(imageEntry, imageEntry.name)
-    : imageEntry as string;
-
-  const maskUrl = maskEntry instanceof File
-    ? await uploadFileToReplicate(maskEntry, "mask.png")
-    : maskEntry as string;
-
-  let allOutputUrls: string[];
-  try {
-
-    // 프롬프트 빌드
-    const prompt = buildFaceEditPrompt(gender as "female" | "male");
-
-    // strength에 따라 steps & guidance 매핑
-    // steps: 20~28 / guidance: 15~25
-    // guidance가 높으면 프롬프트를 과도하게 따라 부자연스러운 결과 발생
-    const steps = Math.round(20 + ((strength - 0.1) / 0.9) * 8);
-    const guidance = Math.round(15 + ((strength - 0.1) / 0.9) * 10);
-
-    const provider = resolveProvider({
-      provider: "replicate",
-      modelId: REPLICATE_MODEL,
-    });
-
-    const modelConfig = {
-      provider: "replicate" as const,
-      modelId: REPLICATE_MODEL,
-    };
-
-    const result = await provider.generate(modelConfig, {
-      prompt,
-      params: {
-        prompt,
-        image: imageUrl,
-        mask: maskUrl,
-        steps,
-        guidance,
-        output_format: "png",
-        safety_tolerance: 3,
-      },
-    });
-
-    allOutputUrls = result.outputUrls;
-
-    // 업스케일 처리
-    if (scale !== "auto") {
-      const scaleNum = Number(scale);
-      if (scaleNum >= 2) {
-        allOutputUrls = await upscaleImages(allOutputUrls, scaleNum);
-      }
-    }
-  } catch (err) {
-    console.error("[face-edit] AI generation failed, refunding credits:", err);
-    await refundCredits(
-      user.id,
-      deductResult.onetimeDeducted ?? 0,
-      deductResult.subscriptionDeducted ?? 0,
-      "얼굴 변경 실패 환불",
-      { gender, strength, reason: err instanceof Error ? err.message : "unknown" }
-    );
-    throw err;
-  }
-
-  // 7. 히스토리 저장
+  // 7. pending 상태로 히스토리 INSERT
   const supabaseAdmin = createAdminClient();
-  const historyPayload = {
-    user_id: user.id,
-    feature_type: "face-edit" as const,
-    model_id: "flux-fill-pro",
-    prompt: `[${gender}] face-edit`,
-    input_urls: inputImageUrl ? [inputImageUrl] : [imageUrl],
-    display_urls: allOutputUrls,
-    original_urls: allOutputUrls,
-    credits_used: CREDIT_COST,
-    metadata: { gender, strength, scale },
-  };
-
   const { data: historyRow, error: historyError } = await supabaseAdmin
     .from("generation_history")
-    .insert(historyPayload)
+    .insert({
+      user_id: user.id,
+      feature_type: "face-edit" as const,
+      model_id: "flux-fill-pro",
+      prompt: `[${gender}] face-edit`,
+      input_urls: inputImageUrl ? [inputImageUrl] : [imageUrl],
+      display_urls: [],
+      original_urls: [],
+      credits_used: CREDIT_COST,
+      metadata: { gender, strength, scale },
+      status: "pending",
+      onetime_deducted: deductResult.onetimeDeducted ?? 0,
+      subscription_deducted: deductResult.subscriptionDeducted ?? 0,
+    })
     .select("id")
     .single();
 
   if (historyError) {
     console.error("[face-edit] history insert failed:", historyError);
+    throw new Error("히스토리 저장에 실패했습니다");
   }
 
-  // 8. Lambda 이미지 최적화 (fire-and-forget)
-  const skipOptimizer = process.env.SKIP_IMAGE_OPTIMIZER === "true";
-  if (historyRow && !skipOptimizer) {
-    lambda.send(new InvokeCommand({
-      FunctionName: "ai-image-optimizer",
-      InvocationType: "Event",
-      Payload: JSON.stringify({
-        historyId: historyRow.id,
-        userId: user.id,
-        outputUrls: allOutputUrls,
-      }),
-    })).catch((err) => {
-      console.error("[lambda] invoke failed:", err);
-    });
-  }
-
-  // 9. 응답
+  // 8. 즉시 응답 반환
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {
-      outputUrls: allOutputUrls,
+      historyId: historyRow.id,
       creditsUsed: CREDIT_COST,
       balanceAfter: deductResult.totalBalance ?? 0,
-      historyId: historyRow?.id ?? null,
+      status: "pending",
     },
   };
+
+  // 9. 백그라운드에서 AI 생성
+  after(() =>
+    runGenerationInBackground({
+      historyId: historyRow.id,
+      userId: user.id,
+      modelLabel: "Flux Fill Pro",
+      imageCount: 1,
+      onetimeDeducted: deductResult.onetimeDeducted ?? 0,
+      subscriptionDeducted: deductResult.subscriptionDeducted ?? 0,
+      generateFn: async () => {
+        const prompt = buildFaceEditPrompt(gender as "female" | "male");
+
+        const steps = Math.round(20 + ((strength - 0.1) / 0.9) * 8);
+        const guidance = Math.round(15 + ((strength - 0.1) / 0.9) * 10);
+
+        const provider = resolveProvider({
+          provider: "replicate",
+          modelId: REPLICATE_MODEL,
+        });
+
+        const modelConfig = {
+          provider: "replicate" as const,
+          modelId: REPLICATE_MODEL,
+        };
+
+        const result = await provider.generate(modelConfig, {
+          prompt,
+          params: {
+            prompt,
+            image: imageUrl,
+            mask: maskUrl,
+            steps,
+            guidance,
+            output_format: "png",
+            safety_tolerance: 3,
+          },
+        });
+
+        let outputUrls = result.outputUrls;
+
+        if (scale !== "auto") {
+          const scaleNum = Number(scale);
+          if (scaleNum >= 2) {
+            outputUrls = await upscaleImages(outputUrls, scaleNum);
+          }
+        }
+
+        return outputUrls;
+      },
+    })
+  );
 
   return NextResponse.json(body);
 });

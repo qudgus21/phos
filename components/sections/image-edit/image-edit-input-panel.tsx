@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { SAMPLES } from "@/lib/constants/samples";
 import { IMAGE_EDIT_MODELS, getImageEditCredits } from "@/lib/services/ai/models";
-import { prependHistoryItem } from "@/hooks/use-history";
+import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { compressImageForInput } from "@/lib/utils/compress-image";
 
@@ -71,12 +71,13 @@ export interface ImageEditInputPanelHandle {
 
 interface ImageEditInputPanelProps {
   sampleId?: string | null;
-  onGenerate?: (outputUrls: string[]) => void;
-  onGenerateStart?: (imageCount: number, firstImageUrl: string | null, scale?: number) => void;
-  onGenerateEnd?: () => void;
+  isGenerating?: boolean;
+  onSubmit?: (imageCount: number, firstImageUrl: string | null, scale?: number) => void;
+  onSubmitError?: () => void;
+  onPendingStart?: (historyId: string) => void;
 }
 
-export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd }, ref) {
+export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ sampleId, isGenerating: isGeneratingExternal, onSubmit, onSubmitError, onPendingStart }, ref) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { requireAuth, loginModal } = useRequireAuth();
@@ -199,16 +200,6 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
   useEffect(() => stopAutoScroll, [stopAutoScroll]);
 
-  // 2-4: 생성 중 페이지 이탈 경고
-  useEffect(() => {
-    if (!isGenerating) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isGenerating]);
-
   const scaleDisplay = `×${scale.toFixed(1)}`;
   const creditCost = getImageEditCredits(model, imageSize);
 
@@ -226,7 +217,18 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       return;
     }
     setIsGenerating(true);
-    onGenerateStart?.(imageCount, images[0]?.previewUrl ?? null, scale);
+    // 낙관적 업데이트: 버튼 클릭 즉시 히스토리에 pending 추가 + 로딩 UI 표시
+    const tempId = crypto.randomUUID();
+    prependHistoryItem(queryClient, "image-edit", {
+      id: tempId,
+      model_id: model,
+      prompt,
+      credits_used: creditCost * imageCount,
+      metadata: {},
+      status: "pending",
+      input_urls: images[0]?.previewUrl ? [images[0].previewUrl] : [],
+    });
+    onSubmit?.(imageCount, images[0]?.previewUrl ?? null, scale);
     window.dispatchEvent(
       new CustomEvent("credits-updated", {
         detail: { delta: -(creditCost * imageCount) },
@@ -264,17 +266,9 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       if (!data.success) {
         throw new Error(data.error?.message ?? "생성에 실패했습니다");
       }
-      prependHistoryItem(queryClient, "image-edit", {
-        id: data.data.historyId,
-        display_urls: data.data.outputUrls,
-        original_urls: data.data.outputUrls,
-        input_urls: [],
-        model_id: model,
-        prompt,
-        credits_used: creditCost * imageCount,
-        metadata: {},
-      });
-      onGenerate?.(data.data.outputUrls);
+      // 임시 ID → 실제 historyId로 교체
+      replaceHistoryId(queryClient, "image-edit", tempId, data.data.historyId);
+      onPendingStart?.(data.data.historyId);
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
           new CustomEvent("credits-updated", {
@@ -283,6 +277,9 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
         );
       }
     } catch (err) {
+      // 실패 시 낙관적으로 추가한 항목 제거
+      removeHistoryItem(queryClient, "image-edit", tempId);
+      onSubmitError?.();
       window.dispatchEvent(
         new CustomEvent("credits-updated", {
           detail: { delta: creditCost * imageCount },
@@ -294,9 +291,8 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       );
     } finally {
       setIsGenerating(false);
-      onGenerateEnd?.();
     }
-  }, [prompt, isGenerating, imageCount, images, creditCost, model, imageSize, ratio, width, height, scale, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
+  }, [prompt, isGenerating, isGeneratingExternal, imageCount, images, creditCost, model, imageSize, ratio, width, height, scale, onSubmit, onSubmitError, onPendingStart, toast, queryClient]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

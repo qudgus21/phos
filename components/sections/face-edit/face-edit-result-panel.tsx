@@ -232,7 +232,7 @@ function GeneratingPlaceholder({ inputImage, willUpscale = false, phase = "gener
                   고해상도로 변환하고 있습니다...
                 </motion.span>
               ) : (
-                <RotatingText texts={["잠시만 기다려 주세요", "페이지를 벗어나지 마세요"]} interval={5000} />
+                <RotatingText texts={["잠시만 기다려 주세요", "이미지를 만들고 있어요"]} interval={5000} />
               )}
             </AnimatePresence>
           </motion.p>

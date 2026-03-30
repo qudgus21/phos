@@ -187,6 +187,10 @@ export interface Database {
           original_urls: string[];
           credits_used: number;
           metadata: Record<string, unknown>;
+          status: string;
+          error_message: string | null;
+          onetime_deducted: number;
+          subscription_deducted: number;
           created_at: string;
         };
         Insert: {
@@ -201,6 +205,10 @@ export interface Database {
           original_urls?: string[];
           credits_used?: number;
           metadata?: Record<string, unknown>;
+          status?: string;
+          error_message?: string | null;
+          onetime_deducted?: number;
+          subscription_deducted?: number;
           created_at?: string;
         };
         Update: {
@@ -215,6 +223,10 @@ export interface Database {
           original_urls?: string[];
           credits_used?: number;
           metadata?: Record<string, unknown>;
+          status?: string;
+          error_message?: string | null;
+          onetime_deducted?: number;
+          subscription_deducted?: number;
           created_at?: string;
         };
         Relationships: [

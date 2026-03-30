@@ -6,6 +6,8 @@ import { FaceEditInputPanel, type FaceEditInputPanelHandle } from "@/components/
 import { FaceEditResultPanel } from "@/components/sections/face-edit/face-edit-result-panel";
 import { ImageEditHistoryPanel } from "@/components/sections/image-edit/image-edit-history-panel";
 import { FaceEditMobileTabs } from "@/components/sections/face-edit/face-edit-mobile-tabs";
+import { useGenerationRealtime } from "@/hooks/use-generation-realtime";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 export default function FaceEditPage() {
@@ -13,25 +15,36 @@ export default function FaceEditPage() {
   const [mobileTab, setMobileTab] = useState("input");
   const [displayUrls, setDisplayUrls] = useState<string[]>([]);
   const [originalUrls, setOriginalUrls] = useState<string[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [showResultLoading, setShowResultLoading] = useState(false);
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
   const [generatingScale, setGeneratingScale] = useState<string>("auto");
   const [beforeImage, setBeforeImage] = useState<string | null>(null);
   const inputPanelRef = useRef<FaceEditInputPanelHandle>(null);
+  const { toast } = useToast();
 
-  const handleGenerate = useCallback((outputUrls: string[]) => {
-    setDisplayUrls(outputUrls);
-    setOriginalUrls(outputUrls);
-    setMobileTab("result");
-  }, []);
+  const { isGenerating, trackGeneration } = useGenerationRealtime("face-edit", {
+    onCompleted: (row) => {
+      setShowResultLoading(false);
+      setDisplayUrls(row.display_urls);
+      setOriginalUrls(row.original_urls);
+      setMobileTab("result");
+    },
+    onFailed: (row) => {
+      setShowResultLoading(false);
+      toast(row.error_message ?? "생성에 실패했습니다", "error");
+      window.dispatchEvent(
+        new CustomEvent("credits-updated", { detail: { refresh: true } })
+      );
+    },
+  });
 
   const handleSampleSelect = useCallback((id: string | null) => {
     setSampleId(id);
-    // 샘플 선택 시 히스토리 결과 초기화 → 샘플 before/after로 전환
     setDisplayUrls([]);
     setOriginalUrls([]);
     setBeforeImage(null);
     setGeneratingInputImage(null);
+    setShowResultLoading(false);
   }, []);
 
   const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[], inputUrls?: string[]) => {
@@ -39,6 +52,7 @@ export default function FaceEditPage() {
     setOriginalUrls(histOriginalUrls);
     setBeforeImage(inputUrls?.[0] ?? null);
     setGeneratingInputImage(null);
+    setShowResultLoading(false);
     setMobileTab("result");
   }, []);
 
@@ -48,13 +62,10 @@ export default function FaceEditPage() {
 
   return (
     <div className="editor-theme h-screen overflow-hidden bg-background flex flex-col">
-      {/* GNB offset */}
       <div className="h-[74px] shrink-0" />
 
-      {/* Mobile Tabs */}
       <FaceEditMobileTabs activeTab={mobileTab} onTabChange={setMobileTab} isGenerating={isGenerating} />
 
-      {/* Main Editor */}
       <div className="flex-1 flex gap-2.5 p-2.5 min-h-0">
         <FaceEditSampleSidebar
           inputPanelRef={inputPanelRef}
@@ -67,14 +78,16 @@ export default function FaceEditPage() {
             <FaceEditInputPanel
               ref={inputPanelRef}
               sampleId={sampleId}
-              onGenerate={handleGenerate}
-              onGenerateStart={(inputImage, scale) => {
-                setIsGenerating(true);
+              isGenerating={isGenerating}
+              onSubmit={(inputImage, scale) => {
+                setShowResultLoading(true);
                 setGeneratingInputImage(inputImage);
                 setGeneratingScale(scale ?? "auto");
+                setMobileTab("result");
               }}
-              onGenerateEnd={() => {
-                setIsGenerating(false);
+              onSubmitError={() => setShowResultLoading(false)}
+              onPendingStart={(historyId) => {
+                trackGeneration(historyId);
               }}
             />
           </div>
@@ -83,7 +96,7 @@ export default function FaceEditPage() {
               sampleId={sampleId}
               displayUrls={displayUrls}
               originalUrls={originalUrls}
-              isGenerating={isGenerating}
+              isGenerating={showResultLoading}
               generatingInputImage={generatingInputImage}
               generatingScale={generatingScale}
               historyBeforeImage={beforeImage}
@@ -94,6 +107,11 @@ export default function FaceEditPage() {
             <ImageEditHistoryPanel
               featureType="face-edit"
               onSelect={handleHistorySelect}
+              onSelectPending={(inputUrls) => {
+                setShowResultLoading(true);
+                setGeneratingInputImage(inputUrls[0] ?? null);
+                setMobileTab("result");
+              }}
             />
           </div>
         </div>

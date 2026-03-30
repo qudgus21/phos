@@ -8,7 +8,7 @@ import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { FaceEditMaskEditor } from "./face-edit-mask-editor";
 import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
-import { prependHistoryItem } from "@/hooks/use-history";
+import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { createClient } from "@/lib/supabase/client";
 import { compressImageForFavorite, compressImageForInput } from "@/lib/utils/compress-image";
@@ -47,12 +47,13 @@ export interface FaceEditInputPanelHandle {
 
 interface FaceEditInputPanelProps {
   sampleId?: string | null;
-  onGenerate?: (outputUrls: string[]) => void;
-  onGenerateStart?: (inputImage: string | null, scale?: string) => void;
-  onGenerateEnd?: () => void;
+  isGenerating?: boolean;
+  onSubmit?: (inputImage: string | null, scale?: string) => void;
+  onSubmitError?: () => void;
+  onPendingStart?: (historyId: string) => void;
 }
 
-export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditInputPanelProps>(function FaceEditInputPanel({ sampleId, onGenerate, onGenerateStart, onGenerateEnd }, ref) {
+export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditInputPanelProps>(function FaceEditInputPanel({ sampleId, isGenerating: isGeneratingExternal, onSubmit, onSubmitError, onPendingStart }, ref) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { requireAuth, loginModal } = useRequireAuth();
@@ -297,13 +298,6 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     setMaskBlob(blob);
   }, []);
 
-  /* 생성 중 페이지 이탈 경고 */
-  useEffect(() => {
-    if (!isGenerating) return;
-    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isGenerating]);
 
   /* Cmd+Enter 단축키 */
   const handleGenerate = useCallback(async () => {
@@ -322,7 +316,17 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     }
 
     setIsGenerating(true);
-    onGenerateStart?.(uploadedImage, scale);
+    const tempId = crypto.randomUUID();
+    prependHistoryItem(queryClient, "face-edit", {
+      id: tempId,
+      model_id: "flux-fill-pro",
+      prompt: "",
+      credits_used: CREDIT_COST,
+      metadata: { gender, strength, scale },
+      status: "pending",
+      input_urls: uploadedImage ? [uploadedImage] : [],
+    });
+    onSubmit?.(uploadedImage, scale);
     window.dispatchEvent(
       new CustomEvent("credits-updated", { detail: { delta: -CREDIT_COST } })
     );
@@ -355,12 +359,10 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       fd.append("strength", String(strength));
       fd.append("scale", String(scale));
 
-      // 영구 URL이 있으면 API에도 전달 (히스토리 input_urls에 저장)
       if (permanentInputUrl) {
         fd.append("inputImageUrl", permanentInputUrl);
       }
 
-      // 이미지
       if (uploadedFile) {
         fd.append("image", uploadedFile);
       } else if (uploadedImage?.startsWith("http")) {
@@ -376,7 +378,6 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         fd.append("image", new File([blob], "input.png", { type: blob.type }));
       }
 
-      // 마스크
       if (maskBlob) {
         fd.append("mask", new File([maskBlob], "mask.png", { type: "image/png" }));
       }
@@ -390,18 +391,8 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         throw new Error(data.error?.message ?? "생성에 실패했습니다");
       }
 
-      const inputUrlForHistory = permanentInputUrl ?? (uploadedImage?.startsWith("http") ? uploadedImage : null);
-      prependHistoryItem(queryClient, "face-edit", {
-        id: data.data.historyId,
-        display_urls: data.data.outputUrls,
-        original_urls: data.data.outputUrls,
-        input_urls: inputUrlForHistory ? [inputUrlForHistory] : [],
-        model_id: "flux-fill-pro",
-        prompt: "",
-        credits_used: CREDIT_COST,
-        metadata: { gender, strength, scale },
-      });
-      onGenerate?.(data.data.outputUrls);
+      replaceHistoryId(queryClient, "face-edit", tempId, data.data.historyId);
+      onPendingStart?.(data.data.historyId);
 
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
@@ -409,6 +400,8 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
         );
       }
     } catch (err) {
+      removeHistoryItem(queryClient, "face-edit", tempId);
+      onSubmitError?.();
       window.dispatchEvent(
         new CustomEvent("credits-updated", { detail: { delta: CREDIT_COST } })
       );
@@ -418,9 +411,8 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       );
     } finally {
       setIsGenerating(false);
-      onGenerateEnd?.();
     }
-  }, [gender, strength, scale, hasImage, hasMask, isGenerating, uploadedImage, uploadedFile, maskBlob, onGenerateStart, onGenerate, onGenerateEnd, toast, queryClient]);
+  }, [gender, strength, scale, hasImage, hasMask, isGenerating, isGeneratingExternal, uploadedImage, uploadedFile, maskBlob, onSubmit, onSubmitError, onPendingStart, toast, queryClient]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

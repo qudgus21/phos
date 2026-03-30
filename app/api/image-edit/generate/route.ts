@@ -1,30 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
-import { getModelDef, getImageEditCredits, UPSCALE_CREDITS } from "@/lib/services/ai/models";
+import { getModelDef, getImageEditCredits } from "@/lib/services/ai/models";
 import { resolveProvider } from "@/lib/services/ai/registry";
 import { buildImageEditPrompt, buildSeedreamPrompt } from "@/lib/services/ai/prompts";
 import {
   getUserCreditInfo,
   deductCredits,
-  refundCredits,
   checkCooldown,
 } from "@/lib/services/credits";
 import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
+import { runGenerationInBackground } from "@/lib/services/generation/background";
 import { CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
 
-const lambda: LambdaClient =
-  (globalThis as Record<string, unknown>).__lambdaClient as LambdaClient ??
-  ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
-
 interface GenerateResponse {
-  outputUrls: string[];
+  historyId: string;
   creditsUsed: number;
   balanceAfter: number;
-  historyId: string | null;
+  status: "pending";
 }
 
 export const POST = withAuth(async (request, { user }) => {
@@ -66,7 +61,7 @@ export const POST = withAuth(async (request, { user }) => {
     throw new ValidationError("지원하지 않는 모델입니다");
   }
 
-  // 3. 이미지 파일 처리 (Replicate Files 업로드 or data URI 변환)
+  // 3. 이미지 파일 처리 (응답 전에 완료해야 함 — after() 이후 FormData 접근 불가)
   const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
   const imageEntries = formData.getAll("images");
   const images: string[] = await Promise.all(
@@ -80,7 +75,6 @@ export const POST = withAuth(async (request, { user }) => {
         if (modelDef.provider === "replicate") {
           return uploadFileToReplicate(entry, entry.name);
         }
-        // 비-Replicate 프로바이더: 서버에서 data URI 변환 (Node.js Buffer는 빠름)
         const buffer = Buffer.from(await entry.arrayBuffer());
         return `data:${entry.type || "image/png"};base64,${buffer.toString("base64")}`;
       }
@@ -100,7 +94,6 @@ export const POST = withAuth(async (request, { user }) => {
   const perImage = getImageEditCredits(modelId, imageSize);
   const creditCost = perImage * imageCount;
 
-  // 쿨다운 검증
   const cooldownRemaining = checkCooldown(
     creditInfo.lastGenerationAt,
     creditInfo.plan.cooldownSeconds
@@ -111,31 +104,28 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 배치 크기 검증
   if (imageCount > creditInfo.plan.maxBatchSize) {
     throw new ValidationError(
       `${creditInfo.plan.name} 플랜은 한 번에 최대 ${creditInfo.plan.maxBatchSize}장까지 생성할 수 있습니다`
     );
   }
 
-  // 5. AI 생성 호출 — 개발 환경 dry-run 모드
+  // 5. dry-run 모드
   const isDryRun = process.env.DRY_RUN === "true";
   if (isDryRun) {
     const body: ApiResponse<GenerateResponse> = {
       success: true,
       data: {
-        outputUrls: Array(imageCount).fill(
-          "https://placehold.co/1024x1024/1a1a2e/white?text=DRY+RUN"
-        ),
+        historyId: crypto.randomUUID(),
         creditsUsed: 0,
-        historyId: null,
         balanceAfter: creditInfo.balance.total,
+        status: "pending",
       },
     };
     return NextResponse.json(body);
   }
 
-  // 5-1. 선차감: AI 호출 전에 크레딧을 먼저 차감 (동시 요청 race condition 방지)
+  // 6. 선차감
   const deductResult = await deductCredits(
     user.id,
     creditCost,
@@ -151,139 +141,118 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 5-2. AI 생성 (실패 시 환불)
-  let allOutputUrls: string[];
-  try {
-    const provider = resolveProvider({
-      provider: modelDef.provider,
-      modelId: modelDef.modelId,
-      version: modelDef.version,
-    });
-
-    const modelConfig = {
-      provider: modelDef.provider,
-      modelId: modelDef.modelId,
-      version: modelDef.version,
-      defaults: modelDef.defaults,
-    };
-
-    // 모델이 N장 동시 생성 가능하면 한 번에, 아니면 병렬 호출
-    const perCallCount = Math.min(imageCount, modelDef.maxOutputs);
-    const callCount = Math.ceil(imageCount / perCallCount);
-
-    const isSeedream = modelId.startsWith("seedream");
-    const generateOne = (count: number) => {
-      const builtPrompt = isSeedream
-        ? buildSeedreamPrompt(prompt, images.length > 0)
-        : buildImageEditPrompt(prompt);
-      const modelInput = modelDef.buildInput({
-        prompt: builtPrompt,
-        images: images.length > 0 ? images : undefined,
-        width,
-        height,
-        ratio,
-        imageCount: count,
-        imageSize,
-      });
-      return provider.generate(modelConfig, {
-        prompt: modelInput.prompt as string,
-        params: modelInput,
-      });
-    };
-
-    // stagger 방식: 요청 간 1초 간격으로 발사 후 전체 대기
-    const resultPromises: ReturnType<typeof generateOne>[] = [];
-    for (let i = 0; i < callCount; i++) {
-      if (i > 0) await new Promise((r) => setTimeout(r, 1000));
-      const remaining = imageCount - i * perCallCount;
-      resultPromises.push(generateOne(Math.min(perCallCount, remaining)));
-    }
-    const results = await Promise.all(resultPromises);
-
-    allOutputUrls = results.flatMap((r) => r.outputUrls);
-
-    // 필요 시 업스케일 (GPU 메모리 한계에 따른 해상도별 제한)
-    // - 4K/3K: 업스케일 불가 (이미 고해상도)
-    // - 2K: 최대 2x까지만
-    // - 1K: 최대 4x까지
-    {
-      const maxScale =
-        imageSize === "4K" || imageSize === "3K" ? 1
-          : imageSize === "2K" ? 2
-          : 4;
-
-      const effectiveScale = Math.min(
-        scale > 1 ? Math.round(scale) : 1,
-        maxScale
-      );
-
-      if (effectiveScale >= 2) {
-        allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
-      }
-    }
-  } catch (err) {
-    // AI 생성 실패 → 선차감 크레딧 환불
-    console.error("[generate] AI generation failed, refunding credits:", err);
-    await refundCredits(
-      user.id,
-      deductResult.onetimeDeducted ?? 0,
-      deductResult.subscriptionDeducted ?? 0,
-      `생성 실패 환불 (${modelDef.label}, ${imageCount}장)`,
-      { modelId, imageCount, reason: err instanceof Error ? err.message : "unknown" }
-    );
-    throw err;
-  }
-
-  // 6. 히스토리 저장
+  // 7. pending 상태로 히스토리 INSERT
   const supabaseAdmin = createAdminClient();
-  const historyPayload = {
-    user_id: user.id,
-    feature_type: "image-edit" as const,
-    model_id: modelId,
-    prompt,
-    input_urls: images.filter((s) => s.startsWith("http")),
-    display_urls: allOutputUrls,
-    original_urls: allOutputUrls,
-    credits_used: creditCost,
-    metadata: { width, height, ratio, imageSize, scale, imageCount },
-  };
-
   const { data: historyRow, error: historyError } = await supabaseAdmin
     .from("generation_history")
-    .insert(historyPayload)
+    .insert({
+      user_id: user.id,
+      feature_type: "image-edit" as const,
+      model_id: modelId,
+      prompt,
+      input_urls: images.filter((s) => s.startsWith("http")),
+      display_urls: [],
+      original_urls: [],
+      credits_used: creditCost,
+      metadata: { width, height, ratio, imageSize, scale, imageCount },
+      status: "pending",
+      onetime_deducted: deductResult.onetimeDeducted ?? 0,
+      subscription_deducted: deductResult.subscriptionDeducted ?? 0,
+    })
     .select("id")
     .single();
 
   if (historyError) {
     console.error("[generate] history insert failed:", historyError);
+    throw new Error("히스토리 저장에 실패했습니다");
   }
 
-  // 7. Lambda에 이미지 최적화 요청 (fire-and-forget, AWS SDK 직접 호출)
-  const skipOptimizer = process.env.SKIP_IMAGE_OPTIMIZER === "true";
-  if (historyRow && !skipOptimizer) {
-    lambda.send(new InvokeCommand({
-      FunctionName: "ai-image-optimizer",
-      InvocationType: "Event", // 비동기 — 즉시 202 반환, Lambda는 백그라운드 실행
-      Payload: JSON.stringify({
-        historyId: historyRow.id,
-        userId: user.id,
-        outputUrls: allOutputUrls,
-      }),
-    })).catch((err) => {
-      console.error("[lambda] invoke failed:", err);
-    });
-  }
-
-  // 8. 응답 (Lambda 완료를 기다리지 않음)
+  // 8. 즉시 응답 반환
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {
-      outputUrls: allOutputUrls,
+      historyId: historyRow.id,
       creditsUsed: creditCost,
       balanceAfter: deductResult.totalBalance ?? 0,
-      historyId: historyRow?.id ?? null,
+      status: "pending",
     },
   };
+
+  // 9. 백그라운드에서 AI 생성 실행
+  after(() =>
+    runGenerationInBackground({
+      historyId: historyRow.id,
+      userId: user.id,
+      modelLabel: modelDef.label,
+      imageCount,
+      onetimeDeducted: deductResult.onetimeDeducted ?? 0,
+      subscriptionDeducted: deductResult.subscriptionDeducted ?? 0,
+      generateFn: async () => {
+        const provider = resolveProvider({
+          provider: modelDef.provider,
+          modelId: modelDef.modelId,
+          version: modelDef.version,
+        });
+
+        const modelConfig = {
+          provider: modelDef.provider,
+          modelId: modelDef.modelId,
+          version: modelDef.version,
+          defaults: modelDef.defaults,
+        };
+
+        const perCallCount = Math.min(imageCount, modelDef.maxOutputs);
+        const callCount = Math.ceil(imageCount / perCallCount);
+
+        const isSeedream = modelId.startsWith("seedream");
+        const generateOne = (count: number) => {
+          const builtPrompt = isSeedream
+            ? buildSeedreamPrompt(prompt, images.length > 0)
+            : buildImageEditPrompt(prompt);
+          const modelInput = modelDef.buildInput({
+            prompt: builtPrompt,
+            images: images.length > 0 ? images : undefined,
+            width,
+            height,
+            ratio,
+            imageCount: count,
+            imageSize,
+          });
+          return provider.generate(modelConfig, {
+            prompt: modelInput.prompt as string,
+            params: modelInput,
+          });
+        };
+
+        const resultPromises: ReturnType<typeof generateOne>[] = [];
+        for (let i = 0; i < callCount; i++) {
+          if (i > 0) await new Promise((r) => setTimeout(r, 1000));
+          const remaining = imageCount - i * perCallCount;
+          resultPromises.push(generateOne(Math.min(perCallCount, remaining)));
+        }
+        const results = await Promise.all(resultPromises);
+
+        let allOutputUrls = results.flatMap((r) => r.outputUrls);
+
+        // 업스케일
+        const maxScale =
+          imageSize === "4K" || imageSize === "3K" ? 1
+            : imageSize === "2K" ? 2
+            : 4;
+
+        const effectiveScale = Math.min(
+          scale > 1 ? Math.round(scale) : 1,
+          maxScale
+        );
+
+        if (effectiveScale >= 2) {
+          allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
+        }
+
+        return allOutputUrls;
+      },
+    })
+  );
 
   return NextResponse.json(body);
 });

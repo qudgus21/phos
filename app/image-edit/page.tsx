@@ -6,6 +6,8 @@ import { ImageEditInputPanel, type ImageEditInputPanelHandle } from "@/component
 import { ImageEditResultPanel } from "@/components/sections/image-edit/image-edit-result-panel";
 import { ImageEditHistoryPanel } from "@/components/sections/image-edit/image-edit-history-panel";
 import { ImageEditMobileTabs } from "@/components/sections/image-edit/image-edit-mobile-tabs";
+import { useGenerationRealtime } from "@/hooks/use-generation-realtime";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 export default function ImageEditPage() {
@@ -13,45 +15,53 @@ export default function ImageEditPage() {
   const [mobileTab, setMobileTab] = useState("input");
   const [displayUrls, setDisplayUrls] = useState<string[]>([]);
   const [originalUrls, setOriginalUrls] = useState<string[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [showResultLoading, setShowResultLoading] = useState(false);
   const [generatingCount, setGeneratingCount] = useState(1);
   const [generatingInputImage, setGeneratingInputImage] = useState<string | null>(null);
   const [generatingScale, setGeneratingScale] = useState(0);
   const inputPanelRef = useRef<ImageEditInputPanelHandle>(null);
+  const { toast } = useToast();
+
+  const { isGenerating, trackGeneration } = useGenerationRealtime("image-edit", {
+    onCompleted: (row) => {
+      setShowResultLoading(false);
+      setDisplayUrls(row.display_urls);
+      setOriginalUrls(row.original_urls);
+      setMobileTab("result");
+    },
+    onFailed: (row) => {
+      setShowResultLoading(false);
+      toast(row.error_message ?? "생성에 실패했습니다", "error");
+      window.dispatchEvent(
+        new CustomEvent("credits-updated", { detail: { refresh: true } })
+      );
+    },
+  });
 
   const addOutputToInput = useCallback((src: string) => {
     inputPanelRef.current?.addImageFromUrl(src);
   }, []);
 
-  const handleGenerate = useCallback((outputUrls: string[]) => {
-    // 생성 직후에는 임시 URL을 display로 표시 (Lambda가 WebP 처리 완료하면 히스토리에서 갱신됨)
-    setDisplayUrls(outputUrls);
-    setOriginalUrls(outputUrls);
-    setMobileTab("result");
-  }, []);
-
   const handleSampleSelect = useCallback((id: string | null) => {
     setSampleId(id);
-    // 샘플 선택 시 히스토리 결과 초기화 → 샘플 before/after로 전환
     setDisplayUrls([]);
     setOriginalUrls([]);
+    setShowResultLoading(false);
   }, []);
 
   const handleHistorySelect = useCallback((histDisplayUrls: string[], histOriginalUrls: string[]) => {
     setDisplayUrls(histDisplayUrls);
     setOriginalUrls(histOriginalUrls);
+    setShowResultLoading(false);
     setMobileTab("result");
   }, []);
 
   return (
     <div className="editor-theme h-screen overflow-hidden bg-background flex flex-col">
-      {/* GNB offset — nav py-4(16*2) + logo h-10(40) + progress 2px ≈ 74px */}
       <div className="h-[74px] shrink-0" />
 
-      {/* Mobile Tabs */}
       <ImageEditMobileTabs activeTab={mobileTab} onTabChange={setMobileTab} isGenerating={isGenerating} />
 
-      {/* Main Editor */}
       <div className="flex-1 flex gap-2.5 p-2.5 min-h-0">
         <ImageEditSampleSidebar
           inputPanelRef={inputPanelRef}
@@ -64,15 +74,17 @@ export default function ImageEditPage() {
             <ImageEditInputPanel
               ref={inputPanelRef}
               sampleId={sampleId}
-              onGenerate={handleGenerate}
-              onGenerateStart={(count, firstImageUrl, scale) => {
-                setIsGenerating(true);
+              isGenerating={isGenerating}
+              onSubmit={(count, firstImageUrl, scale) => {
+                setShowResultLoading(true);
                 setGeneratingCount(count);
                 setGeneratingInputImage(firstImageUrl);
                 setGeneratingScale(scale ?? 0);
+                setMobileTab("result");
               }}
-              onGenerateEnd={() => {
-                setIsGenerating(false);
+              onSubmitError={() => setShowResultLoading(false)}
+              onPendingStart={(historyId) => {
+                trackGeneration(historyId);
               }}
             />
           </div>
@@ -82,7 +94,7 @@ export default function ImageEditPage() {
               onAddToInput={addOutputToInput}
               displayUrls={displayUrls}
               originalUrls={originalUrls}
-              isGenerating={isGenerating}
+              isGenerating={showResultLoading}
               generatingCount={generatingCount}
               generatingInputImage={generatingInputImage}
               generatingScale={generatingScale}
@@ -92,6 +104,11 @@ export default function ImageEditPage() {
             <ImageEditHistoryPanel
               featureType="image-edit"
               onSelect={handleHistorySelect}
+              onSelectPending={(inputUrls) => {
+                setShowResultLoading(true);
+                setGeneratingInputImage(inputUrls[0] ?? null);
+                setMobileTab("result");
+              }}
             />
           </div>
         </div>

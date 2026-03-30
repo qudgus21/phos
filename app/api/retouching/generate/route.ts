@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
 import { getRetouchingModelDef } from "@/lib/services/ai/models";
 import { resolveProvider } from "@/lib/services/ai/registry";
@@ -7,29 +7,23 @@ import type { SkinRetouchOptions } from "@/lib/services/ai/prompts";
 import {
   getUserCreditInfo,
   deductCredits,
-  refundCredits,
   checkCooldown,
 } from "@/lib/services/credits";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
+import { runGenerationInBackground } from "@/lib/services/generation/background";
 import { CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
-
-const lambda: LambdaClient =
-  (globalThis as Record<string, unknown>).__lambdaClient as LambdaClient ??
-  ((globalThis as Record<string, unknown>).__lambdaClient = new LambdaClient({ region: "us-east-2" }));
 
 const CREDIT_COST = 110;
 const DEFAULT_MODEL_ID = "retouching-gpt-image-1.5";
 
 interface GenerateResponse {
-  outputUrls: string[];
-  inputImageUrl: string | null;
+  historyId: string;
   creditsUsed: number;
   balanceAfter: number;
-  historyId: string | null;
+  status: "pending";
 }
 
 const VALID_FILTERS = ["none", "studio", "brightening", "glow"] as const;
@@ -110,7 +104,7 @@ export const POST = withAuth(async (request, { user }) => {
     console.log("[retouching] prompt:", builtPrompt);
   }
 
-  // 5. 크레딧 + 플랜 정보 조회 (업로드 전 검증)
+  // 5. 크레딧 + 플랜 정보 조회
   const creditInfo = await getUserCreditInfo(user.id);
 
   const cooldownRemaining = checkCooldown(
@@ -123,20 +117,19 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 6. 이미지 업로드 (Replicate Files) — 클라이언트에서 1024px WebP 변환 완료
+  // 6. 이미지 업로드 (after() 전에 완료)
   const imageUrl = await uploadFileToReplicate(imageFile, imageFile.name);
 
-  // 7. DRY_RUN 모드
+  // 7. dry-run 모드
   const isDryRun = process.env.DRY_RUN === "true";
   if (isDryRun) {
     const body: ApiResponse<GenerateResponse> = {
       success: true,
       data: {
-        outputUrls: ["https://placehold.co/1024x1024/1a1a2e/white?text=DRY+RUN+RETOUCH"],
-        inputImageUrl: null,
+        historyId: crypto.randomUUID(),
         creditsUsed: 0,
         balanceAfter: creditInfo.balance.total,
-        historyId: null,
+        status: "pending",
       },
     };
     return NextResponse.json(body);
@@ -158,121 +151,106 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 9. AI 생성 (실패 시 환불)
-  let allOutputUrls: string[];
-  try {
-    const provider = resolveProvider({
-      provider: modelDef.provider,
-      modelId: modelDef.modelId,
-      version: modelDef.version,
-    });
-
-    const modelConfig = {
-      provider: modelDef.provider,
-      modelId: modelDef.modelId,
-      version: modelDef.version,
-      defaults: modelDef.defaults,
-    };
-
-    const modelInput = modelDef.buildInput({
-      prompt: builtPrompt,
-      images: [imageUrl],
-      width: 0,
-      height: 0,
-      ratio,
-      imageCount: 1,
-      imageSize: outputSize,
-    });
-
-    const result = await provider.generate(modelConfig, {
-      prompt: modelInput.prompt as string,
-      params: modelInput,
-    });
-
-    allOutputUrls = result.outputUrls;
-
-    // 업스케일 (GPT Image 1.5는 항상 ~1K 출력 → 최대 4x까지)
-    const effectiveScale = Math.min(
-      scale > 1 ? Math.round(scale) : 1,
-      4
-    );
-    if (effectiveScale >= 2) {
-      allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
-    }
-  } catch (err) {
-    console.error("[retouching] AI generation failed, refunding credits:", err);
-    await refundCredits(
-      user.id,
-      deductResult.onetimeDeducted ?? 0,
-      deductResult.subscriptionDeducted ?? 0,
-      `리터칭 실패 환불 (${modelDef.label})`,
-      { modelId: DEFAULT_MODEL_ID, reason: err instanceof Error ? err.message : "unknown" }
-    );
-    throw err;
-  }
-
-  // 10. 히스토리 저장
+  // 9. pending 상태로 히스토리 INSERT
   const supabaseAdmin = createAdminClient();
-  const historyPayload = {
-    user_id: user.id,
-    feature_type: "retouching" as const,
-    model_id: DEFAULT_MODEL_ID,
-    prompt: builtPrompt,
-    input_urls: [imageUrl],
-    display_urls: allOutputUrls,
-    original_urls: allOutputUrls,
-    credits_used: CREDIT_COST,
-    metadata: {
-      filter,
-      filterIntensity,
-      gender,
-      mode,
-      excludedAreas,
-      faceReshape,
-      faceReshapeIntensity,
-      outputSize,
-      ratio,
-      scale,
-    },
-  };
-
   const { data: historyRow, error: historyError } = await supabaseAdmin
     .from("generation_history")
-    .insert(historyPayload)
+    .insert({
+      user_id: user.id,
+      feature_type: "retouching" as const,
+      model_id: DEFAULT_MODEL_ID,
+      prompt: builtPrompt,
+      input_urls: [imageUrl],
+      display_urls: [],
+      original_urls: [],
+      credits_used: CREDIT_COST,
+      metadata: {
+        filter,
+        filterIntensity,
+        gender,
+        mode,
+        excludedAreas,
+        faceReshape,
+        faceReshapeIntensity,
+        outputSize,
+        ratio,
+        scale,
+      },
+      status: "pending",
+      onetime_deducted: deductResult.onetimeDeducted ?? 0,
+      subscription_deducted: deductResult.subscriptionDeducted ?? 0,
+    })
     .select("id")
     .single();
 
   if (historyError) {
     console.error("[retouching] history insert failed:", historyError);
+    throw new Error("히스토리 저장에 실패했습니다");
   }
 
-  // 11. Lambda 이미지 최적화 (fire-and-forget)
-  const skipOptimizer = process.env.SKIP_IMAGE_OPTIMIZER === "true";
-  if (historyRow && !skipOptimizer) {
-    lambda.send(new InvokeCommand({
-      FunctionName: "ai-image-optimizer",
-      InvocationType: "Event",
-      Payload: JSON.stringify({
-        historyId: historyRow.id,
-        userId: user.id,
-        outputUrls: allOutputUrls,
-      }),
-    })).catch((err) => {
-      console.error("[lambda] invoke failed:", err);
-    });
-  }
-
-  // 12. 응답
+  // 10. 즉시 응답 반환
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {
-      outputUrls: allOutputUrls,
-      inputImageUrl: null,
+      historyId: historyRow.id,
       creditsUsed: CREDIT_COST,
       balanceAfter: deductResult.totalBalance ?? 0,
-      historyId: historyRow?.id ?? null,
+      status: "pending",
     },
   };
+
+  // 11. 백그라운드에서 AI 생성
+  after(() =>
+    runGenerationInBackground({
+      historyId: historyRow.id,
+      userId: user.id,
+      modelLabel: modelDef.label,
+      imageCount: 1,
+      onetimeDeducted: deductResult.onetimeDeducted ?? 0,
+      subscriptionDeducted: deductResult.subscriptionDeducted ?? 0,
+      generateFn: async () => {
+        const provider = resolveProvider({
+          provider: modelDef.provider,
+          modelId: modelDef.modelId,
+          version: modelDef.version,
+        });
+
+        const modelConfig = {
+          provider: modelDef.provider,
+          modelId: modelDef.modelId,
+          version: modelDef.version,
+          defaults: modelDef.defaults,
+        };
+
+        const modelInput = modelDef.buildInput({
+          prompt: builtPrompt,
+          images: [imageUrl],
+          width: 0,
+          height: 0,
+          ratio,
+          imageCount: 1,
+          imageSize: outputSize,
+        });
+
+        const result = await provider.generate(modelConfig, {
+          prompt: modelInput.prompt as string,
+          params: modelInput,
+        });
+
+        let allOutputUrls = result.outputUrls;
+
+        const effectiveScale = Math.min(
+          scale > 1 ? Math.round(scale) : 1,
+          4
+        );
+        if (effectiveScale >= 2) {
+          allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
+        }
+
+        return allOutputUrls;
+      },
+    })
+  );
 
   return NextResponse.json(body);
 });

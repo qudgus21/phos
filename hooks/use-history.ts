@@ -63,33 +63,36 @@ export function useHistory(featureType: string) {
   };
 }
 
-/** 생성 완료 후 히스토리 캐시에 새 항목을 추가하고 지연 갱신을 예약한다 */
+/** 생성 시작 시 히스토리 캐시에 pending 항목을 즉시 추가한다 (낙관적 업데이트) */
 export function prependHistoryItem(
   queryClient: ReturnType<typeof useQueryClient>,
   featureType: string,
   item: {
-    id?: string | null;
-    display_urls: string[];
-    original_urls: string[];
-    input_urls: string[];
+    id: string;
     model_id: string;
     prompt: string;
     credits_used: number;
     metadata: Record<string, unknown>;
+    status?: string;
+    input_urls?: string[];
   }
 ) {
   const newRow: HistoryRow = {
-    id: item.id || crypto.randomUUID(),
+    id: item.id,
     user_id: "",
     feature_type: featureType,
     model_id: item.model_id,
     prompt: item.prompt,
-    input_urls: item.input_urls,
+    input_urls: item.input_urls ?? [],
     thumb_urls: [],
-    display_urls: item.display_urls,
-    original_urls: item.original_urls,
+    display_urls: [],
+    original_urls: [],
     credits_used: item.credits_used,
     metadata: item.metadata,
+    status: item.status ?? "pending",
+    error_message: null,
+    onetime_deducted: 0,
+    subscription_deducted: 0,
     created_at: new Date().toISOString(),
   };
 
@@ -97,11 +100,29 @@ export function prependHistoryItem(
     queryKeys.history.byFeature(featureType),
     (old) => [newRow, ...(old ?? [])].slice(0, 50)
   );
+}
 
-  // Lambda가 썸네일/display URL을 처리한 뒤 실제 데이터로 갱신
-  setTimeout(() => {
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.history.byFeature(featureType),
-    });
-  }, 3000);
+/** 임시 ID를 실제 historyId로 교체한다 (API 응답 후) */
+export function replaceHistoryId(
+  queryClient: ReturnType<typeof useQueryClient>,
+  featureType: string,
+  tempId: string,
+  realId: string
+) {
+  queryClient.setQueryData<HistoryRow[]>(
+    queryKeys.history.byFeature(featureType),
+    (old) => old?.map((h) => h.id === tempId ? { ...h, id: realId } : h) ?? []
+  );
+}
+
+/** 낙관적으로 추가한 pending 항목을 제거한다 (API 호출 실패 시) */
+export function removeHistoryItem(
+  queryClient: ReturnType<typeof useQueryClient>,
+  featureType: string,
+  id: string
+) {
+  queryClient.setQueryData<HistoryRow[]>(
+    queryKeys.history.byFeature(featureType),
+    (old) => old?.filter((h) => h.id !== id) ?? []
+  );
 }
