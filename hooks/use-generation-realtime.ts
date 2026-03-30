@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query-keys";
 import type { HistoryRow } from "@/hooks/use-history";
 
-const PENDING_TIMEOUT_MS = 5 * 60 * 1000; // 5분
+const PENDING_TIMEOUT_MS = 2 * 60 * 1000; // 2분
 
 interface UseGenerationRealtimeOptions {
   onCompleted?: (row: HistoryRow) => void;

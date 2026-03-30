@@ -176,6 +176,9 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => { setImgFailed(false); }, [inputImage]);
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -199,10 +202,10 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
   ];
 
   const renderBlurContent = (index: number) => {
-    if (inputImage) {
+    if (inputImage && !imgFailed) {
       return (
         <>
-          <img src={inputImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img src={inputImage} alt="" className="absolute inset-0 w-full h-full object-cover" onError={() => setImgFailed(true)} />
           <div className="absolute inset-0 bg-black/20" />
         </>
       );
