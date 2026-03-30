@@ -29,7 +29,7 @@ export const SAMPLES: Sample[] = [
     imageSize: "1K",
     ratio: "AUTO",
     scale: 1,
-    imageCount: 4,
+    imageCount: 1,
   },
   {
     id: "2",
