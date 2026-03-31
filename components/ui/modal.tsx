@@ -57,7 +57,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              "relative w-full rounded-2xl bg-card/95 backdrop-blur-xl border border-border p-6 shadow-[0_8px_40px_rgba(0,0,0,0.25)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5),0_0_80px_rgba(99,102,241,0.08)]",
+              "relative w-full rounded-2xl bg-card backdrop-blur-xl border border-border/50 ring-1 ring-white/10 p-6 shadow-[0_8px_40px_rgba(0,0,0,0.4)] dark:shadow-[0_8px_60px_rgba(0,0,0,0.6),0_0_80px_rgba(99,102,241,0.1)]",
               sizeStyles[size]
             )}
           >

@@ -12,6 +12,7 @@ export interface Database {
           avatar_url: string | null;
           auth_provider: string;
           role: string;
+          polar_customer_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -22,6 +23,7 @@ export interface Database {
           avatar_url?: string | null;
           auth_provider?: string;
           role?: string;
+          polar_customer_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -32,6 +34,7 @@ export interface Database {
           avatar_url?: string | null;
           auth_provider?: string;
           role?: string;
+          polar_customer_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -45,6 +48,7 @@ export interface Database {
           subscription_balance: number;
           onetime_balance: number;
           last_generation_at: string | null;
+          period_credits_granted: number;
           created_at: string;
           updated_at: string;
         };
@@ -55,6 +59,7 @@ export interface Database {
           subscription_balance?: number;
           onetime_balance?: number;
           last_generation_at?: string | null;
+          period_credits_granted?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -65,6 +70,7 @@ export interface Database {
           subscription_balance?: number;
           onetime_balance?: number;
           last_generation_at?: string | null;
+          period_credits_granted?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -130,6 +136,7 @@ export interface Database {
           current_period_end: string | null;
           external_subscription_id: string | null;
           external_customer_id: string | null;
+          scheduled_plan_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -142,6 +149,7 @@ export interface Database {
           current_period_end?: string | null;
           external_subscription_id?: string | null;
           external_customer_id?: string | null;
+          scheduled_plan_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -154,6 +162,7 @@ export interface Database {
           current_period_end?: string | null;
           external_subscription_id?: string | null;
           external_customer_id?: string | null;
+          scheduled_plan_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -348,6 +357,80 @@ export interface Database {
           },
         ];
       };
+      webhook_events: {
+        Row: {
+          id: string;
+          event_type: string;
+          payload: Record<string, unknown>;
+          processed_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          event_type: string;
+          payload?: Record<string, unknown>;
+          processed_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_type?: string;
+          payload?: Record<string, unknown>;
+          processed_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      orders: {
+        Row: {
+          id: string;
+          user_id: string;
+          polar_product_id: string;
+          product_type: string;
+          amount_cents: number;
+          credits_granted: number;
+          status: string;
+          polar_subscription_id: string | null;
+          metadata: Record<string, unknown>;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          polar_product_id: string;
+          product_type: string;
+          amount_cents?: number;
+          credits_granted?: number;
+          status?: string;
+          polar_subscription_id?: string | null;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          polar_product_id?: string;
+          product_type?: string;
+          amount_cents?: number;
+          credits_granted?: number;
+          status?: string;
+          polar_subscription_id?: string | null;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "orders_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -371,6 +454,48 @@ export interface Database {
         };
         Returns: Record<string, unknown>;
       };
+      process_subscription_activation: {
+        Args: {
+          p_user_id: string;
+          p_plan_id: string;
+          p_polar_subscription_id: string;
+          p_polar_customer_id: string;
+          p_period_start: string;
+          p_period_end: string;
+          p_credits: number;
+          p_order_id?: string;
+          p_amount_cents?: number;
+          p_polar_product_id?: string;
+          p_old_plan_credits?: number | null;
+        };
+        Returns: Record<string, unknown>;
+      };
+      process_credit_purchase: {
+        Args: {
+          p_user_id: string;
+          p_credits: number;
+          p_order_id: string;
+          p_amount_cents: number;
+          p_polar_product_id: string;
+          p_polar_customer_id?: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      process_refund: {
+        Args: {
+          p_user_id: string;
+          p_order_id: string;
+          p_credits_to_revoke: number;
+          p_refund_type?: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      process_subscription_revoke: {
+        Args: {
+          p_user_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
     };
     Enums: {
       credit_transaction_type:
@@ -379,7 +504,8 @@ export interface Database {
         | "onetime_purchase"
         | "generation_deduct"
         | "refund"
-        | "admin_adjust";
+        | "admin_adjust"
+        | "subscription_renewal";
     };
   };
 }

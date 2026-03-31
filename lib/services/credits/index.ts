@@ -22,7 +22,7 @@ export async function getUserCreditInfo(
       .single(),
     admin
       .from("user_subscriptions")
-      .select("plan_id, subscription_plans(*)")
+      .select("plan_id, scheduled_plan_id, subscription_plans(*)")
       .eq("user_id", userId)
       .single(),
   ]);
@@ -60,6 +60,7 @@ export async function getUserCreditInfo(
       onetime: creditsRes.data.onetime_balance,
     },
     plan,
+    scheduledPlanId: (subRes.data?.scheduled_plan_id as string) ?? null,
     lastGenerationAt: creditsRes.data.last_generation_at,
   };
 }

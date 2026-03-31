@@ -19,6 +19,7 @@ export interface PlanInfo {
 export interface UserCreditInfo {
   balance: CreditBalance;
   plan: PlanInfo;
+  scheduledPlanId: string | null;
   lastGenerationAt: string | null;
 }
 
