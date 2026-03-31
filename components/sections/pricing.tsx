@@ -26,7 +26,7 @@ const monthlyPlans = [
     ],
   },
   {
-    name: "Deluxe",
+    name: "Pro",
     description: "전체 기능",
     price: 19,
     recommended: true,

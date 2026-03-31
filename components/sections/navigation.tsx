@@ -25,7 +25,7 @@ const navItems = [
 const PLAN_BADGE: Record<string, { label: string; className: string }> = {
   free: { label: "Free", className: "text-slate-500 dark:text-slate-400 bg-slate-500/15" },
   basic: { label: "Basic", className: "text-blue-400 bg-blue-500/15" },
-  deluxe: { label: "Deluxe", className: "text-violet-400 bg-violet-500/15" },
+  pro: { label: "Pro", className: "text-violet-400 bg-violet-500/15" },
   premium: { label: "Premium", className: "text-amber-300 bg-amber-400/15 ring-1 ring-amber-400/30" },
 };
 

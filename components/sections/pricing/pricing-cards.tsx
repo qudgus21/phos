@@ -49,7 +49,7 @@ const monthlyPlans: Plan[] = [
     ctaText: "시작하기",
   },
   {
-    name: "Deluxe",
+    name: "Pro",
     price: 19,
     recommended: true,
     features: [

@@ -1,4 +1,4 @@
-export type PlanId = "free" | "basic" | "deluxe" | "premium";
+export type PlanId = "free" | "basic" | "pro" | "premium";
 
 export interface CreditBalance {
   total: number;

@@ -143,7 +143,7 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 |---|---|---|---|
 | Free | $0 | 120 | 속도 제한 (300초 쿨다운), 1장씩만 |
 | Basic | $9 | 2,000 | |
-| Deluxe | $19 | 4,400 | 추천 |
+| Pro | $19 | 4,400 | 추천 |
 | Premium | $29 | 7,100 | 베타 기능 포함 |
 
 ### 일회성 충전
@@ -355,7 +355,7 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | 컬럼 | 타입 | 설명 |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `name` | TEXT | Free / Basic / Deluxe / Premium |
+| `name` | TEXT | Free / Basic / Pro / Premium |
 | `credits` | INTEGER | 월간 크레딧 |
 | `price` | INTEGER | 월간 가격 (센트) |
 | `features` | JSONB | 기능 목록 (쿨다운, 배치 수 등) |
