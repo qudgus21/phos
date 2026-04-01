@@ -265,9 +265,22 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
 
       if (isUpgrade) {
         const subBalance = creditInfo?.balance.subscription ?? 0;
-        const periodGranted = creditInfo?.plan?.monthlyCredits ?? 0;
-        const used = Math.max(periodGranted - subBalance, 0);
-        const newCredits = Math.max((targetPlan?.credits ?? 0) - used, 0);
+        const currentPlanCredits = creditInfo?.plan?.monthlyCredits ?? 0;
+        const targetPlanCredits = targetPlan?.credits ?? 0;
+
+        // 남은 기간 비례율 계산
+        const periodEnd = creditInfo?.currentPeriodEnd ? new Date(creditInfo.currentPeriodEnd).getTime() : 0;
+        const now = Date.now();
+        const periodDays = 30; // 대략적 계산 (모달 표시용)
+        const remainingMs = Math.max(periodEnd - now, 0);
+        const totalMs = periodDays * 86400000;
+        const ratio = periodEnd ? Math.min(remainingMs / totalMs, 1) : 1;
+
+        const oldProportional = Math.round(currentPlanCredits * ratio);
+        const newProportional = Math.round(targetPlanCredits * ratio);
+        const proportionalDiff = newProportional - oldProportional;
+        const newCredits = Math.max(subBalance - oldProportional + newProportional, 0);
+        const remainingDays = Math.ceil(remainingMs / 86400000);
 
         setModal({
           open: true,
@@ -281,16 +294,16 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
               </p>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between py-2 px-3.5 rounded-lg bg-white/5">
-                  <span className="text-slate-400 text-[13px]">이번 달 사용량</span>
-                  <span className="text-white font-semibold text-[13px]">{used.toLocaleString()} 크레딧</span>
+                  <span className="text-slate-400 text-[13px]">현재 잔액</span>
+                  <span className="text-white font-semibold text-[13px]">{subBalance.toLocaleString()} 크레딧</span>
                 </div>
                 <div className="flex items-center justify-between py-2 px-3.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                  <span className="text-indigo-300 text-[13px]">추가될 크레딧</span>
-                  <span className="text-indigo-200 font-bold text-[13px]">+{newCredits.toLocaleString()} 크레딧</span>
+                  <span className="text-indigo-300 text-[13px]">추가될 크레딧 (남은 {remainingDays}일 비례)</span>
+                  <span className="text-indigo-200 font-bold text-[13px]">+{proportionalDiff.toLocaleString()} 크레딧</span>
                 </div>
               </div>
               <p className="text-[11px] text-slate-500">
-                남은 기간 차액만 청구 · 결제일 변경 없음
+                남은 기간에 비례하여 차액 청구 · 결제일 변경 없음
               </p>
             </div>
           ),

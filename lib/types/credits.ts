@@ -21,6 +21,7 @@ export interface UserCreditInfo {
   plan: PlanInfo;
   scheduledPlanId: string | null;
   lastGenerationAt: string | null;
+  currentPeriodEnd: string | null;
 }
 
 export interface DeductResult {

@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phos 결제 시스템 구조 문서</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.7; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; color: #0f172a; }
+    h1 span { color: #6366f1; }
+    .subtitle { color: #64748b; font-size: 15px; margin-bottom: 48px; }
+    h2 { font-size: 22px; font-weight: 700; margin-top: 56px; margin-bottom: 20px; color: #0f172a; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+    h3 { font-size: 17px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: #334155; }
+    p { margin-bottom: 12px; font-size: 15px; }
+    ul { padding-left: 18px; font-size: 14px; margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+    .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+    .card-title { font-weight: 700; font-size: 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 100px; font-size: 12px; font-weight: 600; }
+    .badge-free { background: #f1f5f9; color: #64748b; }
+    .badge-basic { background: #dbeafe; color: #1d4ed8; }
+    .badge-pro { background: #ede9fe; color: #7c3aed; }
+    .badge-premium { background: #fef3c7; color: #b45309; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+    th { background: #f1f5f9; padding: 10px 14px; text-align: left; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+    td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; }
+    tr:hover td { background: #fafbfc; }
+    .flow { background: #fafbfc; border-radius: 8px; padding: 20px; margin: 16px 0; border-left: 4px solid #6366f1; font-size: 14px; }
+    .scenario { background: white; border-radius: 10px; padding: 20px; margin: 12px 0; border: 1px solid #e2e8f0; }
+    .scenario-title { font-weight: 700; font-size: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .scenario-icon { font-size: 20px; }
+    .timeline { position: relative; padding-left: 28px; margin: 12px 0; }
+    .timeline::before { content: ''; position: absolute; left: 10px; top: 4px; bottom: 4px; width: 2px; background: #e2e8f0; }
+    .timeline-item { position: relative; margin-bottom: 10px; font-size: 14px; }
+    .timeline-item::before { content: ''; position: absolute; left: -22px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: #6366f1; border: 2px solid white; }
+    .timeline-item.result::before { background: #22c55e; }
+    .timeline-item.warning::before { background: #f59e0b; }
+    .timeline-item.danger::before { background: #ef4444; }
+    .credit-box { display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 13px; font-weight: 600; }
+    .credit-sub { color: #6366f1; }
+    .credit-one { color: #059669; }
+    .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 14px; }
+    .note-title { font-weight: 700; color: #92400e; margin-bottom: 4px; }
+    .important { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 14px; }
+    .important-title { font-weight: 700; color: #991b1b; margin-bottom: 4px; }
+    .info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 14px; }
+    .info-title { font-weight: 700; color: #1e40af; margin-bottom: 4px; }
+    .toc { background: white; border-radius: 12px; padding: 24px; margin-bottom: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+    .toc-title { font-weight: 700; font-size: 16px; margin-bottom: 12px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 4px; font-size: 14px; }
+    .toc a { color: #6366f1; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+    .diagram { font-family: monospace; font-size: 13px; background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: 8px; margin: 16px 0; overflow-x: auto; white-space: pre; line-height: 1.5; }
+    .section-divider { height: 1px; background: #e2e8f0; margin: 40px 0; }
+    .tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 4px; vertical-align: middle; }
+    .tag-instant { background: #dcfce7; color: #166534; }
+    .tag-deferred { background: #fef9c3; color: #854d0e; }
+    .tag-permanent { background: #ede9fe; color: #5b21b6; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+<h1><span>Phos</span> 결제 시스템 구조</h1>
+<p class="subtitle">결제, 구독, 크레딧의 모든 시나리오를 한눈에 이해하기 위한 문서 &mdash; 최종 업데이트: 2026-04-01</p>
+
+<div class="toc">
+  <div class="toc-title">목차</div>
+  <ol>
+    <li><a href="#overview">시스템 개요</a></li>
+    <li><a href="#plans">플랜 & 크레딧 구조</a></li>
+    <li><a href="#credit-types">크레딧의 두 가지 종류</a></li>
+    <li><a href="#basic-scenarios">기본 시나리오</a> &mdash; 신규 구독, 갱신, 업그레이드, 다운그레이드, 취소, 재구독, 해지, 크레딧 팩, 환불, 이미지 생성</li>
+    <li><a href="#edge-scenarios">엣지 & 복합 시나리오</a> &mdash; 20+ 케이스</li>
+    <li><a href="#portal">고객 포털에서 할 수 있는 것</a></li>
+    <li><a href="#policies">정책 요약</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2 id="overview">1. 시스템 개요</h2>
+
+<div class="diagram"><span style="color:#a5b4fc;font-weight:700">사용자</span> ──→ <span style="color:#a5b4fc;font-weight:700">Phos 웹사이트</span> ──→ <span style="color:#a5b4fc;font-weight:700">Polar (결제 처리)</span>
+                          │                         │
+                          │  크레딧 조회/사용          │ 결제 완료 알림 (웹훅)
+                          ▼                         ▼
+                     <span style="color:#a5b4fc;font-weight:700">Supabase DB</span>  ◄──────── <span style="color:#a5b4fc;font-weight:700">웹훅 핸들러</span>
+                   (크레딧, 구독 상태)         (이벤트 처리)</div>
+
+<div class="card">
+  <div class="card-title">핵심 구성 요소</div>
+  <table>
+    <tr><th>구성 요소</th><th>역할</th></tr>
+    <tr><td><strong>Polar</strong></td><td>결제 처리, 구독 관리, 고객 포털 제공. 카드 결제, 환불, 구독 변경 등 모든 금융 처리를 담당</td></tr>
+    <tr><td><strong>Supabase</strong></td><td>크레딧 잔액, 구독 상태, 주문 내역, 트랜잭션 로그 저장</td></tr>
+    <tr><td><strong>웹훅 핸들러</strong></td><td>Polar에서 오는 이벤트(결제 완료, 취소, 환불 등)를 받아 DB를 자동 업데이트</td></tr>
+    <tr><td><strong>고객 포털</strong></td><td>사용자가 직접 결제 수단 변경, 구독 취소, 인보이스 확인 등을 할 수 있는 Polar 제공 페이지</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2 id="plans">2. 플랜 & 크레딧 구조</h2>
+
+<h3>월간 구독 플랜</h3>
+<div class="two-col">
+  <div class="card">
+    <div class="card-title"><span class="badge badge-free">Free</span> 무료</div>
+    <p>120 크레딧 (가입 시 1회 제공)</p>
+    <p>워터마크 O / 쿨다운 5분 / 배치 1장</p>
+    <p style="font-size:13px;color:#94a3b8;">월간 리셋 없음. 추가 이용은 크레딧 팩 구매 또는 구독 필요</p>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="badge badge-basic">Basic</span> $9/월</div>
+    <p>매월 2,000 크레딧</p>
+    <p>워터마크 X / 쿨다운 없음 / 배치 4장</p>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="badge badge-pro">Pro</span> $19/월</div>
+    <p>매월 4,400 크레딧</p>
+    <p>워터마크 X / 쿨다운 없음 / 배치 4장</p>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="badge badge-premium">Premium</span> $29/월</div>
+    <p>매월 7,100 크레딧</p>
+    <p>워터마크 X / 쿨다운 없음 / 배치 4장</p>
+  </div>
+</div>
+
+<h3>크레딧 팩 (일회성 구매)</h3>
+<table>
+  <tr><th>상품</th><th>가격</th><th>크레딧</th><th>크레딧당 가격</th></tr>
+  <tr><td>700 Credit</td><td>$5</td><td>700</td><td>$0.0071</td></tr>
+  <tr><td>1,500 Credit</td><td>$10</td><td>1,500</td><td>$0.0067</td></tr>
+  <tr><td>2,400 Credit</td><td>$15</td><td>2,400</td><td>$0.0063</td></tr>
+  <tr><td>3,300 Credit</td><td>$20</td><td>3,300</td><td>$0.0061</td></tr>
+  <tr><td>5,100 Credit</td><td>$30</td><td>5,100</td><td>$0.0059</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════ -->
+<h2 id="credit-types">3. 크레딧의 두 가지 종류</h2>
+
+<div class="two-col">
+  <div class="card" style="border-left: 4px solid #6366f1;">
+    <div class="card-title"><span class="credit-sub">구독 크레딧</span></div>
+    <p>매월 결제 시 충전되는 크레딧</p>
+    <ul>
+      <li>매달 결제 시 기존 잔액에 새 크레딧 추가 (누적)</li>
+      <li><strong>구독을 취소해도 소멸하지 않음</strong> &mdash; 다 쓸 때까지 유지 (단, 취소 시 다음 달 새 충전은 없음)</li>
+      <li>크레딧 사용 시 일회성 크레딧 다음으로 차감</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left: 4px solid #059669;">
+    <div class="card-title"><span class="credit-one">일회성 크레딧</span></div>
+    <p>크레딧 팩 구매로 획득하는 크레딧</p>
+    <ul>
+      <li>소멸 없이 영구 보유</li>
+      <li>구독 상태와 완전히 무관</li>
+      <li><strong>크레딧 사용 시 먼저 차감됨</strong></li>
+      <li>구독 없이(Free 상태)도 구매 가능</li>
+    </ul>
+  </div>
+</div>
+
+<div class="note">
+  <div class="note-title">크레딧 차감 순서</div>
+  이미지를 생성하면 <strong>일회성 크레딧이 먼저</strong> 사용되고, 부족하면 구독 크레딧에서 차감됩니다.<br>
+  예: 일회성 50 + 구독 2,000 보유 &rarr; 80크레딧 사용 시 &rarr; 일회성 50 + 구독 30 차감 = 잔액 일회성 0 + 구독 1,970
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2 id="basic-scenarios">4. 기본 시나리오</h2>
+
+<!-- 4-1 -->
+<h3>4-1. 신규 구독 <span class="tag tag-instant">즉시 적용</span></h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🛒</span> Free 사용자가 Basic 플랜을 구독</div>
+  <div class="timeline">
+    <div class="timeline-item">사용자가 가격표에서 Basic "시작하기" 클릭</div>
+    <div class="timeline-item">Polar 결제 페이지로 이동 &rarr; 카드 정보 입력 &rarr; $9 결제</div>
+    <div class="timeline-item">결제 완료 &rarr; Polar가 웹훅으로 "결제 완료" 알림 전송</div>
+    <div class="timeline-item">웹훅 핸들러가 DB 업데이트: 플랜 &rarr; Basic, 구독 크레딧 &rarr; 2,000</div>
+    <div class="timeline-item result"><strong>결과:</strong> 즉시 Basic 혜택 사용 가능 (워터마크 제거, 쿨다운 없음, 배치 4장)</div>
+  </div>
+</div>
+
+<!-- 4-2 -->
+<h3>4-2. 구독 갱신 (자동 결제) <span class="tag tag-permanent">크레딧 누적</span></h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🔄</span> 매월 자동 갱신</div>
+  <div class="timeline">
+    <div class="timeline-item">결제일이 되면 Polar가 자동으로 카드 청구</div>
+    <div class="timeline-item">결제 완료 웹훅 도착</div>
+    <div class="timeline-item"><strong>기존 잔액 + 새 크레딧</strong>으로 누적</div>
+    <div class="timeline-item result"><strong>결과:</strong> 예) Basic: 잔액 300 + 갱신 2,000 = <strong>2,300</strong></div>
+  </div>
+  <div class="info">
+    <div class="info-title">결제한 크레딧은 소멸하지 않습니다</div>
+    매달 결제하는 만큼의 크레딧이 기존 잔액에 추가됩니다. 이전에 남은 크레딧이 사라지지 않습니다.<br>
+    일회성 크레딧도 당연히 영향 없습니다.
+  </div>
+</div>
+
+<!-- 4-3 -->
+<h3>4-3. 업그레이드 <span class="tag tag-instant">즉시 적용</span></h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬆️</span> Basic &rarr; Pro 업그레이드</div>
+  <p style="font-size: 14px; color: #64748b; margin-bottom: 12px;">예: Basic(2,000/월) 구독 중, 1,500 사용하여 잔액 500. 30일 중 15일 남음</p>
+  <div class="timeline">
+    <div class="timeline-item">사용자가 가격표에서 Pro "업그레이드" 클릭 &rarr; 확인 모달에서 승인</div>
+    <div class="timeline-item"><strong>즉시 적용</strong> &mdash; 다음 결제일을 기다리지 않음</div>
+    <div class="timeline-item">남은 기간의 차액만 청구 (15일 남음 &rarr; 차액 $10의 50% = $5)</div>
+    <div class="timeline-item">
+      크레딧도 남은 기간에 비례하여 부여:<br>
+      <span class="credit-box">비례율 = 15일 / 30일 = <strong>50%</strong></span><br>
+      <span class="credit-box">Basic 비례 = 2,000 &times; 50% = 1,000</span><br>
+      <span class="credit-box">Pro 비례 = 4,400 &times; 50% = 2,200</span><br>
+      <span class="credit-box">추가 크레딧 = 2,200 - 1,000 = <strong>+1,200</strong></span><br>
+      <span class="credit-box">새 잔액 = 500 - 1,000 + 2,200 = <strong>1,700</strong></span>
+    </div>
+    <div class="timeline-item result"><strong>결과:</strong> 플랜 &rarr; Pro, 구독 크레딧 &rarr; 1,700</div>
+  </div>
+  <div class="info">
+    <div class="info-title">업그레이드 크레딧 계산 (날짜 비례)</div>
+    결제와 동일하게 <strong>남은 기간에 비례</strong>하여 크레딧을 부여합니다.<br>
+    공식: <code>새 잔액 = 기존잔액 - (구플랜크레딧 &times; 비례율) + (새플랜크레딧 &times; 비례율)</code><br>
+    결제 주기 첫날에 업그레이드하면 차액 전액, 마지막날에 하면 거의 0에 가깝습니다.
+  </div>
+</div>
+
+<!-- 4-4 -->
+<h3>4-4. 다운그레이드 <span class="tag tag-deferred">다음 달 적용</span></h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬇️</span> Pro &rarr; Basic 다운그레이드</div>
+  <div class="timeline">
+    <div class="timeline-item">사용자가 가격표에서 Basic "다운그레이드" 클릭 &rarr; 확인 모달에서 승인</div>
+    <div class="timeline-item warning"><strong>즉시 적용 안 됨</strong> &mdash; "다음 결제일부터 적용" 예약만 등록</div>
+    <div class="timeline-item">이번 달은 Pro 크레딧(4,400) 그대로 사용 가능</div>
+    <div class="timeline-item">UI에 <span class="badge" style="background:#fef9c3;color:#854d0e">"다음 달부터 Basic 적용"</span> 배지 표시</div>
+    <div class="timeline-item">다음 결제일: 자동으로 Basic 적용 &rarr; $9 청구 &rarr; 기존 잔액 + 2,000 누적</div>
+    <div class="timeline-item result"><strong>결과:</strong> 이번 달은 Pro 유지, 다음 달부터 Basic</div>
+  </div>
+</div>
+
+<!-- 4-5 -->
+<h3>4-5. 구독 취소 <span class="tag tag-permanent">크레딧 유지</span></h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">❌</span> Premium 사용자가 구독을 취소</div>
+  <p style="font-size: 14px; color: #64748b; margin-bottom: 12px;">예: 4/1에 결제, 4/15에 취소. 구독 크레딧 5,000 남음.</p>
+  <div class="timeline">
+    <div class="timeline-item">사용자가 고객 포털 또는 가격표에서 "구독 취소"</div>
+    <div class="timeline-item">구독 상태 &rarr; "취소됨" (canceled)</div>
+    <div class="timeline-item"><strong>구독 크레딧 5,000은 그대로 유지</strong> &mdash; 다 쓸 때까지 사용 가능</div>
+    <div class="timeline-item">다음 달 결제일에 갱신/청구 없음 (새 크레딧 충전 없음)</div>
+    <div class="timeline-item result"><strong>결과:</strong> 남은 구독 5,000 + 일회성 크레딧을 모두 사용 가능. Premium 기능(워터마크 없음, 쿨다운 없음, 배치 4장)도 그대로 유지</div>
+  </div>
+  <div class="info">
+    <div class="info-title">핵심 정책: 결제한 크레딧은 뺏어가지 않음</div>
+    구독을 취소해도 이미 결제한 크레딧은 소멸하지 않습니다.<br>
+    "구독 취소 = 다음 달 충전 안 됨"이지, "잔여 크레딧 삭제"가 아닙니다.<br>
+    일회성 크레딧도 당연히 유지됩니다.
+  </div>
+</div>
+
+<!-- 4-6 -->
+<h3>4-6. 취소 철회 (재구독)</h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🔄</span> 취소한 구독을 다시 활성화</div>
+  <div class="timeline">
+    <div class="timeline-item">고객 포털에서 "취소 철회" 클릭</div>
+    <div class="timeline-item">구독 상태 &rarr; "활성" (active)으로 복구</div>
+    <div class="timeline-item">크레딧은 변경 없음 (취소 전과 동일한 잔액)</div>
+    <div class="timeline-item result"><strong>결과:</strong> 다음 결제일에 정상적으로 갱신됨. 크레딧 새로 충전</div>
+  </div>
+</div>
+
+<!-- 4-7 -->
+<h3>4-7. 구독 해지 (결제 실패) <span class="tag tag-permanent">크레딧 유지</span></h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🚫</span> 결제 실패로 구독이 강제 해지</div>
+  <div class="timeline">
+    <div class="timeline-item">카드 만료, 잔액 부족 등으로 갱신 결제 실패</div>
+    <div class="timeline-item">Polar가 재시도 후 최종 실패 &rarr; 구독 강제 해지(revoked)</div>
+    <div class="timeline-item">Free 플랜으로 변경 (기능 제한: 워터마크, 쿨다운 5분)</div>
+    <div class="timeline-item"><strong>이전에 결제해서 받은 구독 크레딧은 유지</strong> &mdash; 다 쓸 때까지 사용 가능</div>
+    <div class="timeline-item">다음 달 새 충전만 없음</div>
+    <div class="timeline-item result"><strong>결과:</strong> 구독 크레딧 + 일회성 크레딧 모두 유지. 다시 구독하려면 새로 결제 필요</div>
+  </div>
+  <div class="info">
+    <div class="info-title">"취소"와 "해지"의 차이</div>
+    <strong>취소 (canceled):</strong> 사용자가 직접 취소. 크레딧 유지 + 기능도 유지. 다음 달 충전만 안 됨.<br>
+    <strong>해지 (revoked):</strong> 결제 실패. 크레딧 유지. 단, Free로 전환되어 기능 제한(워터마크, 쿨다운 5분). 다음 달 충전 안 됨.<br>
+    <strong>공통:</strong> 어떤 경우든 결제한 크레딧은 뺏지 않음.
+  </div>
+</div>
+
+<!-- 4-8 -->
+<h3>4-8. 크레딧 팩 구매</h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💎</span> 크레딧 팩(일회성) 구매</div>
+  <div class="timeline">
+    <div class="timeline-item">가격표에서 "일회성" 탭 선택 &rarr; 원하는 크레딧 팩 구매</div>
+    <div class="timeline-item">Polar 결제 완료 &rarr; 웹훅으로 알림</div>
+    <div class="timeline-item result"><strong>결과:</strong> 일회성 크레딧에 즉시 추가. 영구 보유. 구독 상태와 무관</div>
+  </div>
+</div>
+
+<!-- 4-9 -->
+<h3>4-9. 환불</h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💸</span> 전액 환불</div>
+  <div class="timeline">
+    <div class="timeline-item">관리자가 Polar에서 해당 주문에 전액 환불 처리</div>
+    <div class="timeline-item">해당 주문으로 부여된 크레딧 회수 시도</div>
+    <div class="timeline-item warning">이미 크레딧을 사용한 경우: 잔여분만 회수. 부족분(shortfall)은 기록</div>
+    <div class="timeline-item">구독 주문 환불 시 &rarr; 구독도 함께 취소 처리</div>
+    <div class="timeline-item result"><strong>결과:</strong> 환불 금액 반환 + 크레딧 최대한 회수</div>
+  </div>
+</div>
+
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💸</span> 부분 환불</div>
+  <div class="timeline">
+    <div class="timeline-item">주문 금액의 일부만 환불 (예: $9 중 $4.5)</div>
+    <div class="timeline-item">환불 비율에 비례하여 크레딧 회수 (50% 환불 &rarr; 50% 크레딧 회수)</div>
+    <div class="timeline-item">구독은 유지됨 (부분 환불이므로)</div>
+    <div class="timeline-item result"><strong>결과:</strong> 여러 번 부분 환불이 와도 누적으로 정확하게 계산</div>
+  </div>
+</div>
+
+<!-- 4-10 -->
+<h3>4-10. 이미지 생성 (크레딧 사용)</h3>
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🎨</span> 이미지 생성 시 크레딧 차감</div>
+  <p style="font-size: 14px; color: #64748b; margin-bottom: 12px;">예: 일회성 30 + 구독 2,000 보유. 생성 비용 80 크레딧</p>
+  <div class="timeline">
+    <div class="timeline-item">생성 요청 &rarr; 쿨다운 체크 (Free: 5분, 유료: 없음)</div>
+    <div class="timeline-item">크레딧 선차감: 일회성 30 + 구독 50 차감 (일회성 먼저, 부족분은 구독에서)</div>
+    <div class="timeline-item">AI 모델로 이미지 생성</div>
+    <div class="timeline-item result"><strong>성공:</strong> 잔액 = 일회성 0 + 구독 1,950</div>
+    <div class="timeline-item warning"><strong>실패 시:</strong> 일회성 30 + 구독 50을 각각 원래 풀로 복원 &rarr; 일회성 30 + 구독 2,000</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2 id="edge-scenarios">5. 엣지 & 복합 시나리오</h2>
+
+<p style="color:#64748b; margin-bottom: 24px;">다양한 동작이 중첩될 때 시스템이 어떻게 동작하는지 상세히 설명합니다.</p>
+
+<!-- E1 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬆️⬆️</span> 한 달 안에 두 번 업그레이드 (Basic &rarr; Pro &rarr; Premium)</div>
+  <p style="font-size:14px;color:#64748b;">Basic 시작(1일째) &rarr; 500 사용 &rarr; Pro 업그레이드(10일째, 20일 남음) &rarr; 1,000 사용 &rarr; Premium 업그레이드(20일째, 10일 남음)</p>
+  <div class="timeline">
+    <div class="timeline-item">Basic(2,000) 시작, 500 사용 &rarr; 잔액 1,500</div>
+    <div class="timeline-item">Pro 업그레이드 (비례율 20/30 &asymp; 67%): Basic비례 1,333 / Pro비례 2,933 &rarr; 잔액 = 1,500 - 1,333 + 2,933 = <strong>3,100</strong></div>
+    <div class="timeline-item">Pro에서 1,000 사용 &rarr; 잔액 2,100</div>
+    <div class="timeline-item">Premium 업그레이드 (비례율 10/30 &asymp; 33%): Pro비례 1,467 / Premium비례 2,367 &rarr; 잔액 = 2,100 - 1,467 + 2,367 = <strong>3,000</strong></div>
+    <div class="timeline-item result"><strong>결과:</strong> 크레딧은 각 업그레이드 시점의 남은 기간에 비례. 결제도 동일하게 비례 청구</div>
+  </div>
+</div>
+
+<!-- E2 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬆️⬇️</span> 업그레이드 후 즉시 다운그레이드</div>
+  <p style="font-size:14px;color:#64748b;">Basic &rarr; Pro 업그레이드 &rarr; 바로 Basic으로 다운그레이드 요청</p>
+  <div class="timeline">
+    <div class="timeline-item">Pro 업그레이드 즉시 적용 &rarr; Pro 크레딧으로 재계산됨</div>
+    <div class="timeline-item">Basic 다운그레이드 예약 &rarr; "다음 달부터 Basic" 표시</div>
+    <div class="timeline-item">이번 달은 Pro 크레딧 그대로 사용</div>
+    <div class="timeline-item result"><strong>결과:</strong> 이번 달 차액 청구됨 + 이번 달은 Pro. 다음 달부터 Basic $9, 기존 잔액 + 2,000 누적</div>
+  </div>
+</div>
+
+<!-- E3 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬇️⬆️</span> 다운그레이드 예약 후 다시 업그레이드</div>
+  <p style="font-size:14px;color:#64748b;">Premium &rarr; Basic 다운그레이드 예약 &rarr; 마음 바꿔서 Premium 유지하고 싶음</p>
+  <div class="timeline">
+    <div class="timeline-item">Premium에서 Basic으로 다운그레이드 예약 완료</div>
+    <div class="timeline-item">취소 철회(고객 포털) 또는 같은 플랜 재선택으로 예약 해제 가능</div>
+    <div class="timeline-item result"><strong>결과:</strong> 다운그레이드 예약이 해제되고, Premium 그대로 유지</div>
+  </div>
+</div>
+
+<!-- E4 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬇️❌</span> 다운그레이드 예약 후 구독 취소</div>
+  <p style="font-size:14px;color:#64748b;">Pro에서 Basic으로 다운그레이드 예약 &rarr; 그 후 구독 자체를 취소</p>
+  <div class="timeline">
+    <div class="timeline-item">Pro &rarr; Basic 다운그레이드 예약 상태</div>
+    <div class="timeline-item">이후 구독 취소 &rarr; <strong>다운그레이드 예약도 함께 해제됨</strong> (다음 결제가 없으므로 의미 없음)</div>
+    <div class="timeline-item">취소 철회(재구독) 시 &rarr; 다운그레이드 예약 없이 현재 플랜(Pro)으로 갱신</div>
+    <div class="timeline-item result"><strong>결과:</strong> 취소하면 다운그레이드 예약도 초기화. 재구독 시 깨끗한 상태</div>
+  </div>
+</div>
+
+<!-- E5 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">❌🔄</span> 취소 후 재구독 (같은 플랜)</div>
+  <p style="font-size:14px;color:#64748b;">Premium 구독 취소 &rarr; 며칠 뒤 취소 철회</p>
+  <div class="timeline">
+    <div class="timeline-item">Premium 구독 취소 &rarr; 상태: canceled, 크레딧 유지</div>
+    <div class="timeline-item">결제 기간 내에 고객 포털에서 "취소 철회" 클릭</div>
+    <div class="timeline-item">상태: active로 복구. 크레딧 변경 없음</div>
+    <div class="timeline-item result"><strong>결과:</strong> 마치 취소한 적 없는 것처럼. 다음 결제일에 정상 갱신</div>
+  </div>
+</div>
+
+<!-- E6 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">❌🛒</span> 취소 후 다른 플랜으로 신규 구독</div>
+  <p style="font-size:14px;color:#64748b;">Premium 구독 취소 &rarr; 결제 기간 만료 후 &rarr; Basic으로 새 구독</p>
+  <div class="timeline">
+    <div class="timeline-item">Premium 취소, 남은 크레딧 사용</div>
+    <div class="timeline-item">결제 기간 만료 &rarr; 구독 크레딧 잔액 유지 (소멸 안 함)</div>
+    <div class="timeline-item">Basic으로 새 구독 &rarr; 잔여 구독 크레딧 + 2,000 누적</div>
+    <div class="timeline-item result"><strong>결과:</strong> Basic 활성. 구독 크레딧 = 이전 잔액 + 2,000. 일회성 크레딧도 유지</div>
+  </div>
+</div>
+
+<!-- E7 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💎❌</span> 크레딧 팩 구매 후 구독 취소</div>
+  <p style="font-size:14px;color:#64748b;">Pro 구독 중 1,500 크레딧 팩 구매 &rarr; 이후 구독 취소</p>
+  <div class="timeline">
+    <div class="timeline-item">현재 잔액: 구독 4,400 + 일회성 1,500 = 총 5,900</div>
+    <div class="timeline-item">구독 취소 &rarr; 크레딧 전부 유지</div>
+    <div class="timeline-item">크레딧 사용 시: 일회성 1,500 먼저 차감 &rarr; 이후 구독 4,400 차감</div>
+    <div class="timeline-item result"><strong>결과:</strong> 총 5,900 크레딧을 다 쓸 때까지 이용 가능. Pro 기능(워터마크 없음, 쿨다운 없음)도 유지</div>
+  </div>
+</div>
+
+<!-- E8 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💸⬆️</span> 업그레이드 후 이전 주문이 환불되는 경우</div>
+  <p style="font-size:14px;color:#64748b;">Basic($9) 구독 &rarr; Pro 업그레이드 &rarr; 이후 Basic 주문에 대한 환불 발생</p>
+  <div class="timeline">
+    <div class="timeline-item">Basic 주문(2,000크레딧)에 대한 환불 요청 도착</div>
+    <div class="timeline-item warning">현재 Pro 플랜이므로, 이전 주문의 크레딧은 이미 업그레이드로 대체됨</div>
+    <div class="timeline-item">시스템이 경고 로그를 남기고, 현재 구독 크레딧에서 가능한 만큼 회수</div>
+    <div class="timeline-item result"><strong>결과:</strong> 관리자가 로그 확인 후 수동 조치 가능. 금전적 환불은 정상 진행</div>
+  </div>
+</div>
+
+<!-- E9 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💸💎</span> 크레딧 팩 구매 후 크레딧을 다 쓰고 환불 요청</div>
+  <p style="font-size:14px;color:#64748b;">1,500 크레딧 팩 구매 &rarr; 1,200 사용 &rarr; 전액 환불</p>
+  <div class="timeline">
+    <div class="timeline-item">환불 요청: 1,500 크레딧 회수 시도</div>
+    <div class="timeline-item">현재 일회성 잔액: 300 (1,200 이미 사용)</div>
+    <div class="timeline-item warning">회수 가능: 300만 회수. 부족분(shortfall): 1,200은 기록만</div>
+    <div class="timeline-item result"><strong>결과:</strong> 일회성 잔액 0. 금전적 환불은 전액 진행. 1,200크레딧 손실은 운영 비용</div>
+  </div>
+</div>
+
+<!-- E10 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💸💸</span> 같은 주문에 여러 번 부분 환불</div>
+  <p style="font-size:14px;color:#64748b;">$10 주문(1,500크레딧)에 $3 환불 &rarr; 이후 추가 $3 환불</p>
+  <div class="timeline">
+    <div class="timeline-item">1차 환불 $3: 비례 크레딧 = ($3/$10)*1,500 = 450. 회수: 450</div>
+    <div class="timeline-item">2차 환불 $3: 누적 비례 크레딧 = ($6/$10)*1,500 = 900. 이미 회수 450. 추가 회수: 450</div>
+    <div class="timeline-item result"><strong>결과:</strong> 누적 추적으로 정확한 비례 계산. 총 환불 $6, 총 회수 900 크레딧</div>
+  </div>
+</div>
+
+<!-- E11 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🎨❌</span> 이미지 생성 중 크레딧 부족</div>
+  <div class="timeline">
+    <div class="timeline-item">잔액: 일회성 30 + 구독 20 = 총 50. 생성 비용: 80</div>
+    <div class="timeline-item danger">크레딧 부족 &rarr; 생성 거부. "크레딧이 부족합니다" 에러</div>
+    <div class="timeline-item result"><strong>결과:</strong> 크레딧 차감 없음. 사용자에게 크레딧 팩 구매 또는 구독 업그레이드 안내</div>
+  </div>
+</div>
+
+<!-- E12 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🎨💥</span> 이미지 생성 실패 시 크레딧 복원 (일회성에서만 차감된 경우)</div>
+  <p style="font-size:14px;color:#64748b;">일회성 100 + 구독 2,000. 생성 비용 80. AI 처리 중 에러 발생</p>
+  <div class="timeline">
+    <div class="timeline-item">선차감: 일회성에서 80 차감 &rarr; 일회성 20 + 구독 2,000</div>
+    <div class="timeline-item danger">AI 모델 에러 발생 &rarr; 이미지 생성 실패</div>
+    <div class="timeline-item">자동 복원: 일회성에 80 되돌림</div>
+    <div class="timeline-item result"><strong>결과:</strong> 일회성 100 + 구독 2,000. 실패로 크레딧 손실 없음</div>
+  </div>
+</div>
+
+<!-- E12-b -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🎨💥</span> 이미지 생성 실패 시 크레딧 복원 (혼합 차감된 경우)</div>
+  <p style="font-size:14px;color:#64748b;">일회성 30 + 구독 2,000. 생성 비용 80. AI 처리 중 에러 발생</p>
+  <div class="timeline">
+    <div class="timeline-item">선차감: 일회성 30 + 구독 50 차감 &rarr; 일회성 0 + 구독 1,950</div>
+    <div class="timeline-item danger">AI 모델 에러 발생 &rarr; 이미지 생성 실패</div>
+    <div class="timeline-item">자동 복원: 일회성에 30, 구독에 50 각각 되돌림 (차감된 풀로 정확히 복원)</div>
+    <div class="timeline-item result"><strong>결과:</strong> 일회성 30 + 구독 2,000. 원래 상태로 정확히 복구</div>
+  </div>
+</div>
+
+<!-- E13 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🎨⏱️</span> Free 사용자 쿨다운</div>
+  <div class="timeline">
+    <div class="timeline-item">Free 사용자가 이미지 생성 완료</div>
+    <div class="timeline-item">5분(300초) 쿨다운 시작</div>
+    <div class="timeline-item warning">쿨다운 중 다시 생성 시도 &rarr; "N초 후 다시 시도하세요" 에러</div>
+    <div class="timeline-item">5분 경과 후 &rarr; 정상 생성 가능</div>
+    <div class="timeline-item result"><strong>결과:</strong> 유료 플랜은 쿨다운 없음. Free만 5분 제한</div>
+  </div>
+</div>
+
+<!-- E14 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🚫🛒</span> 결제 실패 해지 후 재구독</div>
+  <p style="font-size:14px;color:#64748b;">결제 실패 &rarr; 강제 해지(revoked), 구독 크레딧 800 남음 &rarr; 다시 구독 시도</p>
+  <div class="timeline">
+    <div class="timeline-item">결제 실패로 해지: Free 전환, 구독 크레딧 800 유지</div>
+    <div class="timeline-item">사용자가 새 카드로 Pro 구독 시도</div>
+    <div class="timeline-item">기존 잔액 + 새 크레딧 누적</div>
+    <div class="timeline-item result"><strong>결과:</strong> Pro 활성, 구독 크레딧 = 800 + 4,400 = <strong>5,200</strong></div>
+  </div>
+</div>
+
+<!-- E15 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬇️⬇️</span> 다운그레이드 예약 변경 (Premium &rarr; Basic 예약 &rarr; Pro로 변경)</div>
+  <p style="font-size:14px;color:#64748b;">Premium에서 Basic 다운그레이드 예약 &rarr; 다시 Pro로 다운그레이드 변경</p>
+  <div class="timeline">
+    <div class="timeline-item">Premium &rarr; Basic 다운그레이드 예약 완료 (scheduled_plan_id = basic)</div>
+    <div class="timeline-item">사용자가 Pro 다운그레이드로 변경 (Premium &rarr; Pro도 다운그레이드)</div>
+    <div class="timeline-item">scheduled_plan_id가 basic &rarr; pro로 업데이트</div>
+    <div class="timeline-item result"><strong>결과:</strong> 다음 달부터 Pro 적용. 가장 마지막 다운그레이드 선택이 반영됨</div>
+  </div>
+</div>
+
+<!-- E16 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬆️❌</span> 업그레이드 후 즉시 취소</div>
+  <p style="font-size:14px;color:#64748b;">Basic &rarr; Pro 업그레이드 직후 구독 취소</p>
+  <div class="timeline">
+    <div class="timeline-item">Pro 업그레이드 즉시 적용 &rarr; 남은 기간 차액 청구 &rarr; 크레딧 재계산</div>
+    <div class="timeline-item">바로 구독 취소 &rarr; 상태: canceled</div>
+    <div class="timeline-item">Pro 크레딧은 유지 (소멸 안 함)</div>
+    <div class="timeline-item result"><strong>결과:</strong> 차액은 이미 청구됨. Pro 크레딧을 다 쓸 때까지 사용 가능. 다음 달 갱신 없음</div>
+  </div>
+</div>
+
+<!-- E17 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💎🔄</span> 구독 갱신 시 일회성 크레딧은?</div>
+  <p style="font-size:14px;color:#64748b;">Basic 구독(잔액 300) + 일회성 800 보유 &rarr; 갱신일</p>
+  <div class="timeline">
+    <div class="timeline-item">갱신 결제 완료</div>
+    <div class="timeline-item">구독 크레딧: 300 + 2,000 = <strong>2,300</strong> (누적)</div>
+    <div class="timeline-item">일회성 크레딧: 800 &rarr; <strong>그대로 800</strong></div>
+    <div class="timeline-item result"><strong>결과:</strong> 총 잔액 = 구독 2,300 + 일회성 800 = 3,100. 어떤 크레딧도 소멸 안 함</div>
+  </div>
+</div>
+
+<!-- E18 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🛒🛒</span> 같은 플랜 중복 구독 시도</div>
+  <div class="timeline">
+    <div class="timeline-item">이미 Basic 구독 중인데 Basic "시작하기" 클릭</div>
+    <div class="timeline-item">시스템이 현재 플랜과 동일 플랜 감지</div>
+    <div class="timeline-item result"><strong>결과:</strong> "현재 플랜" 표시. 업/다운그레이드가 아니므로 "구독 관리" 버튼으로 안내</div>
+  </div>
+</div>
+
+<!-- E19 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🖱️🖱️</span> 결제 버튼 더블 클릭</div>
+  <div class="timeline">
+    <div class="timeline-item">사용자가 빠르게 결제 버튼을 2번 클릭</div>
+    <div class="timeline-item">60초 내 동일 상품 재요청 &rarr; 두 번째 요청 차단</div>
+    <div class="timeline-item result"><strong>결과:</strong> "잠시 후 다시 시도해주세요" 메시지. 중복 결제 방지</div>
+  </div>
+</div>
+
+<!-- E20 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🌐</span> 고객 포털에서 직접 플랜 변경</div>
+  <p style="font-size:14px;color:#64748b;">Phos 웹사이트가 아닌 Polar 고객 포털에서 직접 구독 변경</p>
+  <div class="timeline">
+    <div class="timeline-item">사용자가 "구독 관리" &rarr; Polar 고객 포털 이동</div>
+    <div class="timeline-item">포털에서 플랜 변경 또는 취소</div>
+    <div class="timeline-item">Polar가 웹훅으로 변경 사항 알림</div>
+    <div class="timeline-item result"><strong>결과:</strong> Phos 웹사이트에서 변경한 것과 동일하게 처리됨. 웹훅이 모든 변경을 감지</div>
+  </div>
+</div>
+
+<!-- E21 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💳❌</span> 결제 수단 변경</div>
+  <div class="timeline">
+    <div class="timeline-item">카드 만료 예정 &rarr; 사용자가 고객 포털에서 새 카드 등록</div>
+    <div class="timeline-item">Polar에서 결제 수단 업데이트 처리</div>
+    <div class="timeline-item result"><strong>결과:</strong> Phos 측 크레딧/구독 상태에는 영향 없음. 다음 결제부터 새 카드 사용</div>
+  </div>
+</div>
+
+<!-- E22 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🎨💎</span> 구독 크레딧 0 + 일회성 크레딧만 있을 때 생성</div>
+  <p style="font-size:14px;color:#64748b;">구독 크레딧 0, 일회성 500. 생성 비용 80</p>
+  <div class="timeline">
+    <div class="timeline-item">일회성에서 80 차감 (일회성 먼저)</div>
+    <div class="timeline-item result"><strong>결과:</strong> 잔액 = 일회성 420 + 구독 0. 정상 생성. 구독 크레딧이 0이어도 일회성으로 사용 가능</div>
+  </div>
+</div>
+
+<!-- E23 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">🎨🔀</span> 일회성 + 구독 혼합 차감</div>
+  <p style="font-size:14px;color:#64748b;">일회성 30 + 구독 2,000. 생성 비용 80</p>
+  <div class="timeline">
+    <div class="timeline-item">일회성에서 30 차감 (전부 사용)</div>
+    <div class="timeline-item">부족분 50을 구독에서 차감</div>
+    <div class="timeline-item result"><strong>결과:</strong> 잔액 = 일회성 0 + 구독 1,950. 두 풀에 걸쳐 자동 분배</div>
+  </div>
+</div>
+
+<!-- E24 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">⬆️⬆️❌</span> 두 번 업그레이드 후 취소</div>
+  <p style="font-size:14px;color:#64748b;">Basic(2,000) &rarr; 500 사용 &rarr; Pro 업그레이드(3,900) &rarr; 1,000 사용 &rarr; Premium 업그레이드(5,600) &rarr; 구독 취소</p>
+  <div class="timeline">
+    <div class="timeline-item">Premium 구독 크레딧 5,600 + 일회성 크레딧 보유</div>
+    <div class="timeline-item">구독 취소 &rarr; 5,600 크레딧 유지</div>
+    <div class="timeline-item">다음 달 갱신 없음</div>
+    <div class="timeline-item result"><strong>결과:</strong> 5,600 크레딧을 다 쓸 때까지 사용 가능. 업그레이드 차액은 이미 청구됨</div>
+  </div>
+</div>
+
+<!-- E25 -->
+<div class="scenario">
+  <div class="scenario-title"><span class="scenario-icon">💸🚫</span> 환불 후 크레딧 부족(shortfall) 발생</div>
+  <p style="font-size:14px;color:#64748b;">구독 주문 환불 요청. 현재 구독 크레딧 800. 원래 부여 2,000</p>
+  <div class="timeline">
+    <div class="timeline-item">환불 시 2,000 크레딧 회수 시도</div>
+    <div class="timeline-item warning">현재 잔액 800만 회수 가능. shortfall = 1,200</div>
+    <div class="timeline-item">shortfall 1,200은 주문 metadata에 기록</div>
+    <div class="timeline-item result"><strong>결과:</strong> 구독 크레딧 0. 금전적 환불은 전액 진행. shortfall은 관리자가 확인 가능</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2 id="portal">6. 고객 포털에서 할 수 있는 것</h2>
+
+<div class="card">
+  <table>
+    <tr><th>기능</th><th>설명</th><th>Phos에 미치는 영향</th></tr>
+    <tr><td>구독 취소</td><td>다음 갱신부터 중단</td><td>웹훅으로 감지 &rarr; 상태 canceled. 크레딧 유지</td></tr>
+    <tr><td>취소 철회</td><td>취소를 되돌림</td><td>웹훅으로 감지 &rarr; 상태 active. 정상 갱신 재개</td></tr>
+    <tr><td>플랜 변경</td><td>업/다운그레이드</td><td>웹훅으로 감지 &rarr; Phos 웹사이트와 동일하게 처리</td></tr>
+    <tr><td>결제 수단 변경</td><td>카드 추가/변경</td><td>Phos 크레딧/구독에 영향 없음</td></tr>
+    <tr><td>인보이스 확인</td><td>결제 내역 조회</td><td>Phos 크레딧/구독에 영향 없음</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<h2 id="policies">7. 정책 요약</h2>
+
+<div class="card">
+  <table>
+    <tr><th>항목</th><th>정책</th></tr>
+    <tr><td>크레딧 차감 순서</td><td>일회성 먼저 &rarr; 부족하면 구독 크레딧</td></tr>
+    <tr><td>구독 크레딧 갱신</td><td>매달 결제 시 기존 잔액 + 새 크레딧으로 누적 (소멸 없음)</td></tr>
+    <tr><td>구독 취소 후</td><td><strong>크레딧 + 기능 모두 유지.</strong> 다 쓸 때까지 사용 가능. 다음 달 충전만 없음</td></tr>
+    <tr><td>결제 실패 해지</td><td>Free 전환 (기능 제한: 워터마크, 쿨다운 5분). 크레딧은 유지. 다음 충전만 안 됨</td></tr>
+    <tr><td>일회성 크레딧</td><td>영구 보유. 어떤 상황에서도 소멸하지 않음 (환불 제외)</td></tr>
+    <tr><td>Free 플랜 크레딧</td><td>가입 시 1회 120크레딧 제공. 월간 리셋 없음</td></tr>
+    <tr><td>업그레이드</td><td>즉시 적용. 남은 기간에 비례하여 크레딧 부여 &amp; 차액 청구</td></tr>
+    <tr><td>다운그레이드</td><td>다음 결제일부터 적용. 이번 달은 현재 플랜 유지</td></tr>
+    <tr><td>환불</td><td>잔여 크레딧만 회수 (부족분은 기록). 금전적 환불은 전액 진행</td></tr>
+    <tr><td>생성 실패</td><td>선차감 크레딧 자동 복원 (원래 풀로 정확히 복원)</td></tr>
+    <tr><td>쿨다운</td><td>Free: 5분 / 유료 플랜: 없음</td></tr>
+    <tr><td>더블 클릭 방지</td><td>60초 내 동일 상품 재요청 차단</td></tr>
+  </table>
+</div>
+
+<div class="section-divider"></div>
+
+<div style="padding: 16px; text-align: center; color: #94a3b8; font-size: 13px;">
+  Phos 결제 시스템 문서 &mdash; 최종 업데이트: 2026-04-01
+</div>
+
+</div>
+</body>
+</html>

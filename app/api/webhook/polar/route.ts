@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     throw e;
   }
 
-  // ── 멱등성 체크 ────────────────────────────────────────
+  // ── 멱등성 체크 (INSERT 선행 → 레이스 컨디션 방지) ─────
   const webhookId = request.headers.get("webhook-id");
   if (!webhookId) {
     return new Response("Missing webhook-id", { status: 400 });
@@ -43,14 +43,16 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
-  // 이미 처리 완료된 이벤트인지 확인
-  const { data: existing } = await admin
+  const { data: inserted } = await admin
     .from("webhook_events")
+    .upsert(
+      { id: webhookId, event_type: event.type, payload: JSON.parse(body) },
+      { onConflict: "id", ignoreDuplicates: true }
+    )
     .select("id")
-    .eq("id", webhookId)
     .single();
 
-  if (existing) {
+  if (!inserted) {
     return Response.json({ received: true, duplicate: true });
   }
 
@@ -82,30 +84,13 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        // checkout.*, subscription.created, subscription.active 등 → 로그만
         console.log(`[webhook/polar] Unhandled event type: ${event.type}`);
         break;
     }
   } catch (err) {
     console.error(`[webhook/polar] Error handling ${event.type}:`, err);
-    // 처리 실패 → 500 반환 → Polar가 재시도
-    // webhook_events에 기록하지 않아 재시도 시 다시 처리됨
+    await admin.from("webhook_events").delete().eq("id", webhookId);
     return new Response("Internal error", { status: 500 });
-  }
-
-  // ── 처리 성공 후에만 멱등성 기록 ────────────────────────
-  const { error: insertError } = await admin
-    .from("webhook_events")
-    .insert({
-      id: webhookId,
-      event_type: event.type,
-      payload: JSON.parse(body),
-    });
-
-  if (insertError && insertError.code !== "23505") {
-    // 삽입 실패해도 처리는 이미 성공했으므로 200 반환
-    // (RPCs가 멱등이므로 재처리해도 안전)
-    console.error("[webhook/polar] Failed to record webhook_events:", insertError);
   }
 
   return Response.json({ received: true });
@@ -117,12 +102,10 @@ async function resolveUserId(customer: {
   id: string;
   externalId?: string | null;
 }): Promise<string | null> {
-  // 1. externalId = Supabase user ID (체크아웃 시 전달)
   if (customer.externalId) {
     return customer.externalId;
   }
 
-  // 2. fallback: polar_customer_id로 조회
   const admin = createAdminClient();
   const { data } = await admin
     .from("users")
@@ -137,7 +120,15 @@ async function resolveUserId(customer: {
   return data?.id ?? null;
 }
 
-// ── order.paid ───────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// order.paid — 크레딧 부여의 유일한 경로
+//
+// billing_reason:
+//   "subscription_create"  → 신규 구독: 플랜 크레딧 부여
+//   "subscription_cycle"   → 갱신: 플랜 크레딧 누적
+//   "subscription_update"  → 업그레이드: 차액 크레딧 부여
+//   (없음)                 → 크레딧 팩: 일회성 크레딧 부여
+// ══════════════════════════════════════════════════════════
 
 async function handleOrderPaid(order: {
   id: string;
@@ -145,11 +136,11 @@ async function handleOrderPaid(order: {
   product: { id: string } | null;
   subscription: { id: string; currentPeriodStart: Date; currentPeriodEnd: Date } | null;
   totalAmount: number;
+  billingReason?: string | null;
 }) {
   const userId = await resolveUserId(order.customer);
   if (!userId) {
-    console.error("[webhook/polar] order.paid: Cannot resolve user for customer", order.customer.id);
-    return;
+    throw new Error(`[webhook/polar] order.paid: Cannot resolve user for customer ${order.customer.id}`);
   }
 
   const productId = order.product?.id;
@@ -159,15 +150,45 @@ async function handleOrderPaid(order: {
   }
 
   const admin = createAdminClient();
+  const billingReason = order.billingReason ?? "unknown";
 
-  if (isSubscriptionProduct(productId)) {
-    const plan = getSubscriptionByPolarId(productId);
-    if (!plan) {
-      console.error("[webhook/polar] order.paid: Unknown subscription product:", productId);
+  // ── 크레딧 팩 ──────────────────────────────────────────
+  if (!isSubscriptionProduct(productId)) {
+    const pack = getCreditPackByPolarId(productId);
+    if (!pack) {
+      console.error("[webhook/polar] order.paid: Unknown credit product:", productId);
       return;
     }
 
-    const sub = order.subscription;
+    const { error } = await admin.rpc("process_credit_purchase", {
+      p_user_id: userId,
+      p_credits: pack.credits,
+      p_order_id: order.id,
+      p_amount_cents: order.totalAmount,
+      p_polar_product_id: productId,
+      p_polar_customer_id: order.customer.id,
+    });
+
+    if (error) {
+      console.error("[webhook/polar] process_credit_purchase failed:", error);
+      throw error;
+    }
+
+    console.log(`[webhook/polar] Credits purchased: user=${userId}, credits=${pack.credits}`);
+    return;
+  }
+
+  // ── 구독 상품 ──────────────────────────────────────────
+  const plan = getSubscriptionByPolarId(productId);
+  if (!plan) {
+    console.error("[webhook/polar] order.paid: Unknown subscription product:", productId);
+    return;
+  }
+
+  const sub = order.subscription;
+
+  if (billingReason === "subscription_create" || billingReason === "subscription_cycle") {
+    // 신규 구독 또는 갱신 → 플랜 크레딧 누적
     const { error } = await admin.rpc("process_subscription_activation", {
       p_user_id: userId,
       p_plan_id: plan.planId,
@@ -192,33 +213,46 @@ async function handleOrderPaid(order: {
       .update({ scheduled_plan_id: null })
       .eq("user_id", userId);
 
-    console.log(`[webhook/polar] Subscription activated: user=${userId}, plan=${plan.planId}`);
+    console.log(`[webhook/polar] Subscription ${billingReason}: user=${userId}, plan=${plan.planId}, credits=${plan.credits}`);
+
+  } else if (billingReason === "subscription_update") {
+    // 업그레이드 차액 결제 → 주문 기록만 (크레딧은 subscription.updated에서 처리)
+    if (order.id) {
+      await admin.from("orders").upsert({
+        id: order.id,
+        user_id: userId,
+        polar_product_id: productId,
+        product_type: "subscription",
+        amount_cents: order.totalAmount,
+        credits_granted: 0,
+        polar_subscription_id: sub?.id ?? "",
+        status: "paid",
+      }, { onConflict: "id", ignoreDuplicates: true });
+    }
+
+    console.log(`[webhook/polar] Upgrade invoice recorded (no credits): order=${order.id}, amount=${order.totalAmount}`);
+
   } else {
-    const pack = getCreditPackByPolarId(productId);
-    if (!pack) {
-      console.error("[webhook/polar] order.paid: Unknown credit product:", productId);
-      return;
+    // 알 수 없는 billing_reason → 안전하게 주문만 기록
+    console.warn(`[webhook/polar] order.paid: Unknown billing_reason="${billingReason}", recording order only`);
+    if (order.id) {
+      await admin.from("orders").upsert({
+        id: order.id,
+        user_id: userId,
+        polar_product_id: productId,
+        product_type: "subscription",
+        amount_cents: order.totalAmount,
+        credits_granted: 0,
+        polar_subscription_id: sub?.id ?? "",
+        status: "paid",
+      }, { onConflict: "id", ignoreDuplicates: true });
     }
-
-    const { error } = await admin.rpc("process_credit_purchase", {
-      p_user_id: userId,
-      p_credits: pack.credits,
-      p_order_id: order.id,
-      p_amount_cents: order.totalAmount,
-      p_polar_product_id: productId,
-      p_polar_customer_id: order.customer.id,
-    });
-
-    if (error) {
-      console.error("[webhook/polar] process_credit_purchase failed:", error);
-      throw error;
-    }
-
-    console.log(`[webhook/polar] Credits purchased: user=${userId}, credits=${pack.credits}`);
   }
 }
 
-// ── order.refunded ───────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// order.refunded — 환불 처리
+// ══════════════════════════════════════════════════════════
 
 async function handleOrderRefunded(order: {
   id: string;
@@ -228,16 +262,14 @@ async function handleOrderRefunded(order: {
 }) {
   const userId = await resolveUserId(order.customer);
   if (!userId) {
-    console.error("[webhook/polar] order.refunded: Cannot resolve user");
-    return;
+    throw new Error(`[webhook/polar] order.refunded: Cannot resolve user for customer ${order.customer.id}`);
   }
 
   const admin = createAdminClient();
 
-  // 로컬 orders 테이블에서 주문 정보 조회
   const { data: localOrder } = await admin
     .from("orders")
-    .select("credits_granted, amount_cents, status, metadata")
+    .select("credits_granted, amount_cents, status, metadata, product_type, polar_subscription_id")
     .eq("id", order.id)
     .single();
 
@@ -246,23 +278,35 @@ async function handleOrderRefunded(order: {
     return;
   }
 
-  // 이미 전액 환불 처리된 주문은 스킵
   if (localOrder.status === "refunded") {
     console.log("[webhook/polar] order.refunded: Already fully refunded:", order.id);
     return;
   }
 
-  // 이전에 환불된 크레딧 수 계산 (metadata에서 추적)
+  // 구독 환불 시 현재 구독과 주문의 구독이 다르면 경고
+  if (localOrder.product_type === "subscription" && localOrder.polar_subscription_id) {
+    const { data: currentSub } = await admin
+      .from("user_subscriptions")
+      .select("external_subscription_id")
+      .eq("user_id", userId)
+      .single();
+
+    if (currentSub && currentSub.external_subscription_id !== localOrder.polar_subscription_id) {
+      console.warn(
+        `[webhook/polar] order.refunded: Refunding old subscription order after plan change. order=${order.id}, ` +
+        `order_sub=${localOrder.polar_subscription_id}, current_sub=${currentSub.external_subscription_id}`
+      );
+    }
+  }
+
   const prevRefundedCredits = (localOrder.metadata as Record<string, unknown>)?.total_refunded_credits as number ?? 0;
 
   const isFullRefund = order.refundedAmount >= order.totalAmount;
   let creditsToRevoke: number;
 
   if (isFullRefund) {
-    // 전액 환불: 남은 미환불 크레딧 전부 회수
     creditsToRevoke = localOrder.credits_granted - prevRefundedCredits;
   } else {
-    // 부분 환불: 비례 계산 후 이전 환불분 차감 (증분만 회수)
     const totalProportionalCredits = localOrder.amount_cents > 0
       ? Math.floor((order.refundedAmount / localOrder.amount_cents) * localOrder.credits_granted)
       : 0;
@@ -286,7 +330,6 @@ async function handleOrderRefunded(order: {
     throw error;
   }
 
-  // 누적 환불 크레딧 추적 (orders.metadata에 기록)
   const newTotalRefunded = prevRefundedCredits + creditsToRevoke;
   await admin
     .from("orders")
@@ -298,7 +341,13 @@ async function handleOrderRefunded(order: {
   console.log(`[webhook/polar] Refund processed: order=${order.id}, credits=${creditsToRevoke}, total_refunded=${newTotalRefunded}`);
 }
 
-// ── subscription.updated ─────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// subscription.updated — 크레딧 부여 없음. 플랜 상태 업데이트만.
+//
+// 업그레이드: 플랜 변경 + 크레딧 재계산 (차액)
+// 다운그레이드: scheduled_plan_id 예약만
+// 같은 플랜 / free→유료: 무시 (order.paid에서 처리)
+// ══════════════════════════════════════════════════════════
 
 async function handleSubscriptionUpdated(subscription: {
   id: string;
@@ -307,8 +356,37 @@ async function handleSubscriptionUpdated(subscription: {
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
   customer: { id: string; externalId?: string | null };
+  pendingUpdate?: { productId: string | null } | null;
 }) {
-  // 플랜 변경 감지 — 새 상품이 구독 상품이면 재활성화
+  const admin = createAdminClient();
+
+  // pending_update가 있으면 다운그레이드 예약 (next_period)
+  if (subscription.pendingUpdate?.productId) {
+    const pendingPlan = getSubscriptionByPolarId(subscription.pendingUpdate.productId);
+    if (!pendingPlan) {
+      console.log("[webhook/polar] subscription.updated: Unknown pending product:", subscription.pendingUpdate.productId);
+      return;
+    }
+
+    const userId = await resolveUserId(subscription.customer);
+    if (!userId) {
+      throw new Error(`[webhook/polar] subscription.updated: Cannot resolve user for customer ${subscription.customer.id}`);
+    }
+
+    await admin
+      .from("user_subscriptions")
+      .update({
+        scheduled_plan_id: pendingPlan.planId,
+        external_subscription_id: subscription.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId);
+
+    console.log(`[webhook/polar] Downgrade scheduled: user=${userId}, pending=${pendingPlan.planId}`);
+    return;
+  }
+
+  // pending_update 없음 → 즉시 적용된 변경 (업그레이드)
   if (!isSubscriptionProduct(subscription.productId)) {
     console.log("[webhook/polar] subscription.updated: Not a subscription product:", subscription.productId);
     return;
@@ -316,8 +394,7 @@ async function handleSubscriptionUpdated(subscription: {
 
   const userId = await resolveUserId(subscription.customer);
   if (!userId) {
-    console.error("[webhook/polar] subscription.updated: Cannot resolve user");
-    return;
+    throw new Error(`[webhook/polar] subscription.updated: Cannot resolve user for customer ${subscription.customer.id}`);
   }
 
   const plan = getSubscriptionByPolarId(subscription.productId);
@@ -326,9 +403,6 @@ async function handleSubscriptionUpdated(subscription: {
     return;
   }
 
-  const admin = createAdminClient();
-
-  // 기존 플랜 조회
   const { data: currentSub } = await admin
     .from("user_subscriptions")
     .select("plan_id, subscription_plans(monthly_credits)")
@@ -338,28 +412,17 @@ async function handleSubscriptionUpdated(subscription: {
   const oldPlanId = currentSub?.plan_id ?? "free";
   const oldPlanCredits = (currentSub?.subscription_plans as Record<string, unknown>)?.monthly_credits as number ?? 0;
 
-  // 같은 플랜이면 갱신 → 전액 부여
-  if (oldPlanId === plan.planId) {
-    const { error } = await admin.rpc("process_subscription_activation", {
-      p_user_id: userId,
-      p_plan_id: plan.planId,
-      p_polar_subscription_id: subscription.id,
-      p_polar_customer_id: subscription.customer.id,
-      p_period_start: subscription.currentPeriodStart.toISOString(),
-      p_period_end: subscription.currentPeriodEnd.toISOString(),
-      p_credits: plan.credits,
-    });
-    if (error) { console.error("[webhook/polar] subscription renewal failed:", error); throw error; }
-    console.log(`[webhook/polar] Subscription renewed: user=${userId}, plan=${plan.planId}`);
+  // 같은 플랜이거나 free→유료(신규 구독)면 무시 — order.paid에서 처리
+  if (oldPlanId === plan.planId || oldPlanId === "free") {
+    console.log(`[webhook/polar] subscription.updated: ${oldPlanId} → ${plan.planId}, skipping — handled by order.paid`);
     return;
   }
 
-  // 업/다운그레이드 판별
   const planOrder = ["free", "basic", "pro", "premium"];
   const isUpgrade = planOrder.indexOf(plan.planId) > planOrder.indexOf(oldPlanId);
 
   if (isUpgrade) {
-    // 업그레이드: 즉시 크레딧 재계산 (사용량 차감)
+    // 업그레이드: 플랜 변경 + 크레딧 차액 부여
     const { error } = await admin.rpc("process_subscription_activation", {
       p_user_id: userId,
       p_plan_id: plan.planId,
@@ -372,7 +435,6 @@ async function handleSubscriptionUpdated(subscription: {
     });
     if (error) { console.error("[webhook/polar] upgrade failed:", error); throw error; }
 
-    // 업그레이드 시 다운그레이드 예약 초기화
     await admin
       .from("user_subscriptions")
       .update({ scheduled_plan_id: null })
@@ -380,8 +442,7 @@ async function handleSubscriptionUpdated(subscription: {
 
     console.log(`[webhook/polar] Upgraded: user=${userId}, ${oldPlanId} → ${plan.planId}`);
   } else {
-    // 다운그레이드: 크레딧/플랜 변경 안 함, scheduled_plan_id만 기록
-    // → 다음 갱신(order.paid) 시 새 플랜 크레딧으로 자동 적용
+    // productId가 바뀌었는데 pending_update가 없는 다운그레이드 (예외 케이스)
     await admin
       .from("user_subscriptions")
       .update({
@@ -391,25 +452,27 @@ async function handleSubscriptionUpdated(subscription: {
       })
       .eq("user_id", userId);
 
-    console.log(`[webhook/polar] Downgrade scheduled: user=${userId}, ${oldPlanId} → ${plan.planId} (credits unchanged until next period)`);
+    console.log(`[webhook/polar] Downgrade scheduled (fallback): user=${userId}, ${oldPlanId} → ${plan.planId}`);
   }
 }
 
-// ── subscription.canceled ────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// subscription.canceled / revoked / uncanceled
+// ══════════════════════════════════════════════════════════
 
 async function handleSubscriptionCanceled(subscription: {
   customer: { id: string; externalId?: string | null };
 }) {
   const userId = await resolveUserId(subscription.customer);
   if (!userId) {
-    console.error("[webhook/polar] subscription.canceled: Cannot resolve user");
-    return;
+    throw new Error(`[webhook/polar] subscription.canceled: Cannot resolve user for customer ${subscription.customer.id}`);
   }
 
   const admin = createAdminClient();
+  // 취소 시 다운그레이드 예약도 해제 — 다음 결제가 없으므로 의미 없음
   const { error } = await admin
     .from("user_subscriptions")
-    .update({ status: "canceled", updated_at: new Date().toISOString() })
+    .update({ status: "canceled", scheduled_plan_id: null, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
 
   if (error) {
@@ -420,15 +483,12 @@ async function handleSubscriptionCanceled(subscription: {
   console.log(`[webhook/polar] Subscription canceled: user=${userId}`);
 }
 
-// ── subscription.revoked ─────────────────────────────────
-
 async function handleSubscriptionRevoked(subscription: {
   customer: { id: string; externalId?: string | null };
 }) {
   const userId = await resolveUserId(subscription.customer);
   if (!userId) {
-    console.error("[webhook/polar] subscription.revoked: Cannot resolve user");
-    return;
+    throw new Error(`[webhook/polar] subscription.revoked: Cannot resolve user for customer ${subscription.customer.id}`);
   }
 
   const admin = createAdminClient();
@@ -444,15 +504,12 @@ async function handleSubscriptionRevoked(subscription: {
   console.log(`[webhook/polar] Subscription revoked: user=${userId}`);
 }
 
-// ── subscription.uncanceled ──────────────────────────────
-
 async function handleSubscriptionUncanceled(subscription: {
   customer: { id: string; externalId?: string | null };
 }) {
   const userId = await resolveUserId(subscription.customer);
   if (!userId) {
-    console.error("[webhook/polar] subscription.uncanceled: Cannot resolve user");
-    return;
+    throw new Error(`[webhook/polar] subscription.uncanceled: Cannot resolve user for customer ${subscription.customer.id}`);
   }
 
   const admin = createAdminClient();

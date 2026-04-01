@@ -98,7 +98,7 @@ export const POST = withAuth(async (request, { user }) => {
           id: sub.external_subscription_id,
           subscriptionUpdate: {
             productId: polarProductId,
-            prorationBehavior: isUpgrade ? "prorate" : "next_period",
+            prorationBehavior: isUpgrade ? "invoice" : "next_period",
           },
         });
 
