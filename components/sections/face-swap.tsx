@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { getBlur } from "@/lib/constants/blur-placeholders";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -91,6 +92,7 @@ export function FaceSwap() {
                     className="object-cover"
                     sizes="(max-width: 768px) 40vw, 250px"
                     unoptimized
+                    {...(getBlur(`/images/face-edit/${selected}/before.webp`) ? { placeholder: "blur" as const, blurDataURL: getBlur(`/images/face-edit/${selected}/before.webp`) } : {})}
                   />
                   <div className="absolute inset-0 mix-blend-multiply opacity-40">
                     <Image
@@ -100,6 +102,7 @@ export function FaceSwap() {
                       className="object-cover"
                       sizes="(max-width: 768px) 40vw, 250px"
                       unoptimized
+                      {...(getBlur(`/images/face-edit/${selected}/mask.webp`) ? { placeholder: "blur" as const, blurDataURL: getBlur(`/images/face-edit/${selected}/mask.webp`) } : {})}
                     />
                   </div>
                   <Badge
@@ -122,6 +125,7 @@ export function FaceSwap() {
                     className="object-cover"
                     sizes="(max-width: 768px) 40vw, 250px"
                     unoptimized
+                    {...(getBlur(`/images/face-edit/${selected}/after.webp`) ? { placeholder: "blur" as const, blurDataURL: getBlur(`/images/face-edit/${selected}/after.webp`) } : {})}
                   />
                   <Badge
                     variant="primary"

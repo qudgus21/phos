@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { getBlur } from "@/lib/constants/blur-placeholders";
 const tags = ["이미지 편집", "피부 리터칭", "얼굴 변경", "업스케일"];
 
 export function Hero() {
@@ -37,6 +38,8 @@ export function Hero() {
           className="object-cover object-top"
           priority
           unoptimized
+          placeholder="blur"
+          blurDataURL={getBlur("/images/home/hero/hero-model.webp")}
         />
         {/* Left fade */}
         <div className="absolute inset-0 bg-gradient-to-r from-white from-5% via-white/40 via-30% to-transparent to-60% dark:from-[#1a1b2e] dark:via-[#1a1b2e]/40 dark:to-transparent" />

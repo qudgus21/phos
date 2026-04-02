@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { getBlur } from "@/lib/constants/blur-placeholders";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { Scan, Layers, Sun, Sparkles, SlidersHorizontal, Palette } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
@@ -65,6 +66,8 @@ export function SkinRealism() {
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 unoptimized
+                placeholder="blur"
+                blurDataURL={getBlur("/images/retouching/sample1/after.webp")}
               />
 
               {/* Magnifier lens */}

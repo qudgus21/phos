@@ -53,6 +53,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" suppressHydrationWarning>
+      <head>
+        <link
+          rel="preconnect"
+          href="https://ltqzuqvjbiecbjdqgjge.supabase.co"
+        />
+        <link
+          rel="dns-prefetch"
+          href="https://ltqzuqvjbiecbjdqgjge.supabase.co"
+        />
+        <link rel="preconnect" href="https://replicate.delivery" />
+        <link rel="dns-prefetch" href="https://replicate.delivery" />
+      </head>
       <body
         className={`${spaceGrotesk.variable} ${pretendard.variable} font-sans antialiased`}
       >

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { getBlur } from "@/lib/constants/blur-placeholders";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -133,6 +134,7 @@ export function ImageEdit() {
                         className="object-cover"
                         sizes="(max-width: 768px) 40vw, 200px"
                         unoptimized
+                        {...(getBlur(input.src) ? { placeholder: "blur" as const, blurDataURL: getBlur(input.src) } : {})}
                       />
                       <Badge
                         variant="primary"
@@ -157,6 +159,7 @@ export function ImageEdit() {
                   className="object-cover"
                   sizes="(max-width: 768px) 40vw, 300px"
                   unoptimized
+                  {...(getBlur(current.outputs[0]) ? { placeholder: "blur" as const, blurDataURL: getBlur(current.outputs[0]) } : {})}
                 />
                 <Badge
                   variant="primary"

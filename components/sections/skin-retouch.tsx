@@ -10,6 +10,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { getBlur } from "@/lib/constants/blur-placeholders";
 
 const samples = [
   { id: "sample6" },
@@ -176,6 +177,7 @@ export function SkinRetouch() {
               draggable={false}
               sizes="(max-width: 768px) 100vw, 560px"
               unoptimized
+              {...(getBlur(images.after) ? { placeholder: "blur" as const, blurDataURL: getBlur(images.after) } : {})}
             />
 
             {/* Before (clipped) */}
@@ -191,6 +193,7 @@ export function SkinRetouch() {
                 draggable={false}
                 sizes="(max-width: 768px) 100vw, 560px"
                 unoptimized
+                {...(getBlur(images.before) ? { placeholder: "blur" as const, blurDataURL: getBlur(images.before) } : {})}
               />
             </div>
 
