@@ -13,6 +13,7 @@ export interface PlanInfo {
   monthlyCredits: number;
   maxBatchSize: number;
   cooldownSeconds: number;
+  maxFavorites: number;
   features: Record<string, boolean>;
 }
 

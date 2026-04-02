@@ -9,6 +9,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { FavoriteSaveModal } from "@/components/sections/image-edit/favorite-save-modal";
 import { SAMPLES } from "@/lib/constants/samples";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useCreditsBalance } from "@/hooks/use-credits";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import type { ImageEditInputPanelHandle } from "@/components/sections/image-edit/image-edit-input-panel";
 
@@ -28,7 +29,9 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
   const selectedId = selectedSampleId;
   const { toast } = useToast();
 
-  const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("image-edit");
+  const { data: creditInfo } = useCreditsBalance(true);
+  const planMaxFavorites = creditInfo?.plan?.maxFavorites ?? 3;
+  const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("image-edit", planMaxFavorites);
   const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);

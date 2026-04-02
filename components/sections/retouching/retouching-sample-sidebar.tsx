@@ -9,6 +9,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { RetouchingFavoriteSaveModal } from "@/components/sections/retouching/retouching-favorite-save-modal";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useCreditsBalance } from "@/hooks/use-credits";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import type { RetouchingInputPanelHandle } from "@/components/sections/retouching/retouching-input-panel";
 
@@ -31,7 +32,9 @@ export function RetouchingSampleSidebar({
   const [activeTab, setActiveTab] = useState("samples");
   const { toast } = useToast();
 
-  const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("retouching");
+  const { data: creditInfo } = useCreditsBalance(true);
+  const planMaxFavorites = creditInfo?.plan?.maxFavorites ?? 3;
+  const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("retouching", planMaxFavorites);
   const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);

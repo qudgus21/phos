@@ -10,8 +10,6 @@ type FavoriteRow = Database["public"]["Tables"]["favorites"]["Row"];
 
 export type { FavoriteRow };
 
-const MAX_FAVORITES = 5;
-
 interface SaveFavoriteInput {
   name: string;
   prompt: string;
@@ -26,7 +24,7 @@ interface SaveFavoriteInput {
   metadata?: Record<string, unknown>;
 }
 
-export function useFavorites(featureType: string = "image-edit") {
+export function useFavorites(featureType: string = "image-edit", maxFavorites: number = 3) {
   const queryClient = useQueryClient();
 
   const { data: favorites = [], isLoading } = useQuery<FavoriteRow[]>({
@@ -38,7 +36,7 @@ export function useFavorites(featureType: string = "image-edit") {
         .select("*")
         .eq("feature_type", featureType)
         .order("created_at", { ascending: false })
-        .limit(MAX_FAVORITES);
+        .limit(maxFavorites);
 
       return (data ?? []) as FavoriteRow[];
     },
@@ -63,8 +61,8 @@ export function useFavorites(featureType: string = "image-edit") {
         .eq("user_id", user.id)
         .eq("feature_type", featureType);
 
-      if ((count ?? 0) >= MAX_FAVORITES) {
-        throw new Error("즐겨찾기는 최대 5개까지 저장할 수 있습니다");
+      if ((count ?? 0) >= maxFavorites) {
+        throw new Error(`즐겨찾기는 최대 ${maxFavorites}개까지 저장할 수 있습니다`);
       }
 
       // DB row 먼저 생성 (ID 확보)
@@ -177,7 +175,7 @@ export function useFavorites(featureType: string = "image-edit") {
     saveFavorite: saveMutation.mutateAsync,
     deleteFavorite: deleteMutation.mutate,
     fetchFavorites: () => queryClient.invalidateQueries({ queryKey: queryKeys.favorites.byFeature(featureType) }),
-    maxFavorites: MAX_FAVORITES,
-    isFull: favorites.length >= MAX_FAVORITES,
+    maxFavorites,
+    isFull: favorites.length >= maxFavorites,
   };
 }

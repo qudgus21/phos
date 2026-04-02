@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { FaceEditFavoriteSaveModal } from "@/components/sections/face-edit/face-edit-favorite-save-modal";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useCreditsBalance } from "@/hooks/use-credits";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import type { FaceEditInputPanelHandle } from "./face-edit-input-panel";
 
@@ -108,7 +109,9 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
   const [activeTab, setActiveTab] = useState("samples");
   const { toast } = useToast();
 
-  const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("face-edit");
+  const { data: creditInfo } = useCreditsBalance(true);
+  const planMaxFavorites = creditInfo?.plan?.maxFavorites ?? 3;
+  const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("face-edit", planMaxFavorites);
   const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);

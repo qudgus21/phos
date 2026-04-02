@@ -41,6 +41,7 @@ export async function getUserCreditInfo(
         monthlyCredits: planRow.monthly_credits as number,
         maxBatchSize: planRow.max_batch_size as number,
         cooldownSeconds: planRow.cooldown_seconds as number,
+        maxFavorites: (planRow.max_favorites as number) ?? 3,
         features: (planRow.features ?? {}) as Record<string, boolean>,
       }
     : {
@@ -50,6 +51,7 @@ export async function getUserCreditInfo(
         monthlyCredits: 200,
         maxBatchSize: 1,
         cooldownSeconds: 300,
+        maxFavorites: 3,
         features: { watermark: true },
       };
 
