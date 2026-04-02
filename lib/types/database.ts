@@ -431,6 +431,71 @@ export interface Database {
           },
         ];
       };
+      inquiries: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          email: string | null;
+          category: string;
+          subject: string;
+          content: string;
+          image_urls: string[];
+          user_email: string | null;
+          user_name: string | null;
+          user_plan: string | null;
+          user_credits: number | null;
+          ip_address: string | null;
+          status: string;
+          admin_note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          email?: string | null;
+          category: string;
+          subject: string;
+          content: string;
+          image_urls?: string[];
+          user_email?: string | null;
+          user_name?: string | null;
+          user_plan?: string | null;
+          user_credits?: number | null;
+          ip_address?: string | null;
+          status?: string;
+          admin_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          email?: string | null;
+          category?: string;
+          subject?: string;
+          content?: string;
+          image_urls?: string[];
+          user_email?: string | null;
+          user_name?: string | null;
+          user_plan?: string | null;
+          user_credits?: number | null;
+          ip_address?: string | null;
+          status?: string;
+          admin_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
