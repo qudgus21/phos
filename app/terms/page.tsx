@@ -48,7 +48,7 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="5. Refund Policy">
         <ul className="list-disc pl-5 space-y-2">
-          <li>Refund requests must be submitted within 14 days of purchase through the Polar customer portal or by contacting us at <a href="mailto:hbh4231@gmail.com" className="text-primary hover:underline">hbh4231@gmail.com</a>.</li>
+          <li>Refund requests must be submitted within 14 days of purchase through the Polar customer portal or by contacting us at <a href="mailto:phos.support@gmail.com" className="text-primary hover:underline">phos.support@gmail.com</a>.</li>
           <li>Only unused credits are eligible for refund. Credits that have been consumed for image processing are non-refundable.</li>
           <li>Refunds are processed by Polar to the original payment method. Processing times are subject to Polar&apos;s policies and your financial institution.</li>
           <li>We reserve the right to deny refund requests in cases of suspected abuse or fraud.</li>
@@ -150,7 +150,7 @@ export default function TermsOfServicePage() {
       <LegalSection title="16. Contact">
         <p>
           If you have any questions about these Terms, please contact us at:<br />
-          <a href="mailto:hbh4231@gmail.com" className="text-primary hover:underline">hbh4231@gmail.com</a>
+          <a href="mailto:phos.support@gmail.com" className="text-primary hover:underline">phos.support@gmail.com</a>
         </p>
       </LegalSection>
     </LegalPageLayout>

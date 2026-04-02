@@ -128,7 +128,7 @@ export default function PrivacyPolicyPage() {
         </p>
 
         <p className="mt-4">
-          To exercise any of these rights, contact us at <a href="mailto:hbh4231@gmail.com" className="text-primary hover:underline">hbh4231@gmail.com</a>. We will respond within the timeframe required by applicable law (typically 30 days).
+          To exercise any of these rights, contact us at <a href="mailto:phos.support@gmail.com" className="text-primary hover:underline">phos.support@gmail.com</a>. We will respond within the timeframe required by applicable law (typically 30 days).
         </p>
       </LegalSection>
 
@@ -147,7 +147,7 @@ export default function PrivacyPolicyPage() {
       <LegalSection title="12. Contact Us">
         <p>
           If you have any questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us at:<br />
-          <a href="mailto:hbh4231@gmail.com" className="text-primary hover:underline">hbh4231@gmail.com</a>
+          <a href="mailto:phos.support@gmail.com" className="text-primary hover:underline">phos.support@gmail.com</a>
         </p>
       </LegalSection>
     </LegalPageLayout>

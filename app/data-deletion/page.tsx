@@ -23,8 +23,8 @@ export default function DataDeletionPage() {
           To request deletion of your account and associated data, send an email to:
         </p>
         <p className="mb-3">
-          <a href="mailto:hbh4231@gmail.com" className="text-primary hover:underline font-medium">
-            hbh4231@gmail.com
+          <a href="mailto:phos.support@gmail.com" className="text-primary hover:underline font-medium">
+            phos.support@gmail.com
           </a>
         </p>
         <p className="mb-3">Please include the following information so we can verify and process your request:</p>
@@ -100,7 +100,7 @@ export default function DataDeletionPage() {
       <LegalSection title="8. Contact">
         <p>
           If you have questions about the data deletion process or need assistance, contact us at:<br />
-          <a href="mailto:hbh4231@gmail.com" className="text-primary hover:underline">hbh4231@gmail.com</a>
+          <a href="mailto:phos.support@gmail.com" className="text-primary hover:underline">phos.support@gmail.com</a>
         </p>
       </LegalSection>
     </LegalPageLayout>
