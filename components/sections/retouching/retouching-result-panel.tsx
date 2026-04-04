@@ -3,43 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Sparkles, Upload, SlidersHorizontal, Zap, ZoomIn, Download, Plus, X, Loader2 } from "lucide-react";
+import { Sparkles, Upload, SlidersHorizontal, Zap, ZoomIn, Plus, X, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/toast";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
+import { DownloadButton, LightboxDownloadButton } from "@/components/ui/download-button";
 
 /** R2/Supabase Storage URL이면 이미 최적화된 WebP → unoptimized 가능 */
 const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
 const isOptimizedUrl = (url: string) =>
   SKIP_OPTIMIZER || url.includes("images.phos.studio/") || url.includes("r2.dev/") || url.includes("supabase.co/storage/");
-
-async function downloadImage(src: string) {
-  const res = await fetch(src);
-  const blob = await res.blob();
-  const bitmap = await createImageBitmap(blob);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
-
-  const pngBlob = await new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("이미지 변환에 실패했습니다"))), "image/png")
-  );
-
-  const url = URL.createObjectURL(pngBlob);
-  const a = document.createElement("a");
-  a.href = url;
-  const baseName = src.split("/").pop()?.split("?")[0]?.replace(/\.\w+$/, "") || "image";
-  a.download = `${baseName}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 const WORKFLOW_STEPS = [
   { icon: Upload, label: "이미지 업로드" },
@@ -80,45 +53,6 @@ function ActionButton({
       </button>
       <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[11px] text-white bg-black/80 rounded-md whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity">
         {label}
-      </span>
-    </div>
-  );
-}
-
-/* ── 다운로드 버튼 (로딩 상태 포함) ── */
-function DownloadButton({ src }: { src: string }) {
-  const [isDownloading, setIsDownloading] = useState(false);
-  const { toast } = useToast();
-
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isDownloading) return;
-    setIsDownloading(true);
-    try {
-      await downloadImage(src);
-    } catch {
-      toast("다운로드에 실패했습니다", "error");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  return (
-    <div className="relative group/btn">
-      <button
-        type="button"
-        onClick={handleDownload}
-        disabled={isDownloading}
-        className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors cursor-pointer disabled:cursor-wait"
-      >
-        {isDownloading ? (
-          <Loader2 className="w-5 h-5 text-white animate-spin" />
-        ) : (
-          <Download className="w-5 h-5 text-white" />
-        )}
-      </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[11px] text-white bg-black/80 rounded-md whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity">
-        {isDownloading ? "다운로드 중..." : "다운로드"}
       </span>
     </div>
   );
@@ -297,21 +231,6 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
 
 /* ── 확대 모달 (라이트박스) ── */
 function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
-  const [isDownloading, setIsDownloading] = useState(false);
-  const { toast } = useToast();
-
-  const handleDownload = async () => {
-    if (isDownloading) return;
-    setIsDownloading(true);
-    try {
-      await downloadImage(src);
-    } catch {
-      toast("다운로드에 실패했습니다", "error");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -323,8 +242,6 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
-
-  const filename = src.split("/").pop() || "image.png";
 
   return createPortal(
     <AnimatePresence>
@@ -363,19 +280,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
           className="mt-4"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-sm text-white hover:bg-white/20 transition-colors cursor-pointer disabled:cursor-wait"
-          >
-            {isDownloading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            {isDownloading ? "다운로드 중..." : filename}
-          </button>
+          <LightboxDownloadButton src={src} />
         </motion.div>
       </motion.div>
     </AnimatePresence>,
