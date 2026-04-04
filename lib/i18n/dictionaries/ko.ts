@@ -2,24 +2,24 @@ import type { Dictionary } from "../config";
 
 const ko: Dictionary = {
   metadata: {
-    siteTitle: "Phos AI — AI 이미지 보정 · 편집 · 생성",
+    siteTitle: "Phos AI — AI 사진 편집 · 보정 · 얼굴 편집 온라인",
     siteDescription:
-      "AI 기반 이미지 보정, 편집, 생성 도구. 초단위 디테일, 클릭 한 번으로 전문가 급.",
-    imageEditTitle: "AI 이미지 편집 — Phos AI",
+      "프롬프트 한 줄로 이미지 편집, 원클릭 피부 보정, AI 얼굴 교체까지. 브라우저에서 스튜디오 퀄리티를 경험하세요.",
+    imageEditTitle: "AI 사진 편집 | 텍스트 프롬프트로 이미지 편집",
     imageEditDescription:
-      "사진과 설명 한 줄로 새로운 이미지를 생성하세요. AI 기반 상업용 이미지 편집.",
-    retouchingTitle: "AI 피부 보정 — Phos AI",
+      "사진 한 장과 프롬프트 한 줄이면 끝. 상업 촬영, 제품 사진, 크리에이티브 프로젝트를 위한 AI 이미지 편집 도구.",
+    retouchingTitle: "AI 피부 보정 | 잡티 제거 · 피부 리터칭",
     retouchingDescription:
-      "AI가 피부 질감을 분석하고 자연스럽게 보정합니다. 스튜디오 퀄리티 리터칭.",
-    faceEditTitle: "AI 얼굴 변경 — Phos AI",
+      "자연스러운 질감을 살리는 AI 피부 보정. 잡티 제거, 피부 톤 보정, 인물 사진 리터칭을 원클릭으로.",
+    faceEditTitle: "AI 얼굴 편집 · 얼굴 교체 온라인",
     faceEditDescription:
-      "영역을 지정하고 새로운 얼굴을 만들어보세요. AI 기반 얼굴 편집.",
-    pricingTitle: "요금제 — Phos AI",
+      "원하는 영역을 선택하고 AI로 새로운 얼굴을 생성하세요. 얼굴 교체, 표정 변경, 인물 변환을 몇 초 만에.",
+    pricingTitle: "AI 이미지 도구 요금제 안내",
     pricingDescription:
-      "Phos AI 요금제와 크레딧 팩을 확인하세요. 합리적인 가격으로 AI 이미지 도구를 시작하세요.",
-    contactTitle: "문의하기 — Phos AI",
+      "Phos AI 요금제를 비교하고 나에게 맞는 플랜을 선택하세요. 이미지 편집, 보정, 얼굴 편집 도구를 위한 유연한 크레딧.",
+    contactTitle: "문의 및 지원",
     contactDescription:
-      "Phos AI에 대한 문의, 오류 신고, 기능 제안을 보내주세요.",
+      "질문이나 피드백이 있으신가요? Phos AI 팀에 문의, 오류 신고, 기능 제안을 보내주세요.",
   },
   nav: {
     imageEdit: "이미지 편집",
@@ -39,8 +39,8 @@ const ko: Dictionary = {
     subtitle: "이미지 편집 · 피부 보정 · 얼굴 변경",
     subtitleHighlight:
       "하이엔드 실사 이미지, 클릭 한 번이면 충분합니다",
-    cta: "무료로 시작하기",
-    ctaHelper: "카드 등록 없이 · 무료 체험",
+    cta: "지금 시작하기",
+    ctaHelper: "카드 등록 없이 · 바로 체험",
     trustBar:
       "포토그래퍼 · 디자이너 · 마케터 · 인플루언서 · 셀러를 위한 AI 이미지 도구",
     heroImageAlt: "AI로 보정된 고해상도 뷰티 이미지",

@@ -5,19 +5,19 @@ const id: Dictionary = {
     siteTitle: "Phos AI — Edit & Retouch Foto dengan AI",
     siteDescription:
       "Edit, retouch, dan buat foto dengan AI. Hasil kualitas studio dalam hitungan detik.",
-    imageEditTitle: "Edit Foto AI — Phos AI",
+    imageEditTitle: "Edit Foto AI",
     imageEditDescription:
       "Buat gambar baru dari foto dan satu prompt. Edit foto komersial berbasis AI.",
-    retouchingTitle: "Retouch Kulit AI — Phos AI",
+    retouchingTitle: "Retouch Kulit AI",
     retouchingDescription:
       "AI menganalisis tekstur kulit dan meretouch secara alami. Peningkatan kulit kualitas studio.",
-    faceEditTitle: "Edit Wajah AI — Phos AI",
+    faceEditTitle: "Edit Wajah AI",
     faceEditDescription:
       "Pilih area dan buat wajah baru. Edit dan ganti wajah berbasis AI.",
-    pricingTitle: "Harga — Phos AI",
+    pricingTitle: "Harga",
     pricingDescription:
       "Lihat paket Phos AI dan paket kredit. Mulai gunakan alat foto AI dengan harga terjangkau.",
-    contactTitle: "Hubungi Kami — Phos AI",
+    contactTitle: "Hubungi Kami",
     contactDescription:
       "Hubungi kami untuk pertanyaan, laporan bug, atau permintaan fitur.",
   },

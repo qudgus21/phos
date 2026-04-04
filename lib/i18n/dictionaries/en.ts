@@ -2,24 +2,24 @@ import type { Dictionary } from "../config";
 
 const en: Dictionary = {
   metadata: {
-    siteTitle: "Phos AI — AI Image Editing & Retouching",
+    siteTitle: "Phos AI — AI Photo Editor & Retouching Online",
     siteDescription:
-      "AI-powered image editing, retouching, and generation. Studio-quality results in seconds.",
-    imageEditTitle: "AI Image Editing — Phos AI",
+      "Edit, retouch, and generate studio-quality images with AI. Prompt-based editing, skin retouching, and face editing — all in your browser.",
+    imageEditTitle: "AI Photo Editor | Edit Images with Text Prompts",
     imageEditDescription:
-      "Generate new images from a photo and a single prompt. AI-powered commercial image editing.",
-    retouchingTitle: "AI Skin Retouching — Phos AI",
+      "Edit photos with AI-powered text prompts. Remove objects, change backgrounds, and transform product shots and portraits in seconds.",
+    retouchingTitle: "AI Skin Retouching | Smooth Skin & Remove Blemishes",
     retouchingDescription:
-      "AI analyzes skin texture and retouches naturally. Studio-quality skin enhancement.",
-    faceEditTitle: "AI Face Editing — Phos AI",
+      "AI skin retouching that preserves natural texture. Smooth skin, remove blemishes, and enhance portraits with studio-quality results in seconds.",
+    faceEditTitle: "AI Face Editor & Face Swap | Transform Portraits",
     faceEditDescription:
-      "Select an area and generate a new face. AI-powered face editing and swapping.",
-    pricingTitle: "Pricing — Phos AI",
+      "AI-powered face editing and face swap for portraits. Change expressions, swap faces, and transform any portrait with a text prompt.",
+    pricingTitle: "Plans & Pricing for AI Image Tools",
     pricingDescription:
-      "Explore Phos AI plans and credit packs. Start with AI image tools at a fair price.",
-    contactTitle: "Contact — Phos AI",
+      "Choose the right Phos AI plan for your workflow. Flexible credits for image editing, retouching, and face editing tools.",
+    contactTitle: "Contact & Support",
     contactDescription:
-      "Reach out for questions, bug reports, or feature requests.",
+      "Have a question or feedback? Reach out to the Phos AI team for support, bug reports, or feature requests.",
   },
   nav: {
     imageEdit: "Image Edit",
@@ -39,8 +39,8 @@ const en: Dictionary = {
     subtitle: "Image editing · Skin retouching · Face editing",
     subtitleHighlight:
       "Studio-quality images in a single click",
-    cta: "Get started free",
-    ctaHelper: "No credit card · Free to try",
+    cta: "Get started now",
+    ctaHelper: "No credit card required · Try instantly",
     trustBar:
       "AI image tools for photographers, designers, marketers, influencers, and sellers",
     heroImageAlt: "High-resolution beauty image enhanced by AI",

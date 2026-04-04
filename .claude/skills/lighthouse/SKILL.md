@@ -26,15 +26,18 @@ PSI API로 프로덕션 사이트 성능을 측정하고, 코드 레벨에서 �
 - **로컬 서버**: `yarn dev` (port 3000)
 - **PSI API 키**: `.env.local`의 `PSI_API_KEY`
 - **백엔드**: Supabase (Auth/DB), AWS Lambda (이미지 처리)
+- **i18n**: 11개 로케일 (en, zh, es, ar, pt, fr, ja, ru, de, id, ko / 기본: en)
 - **페이지 라우트**:
-  - `app/page.tsx` — 홈/랜딩
-  - `app/image-edit/` — AI 이미지 편집
-  - `app/retouching/` — AI 피부 보정
-  - `app/face-edit/` — AI 얼굴 편집
-  - `app/pricing/` — 가격 페이지
-  - `app/terms/` — 이용약관
-  - `app/privacy/` — 개인정보처리방침
-  - `app/data-deletion/` — 데이터 삭제 안내
+  - `app/page.tsx` — 루트 (로케일 감지 → `/{locale}` 리다이렉트)
+  - `app/[locale]/page.tsx` — 홈/랜딩
+  - `app/[locale]/image-edit/` — AI 이미지 편집
+  - `app/[locale]/retouching/` — AI 피부 보정
+  - `app/[locale]/face-edit/` — AI 얼굴 편집
+  - `app/[locale]/pricing/` — 가격 페이지
+  - `app/[locale]/contact/` — 문의
+  - `app/[locale]/terms/` — 이용약관
+  - `app/[locale]/privacy/` — 개인정보처리방침
+  - `app/[locale]/data-deletion/` — 데이터 삭제 안내
 
 ---
 
@@ -85,13 +88,13 @@ PSI API로 프로덕션 사이트 성능을 측정하고, 코드 레벨에서 �
 
 | 입력 | 동작 |
 |------|------|
-| `home` | 홈/랜딩 페이지 감사 |
-| `image-edit` | AI 이미지 편집 페이지 감사 |
-| `retouching` | AI 피부 보정 페이지 감사 |
-| `face-edit` | AI 얼굴 편집 페이지 감사 |
-| `pricing` | 가격 페이지 감사 |
+| `home` | 홈/랜딩 페이지 감사 (`/en`) |
+| `image-edit` | AI 이미지 편집 페이지 감사 (`/en/image-edit`) |
+| `retouching` | AI 피부 보정 페이지 감사 (`/en/retouching`) |
+| `face-edit` | AI 얼굴 편집 페이지 감사 (`/en/face-edit`) |
+| `pricing` | 가격 페이지 감사 (`/en/pricing`) |
 | `all` | 주요 페이지 전체 감사 (홈 + 에디터 3개 + 가격) |
-| `https://phos.studio/...` | 지정 URL 감사 |
+| `https://phos.studio/en/...` | 지정 URL 감사 |
 | (인자 없음) | 사용자에게 페이지 선택 요청 |
 
 ### 실행 옵션
@@ -123,15 +126,17 @@ PSI API로 프로덕션 사이트 성능을 측정하고, 코드 레벨에서 �
 
 ### 0-3. 감사 대상 페이지 결정
 
-페이지가 결정되면 `app/` 라우트 구조를 Glob으로 탐색하여 실제 존재하는 페이지만 포함:
+페이지가 결정되면 `app/[locale]/` 라우트 구조를 Glob으로 탐색하여 실제 존재하는 페이지만 포함:
 
 ```
-Glob: app/**/page.tsx
+Glob: app/[locale]/**/page.tsx
 ```
 
 URL 매핑:
-- 홈: `app/page.tsx` → `https://phos.studio`
-- 서브 페이지: `app/{page}/page.tsx` → `https://phos.studio/{page}`
+- 홈: `app/[locale]/page.tsx` → `https://phos.studio/en`
+- 서브 페이지: `app/[locale]/{page}/page.tsx` → `https://phos.studio/en/{page}`
+- 지원 로케일: en, zh, es, ar, pt, fr, ja, ru, de, id, ko (기본: en)
+- **PSI 감사는 `en` 로케일 기준으로 실행** (영어가 1순위 타겟)
 
 **감사 대상 목록을 사용자에게 보여주고 확인받는다.**
 
@@ -377,7 +382,7 @@ Green이 아닌 각 메트릭마다:
 ### 4-1. 로컬 서버 확인
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/{path}
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/en/{path}
 ```
 
 200이 아니면: "로컬 서버를 시작해주세요 (`yarn dev`)" 안내 후 대기.
@@ -386,7 +391,7 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/{path}
 
 ```bash
 # Desktop
-npx lighthouse http://localhost:3000/{path} \
+npx lighthouse http://localhost:3000/en/{path} \
   --output=json \
   --output-path=/tmp/lighthouse-before-{page}-desktop.json \
   --chrome-flags="--headless --no-sandbox" \
@@ -394,7 +399,7 @@ npx lighthouse http://localhost:3000/{path} \
   --preset=desktop
 
 # Mobile (preset 미지정 = mobile 기본)
-npx lighthouse http://localhost:3000/{path} \
+npx lighthouse http://localhost:3000/en/{path} \
   --output=json \
   --output-path=/tmp/lighthouse-before-{page}-mobile.json \
   --chrome-flags="--headless --no-sandbox" \
@@ -412,7 +417,7 @@ const { chromium } = require('playwright');
   const page = await browser.newPage();
   const client = await page.context().newCDPSession(page);
   await client.send('Performance.enable');
-  await page.goto('http://localhost:3000/{path}', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:3000/en/{path}', { waitUntil: 'networkidle' });
   const metrics = await client.send('Performance.getMetrics');
   const paint = await page.evaluate(() =>
     performance.getEntriesByType('paint').map(e => ({ name: e.name, time: e.startTime }))
@@ -545,3 +550,4 @@ Phase 4와 동일 방법으로 `/tmp/lighthouse-after-{page}-{strategy}.json` �
 - ❌ PSI 점수 조작 트릭 (UA 스푸핑 등)
 - ❌ Framer Motion 애니메이션 전면 삭제
 - ❌ 사용자 확인 없이 SSR → CSR 전환 (SEO 영향)
+- ❌ 루트(`/`) 측정 (로케일 감지 리다이렉트 — `/en` 등을 대신 측정)

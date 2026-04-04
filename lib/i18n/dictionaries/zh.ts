@@ -4,20 +4,20 @@ const zh: Dictionary = {
   metadata: {
     siteTitle: "Phos AI — AI 图片编辑与修图",
     siteDescription:
-      "AI 驱动的图片编辑、修图与生成，几秒内获得专业级效果。",
-    imageEditTitle: "AI 图片编辑 — Phos AI",
+      "AI 驱动的图片编辑、皮肤修图与面部生成工具。通过文字描述即可编辑照片，几秒内获得专业影棚级效果，一切在浏览器中完成。",
+    imageEditTitle: "AI 图片编辑",
     imageEditDescription:
       "通过一张照片和一段描述生成全新图片。AI 驱动的商业级图片编辑。",
-    retouchingTitle: "AI 皮肤修图 — Phos AI",
+    retouchingTitle: "AI 皮肤修图",
     retouchingDescription:
       "AI 分析肤质并自然修饰，呈现影棚级肌肤效果。",
-    faceEditTitle: "AI 面部编辑 — Phos AI",
+    faceEditTitle: "AI 面部编辑",
     faceEditDescription:
       "选定区域即可生成全新面容。AI 驱动的面部编辑与替换。",
-    pricingTitle: "价格方案 — Phos AI",
+    pricingTitle: "价格方案",
     pricingDescription:
       "了解 Phos AI 套餐与积分包，以合理价格开始使用 AI 图片工具。",
-    contactTitle: "联系我们 — Phos AI",
+    contactTitle: "联系我们",
     contactDescription:
       "有任何问题、Bug 反馈或功能建议，欢迎联系我们。",
   },

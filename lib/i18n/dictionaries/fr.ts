@@ -5,19 +5,19 @@ const fr: Dictionary = {
     siteTitle: "Phos AI — Edition et retouche d'images par AI",
     siteDescription:
       "Edition, retouche et generation d'images par AI. Des resultats studio en quelques secondes.",
-    imageEditTitle: "Edition d'images par AI — Phos AI",
+    imageEditTitle: "Edition d'images par AI",
     imageEditDescription:
       "Generez de nouvelles images a partir d'une photo et d'un prompt. Edition d'images commerciales par AI.",
-    retouchingTitle: "Retouche de peau par AI — Phos AI",
+    retouchingTitle: "Retouche de peau par AI",
     retouchingDescription:
       "L'AI analyse la texture de la peau et la retouche naturellement. Amelioration de peau qualite studio.",
-    faceEditTitle: "Edition de visage par AI — Phos AI",
+    faceEditTitle: "Edition de visage par AI",
     faceEditDescription:
       "Selectionnez une zone et generez un nouveau visage. Edition et remplacement de visage par AI.",
-    pricingTitle: "Tarifs — Phos AI",
+    pricingTitle: "Tarifs",
     pricingDescription:
       "Decouvrez les forfaits et packs de credits Phos AI. Commencez avec des outils d'image AI a un prix juste.",
-    contactTitle: "Contact — Phos AI",
+    contactTitle: "Contact",
     contactDescription:
       "Contactez-nous pour vos questions, signalements de bugs ou demandes de fonctionnalites.",
   },
@@ -39,8 +39,8 @@ const fr: Dictionary = {
     subtitle: "Edition d'images · Retouche de peau · Edition de visage",
     subtitleHighlight:
       "Des images qualite studio en un seul clic",
-    cta: "Commencer gratuitement",
-    ctaHelper: "Sans carte bancaire · Essai gratuit",
+    cta: "Commencer maintenant",
+    ctaHelper: "Sans carte bancaire · Essayez instantanément",
     trustBar:
       "Outils d'image AI pour photographes, designers, marketeurs, influenceurs et vendeurs",
     heroImageAlt: "Image beaute haute resolution amelioree par AI",

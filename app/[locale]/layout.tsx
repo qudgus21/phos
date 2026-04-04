@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { type Locale, locales, getDictionary } from "@/lib/i18n";
 import { Navigation } from "@/components/sections/navigation";
 import { DictionaryProvider } from "@/lib/i18n/dictionary-context";
+import { generateAlternates, webApplicationJsonLd, JsonLdScript } from "@/lib/seo";
 
 export async function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -20,7 +21,7 @@ export async function generateMetadata({
   return {
     title: {
       default: dict.metadata.siteTitle,
-      template: `%s — Phos AI`,
+      template: `Phos AI — %s`,
     },
     description: dict.metadata.siteDescription,
     metadataBase: new URL("https://phos.studio"),
@@ -29,19 +30,25 @@ export async function generateMetadata({
       description: dict.metadata.siteDescription,
       siteName: "Phos AI",
       locale,
+      alternateLocale: locales.filter((l) => l !== locale),
       type: "website",
+      url: `https://phos.studio/${locale}`,
+      images: [
+        {
+          url: "/opengraph-image",
+          width: 1200,
+          height: 630,
+          alt: "Phos AI — AI Image Editing & Retouching",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: dict.metadata.siteTitle,
       description: dict.metadata.siteDescription,
+      images: ["/opengraph-image"],
     },
-    alternates: {
-      languages: {
-        ...Object.fromEntries(locales.map((l) => [l, `/${l}`])),
-        "x-default": "/en",
-      },
-    },
+    alternates: generateAlternates(""),
   };
 }
 
@@ -60,19 +67,17 @@ export default async function LocaleLayout({
 
   const dict = await getDictionary(locale as Locale);
 
-  const dir = locale === "ar" ? "rtl" : "ltr";
-
   return (
-    <>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `document.documentElement.lang="${locale}";document.documentElement.dir="${dir}";`,
-        }}
+    <DictionaryProvider dict={dict} locale={locale}>
+      <JsonLdScript
+        data={webApplicationJsonLd(
+          locale,
+          dict.metadata.siteTitle,
+          dict.metadata.siteDescription
+        )}
       />
-      <DictionaryProvider dict={dict} locale={locale}>
-        <Navigation dict={dict} locale={locale} />
-        {children}
-      </DictionaryProvider>
-    </>
+      <Navigation dict={dict} locale={locale} />
+      {children}
+    </DictionaryProvider>
   );
 }

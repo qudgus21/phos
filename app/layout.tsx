@@ -1,9 +1,19 @@
+import type { Viewport } from "next";
+import { headers } from "next/headers";
 import { Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/ui/toast";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { organizationJsonLd, JsonLdScript } from "@/lib/seo";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -23,14 +33,19 @@ const pretendard = localFont({
   fallback: ["system-ui", "sans-serif"],
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const h = await headers();
+  const locale = h.get("x-locale") || "en";
+  const dir = h.get("x-dir") || "ltr";
+
   return (
-    <html suppressHydrationWarning>
+    <html lang={locale} dir={dir as "ltr" | "rtl"} suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link
           rel="preconnect"
           href="https://ltqzuqvjbiecbjdqgjge.supabase.co"
@@ -49,6 +64,7 @@ export default function RootLayout({
         />
         <link rel="preconnect" href="https://replicate.delivery" />
         <link rel="dns-prefetch" href="https://replicate.delivery" />
+        <JsonLdScript data={organizationJsonLd()} />
       </head>
       <body
         className={`${spaceGrotesk.variable} ${pretendard.variable} font-sans antialiased`}

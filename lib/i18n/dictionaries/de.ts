@@ -5,19 +5,19 @@ const de: Dictionary = {
     siteTitle: "Phos AI — AI-Bildbearbeitung & Retusche",
     siteDescription:
       "KI-gestützte Bildbearbeitung, Retusche und Bildgenerierung. Studioqualität in Sekunden.",
-    imageEditTitle: "AI-Bildbearbeitung — Phos AI",
+    imageEditTitle: "AI-Bildbearbeitung",
     imageEditDescription:
       "Erstellen Sie neue Bilder aus einem Foto und einem Prompt. KI-gestützte kommerzielle Bildbearbeitung.",
-    retouchingTitle: "AI-Hautretusche — Phos AI",
+    retouchingTitle: "AI-Hautretusche",
     retouchingDescription:
       "AI analysiert die Hauttextur und retuschiert natürlich. Hautverbesserung in Studioqualität.",
-    faceEditTitle: "AI-Gesichtsbearbeitung — Phos AI",
+    faceEditTitle: "AI-Gesichtsbearbeitung",
     faceEditDescription:
       "Wählen Sie einen Bereich aus und generieren Sie ein neues Gesicht. KI-gestützte Gesichtsbearbeitung.",
-    pricingTitle: "Preise — Phos AI",
+    pricingTitle: "Preise",
     pricingDescription:
       "Entdecken Sie die Phos AI-Pläne und Credit-Pakete. Starten Sie mit AI-Bildtools zum fairen Preis.",
-    contactTitle: "Kontakt — Phos AI",
+    contactTitle: "Kontakt",
     contactDescription:
       "Kontaktieren Sie uns bei Fragen, Fehlermeldungen oder Feature-Wünschen.",
   },

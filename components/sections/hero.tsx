@@ -40,6 +40,7 @@ export function Hero({ dict, locale }: HeroProps) {
           src="/images/home/hero/hero-model.webp"
           alt={dict.hero.heroImageAlt}
           fill
+          sizes="(max-width: 768px) 100vw, 65vw"
           className="object-cover object-top"
           priority
           unoptimized

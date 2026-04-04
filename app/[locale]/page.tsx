@@ -17,7 +17,7 @@ export default async function Home({
   const dict = await getDictionary(locale as Locale);
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <main className="min-h-screen bg-background relative">
       <Hero dict={dict} locale={locale} />
       <ImageEdit dict={dict} locale={locale} />
       <SkinRetouch dict={dict} locale={locale} />
@@ -26,6 +26,6 @@ export default async function Home({
       <Upscale dict={dict} locale={locale} />
       <Pricing dict={dict} locale={locale} />
       <Footer dict={dict} locale={locale} />
-    </div>
+    </main>
   );
 }

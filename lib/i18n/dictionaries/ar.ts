@@ -5,19 +5,19 @@ const ar: Dictionary = {
     siteTitle: "Phos AI — تعديل الصور وتنقيتها بالذكاء الاصطناعي",
     siteDescription:
       "تعديل الصور وتنقيتها وتوليدها بتقنية AI. نتائج احترافية في ثوانٍ.",
-    imageEditTitle: "تعديل الصور بالـ AI — Phos AI",
+    imageEditTitle: "تعديل الصور بالـ AI",
     imageEditDescription:
       "أنشئ صورًا جديدة من صورة وأمر نصي واحد. تعديل صور تجاري مدعوم بالـ AI.",
-    retouchingTitle: "تنقية البشرة بالـ AI — Phos AI",
+    retouchingTitle: "تنقية البشرة بالـ AI",
     retouchingDescription:
       "يحلل AI ملمس البشرة ويُعيد تنقيتها بشكل طبيعي. تحسين البشرة بجودة الاستوديو.",
-    faceEditTitle: "تعديل الوجه بالـ AI — Phos AI",
+    faceEditTitle: "تعديل الوجه بالـ AI",
     faceEditDescription:
       "حدد منطقة وأنشئ وجهًا جديدًا. تعديل الوجوه واستبدالها بتقنية AI.",
-    pricingTitle: "الأسعار — Phos AI",
+    pricingTitle: "الأسعار",
     pricingDescription:
       "استعرض خطط Phos AI وحزم الرصيد. ابدأ باستخدام أدوات الصور بسعر عادل.",
-    contactTitle: "تواصل معنا — Phos AI",
+    contactTitle: "تواصل معنا",
     contactDescription:
       "تواصل معنا للاستفسارات أو الإبلاغ عن مشكلة أو طلب ميزة جديدة.",
   },
