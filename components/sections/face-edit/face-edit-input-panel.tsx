@@ -332,7 +332,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     );
 
     try {
-      // 입력 이미지를 WebP 압축 → Supabase Storage 영구 업로드
+      // 입력 이미지를 WebP 압축 → R2 영구 업로드
       let permanentInputUrl: string | null = null;
       if (uploadedImage) {
         const supabase = createClient();
@@ -341,15 +341,23 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
           const compressed = await compressImageForFavorite(
             uploadedFile ?? uploadedImage
           );
-          const path = `inputs/${user.id}/${Date.now()}.webp`;
-          const { error: uploadErr } = await supabase.storage
-            .from("generation-outputs")
-            .upload(path, compressed, { contentType: "image/webp", upsert: false });
-          if (!uploadErr) {
-            const { data: { publicUrl } } = supabase.storage
-              .from("generation-outputs")
-              .getPublicUrl(path);
-            permanentInputUrl = publicUrl;
+          const key = `generation-outputs/inputs/${user.id}/${Date.now()}.webp`;
+
+          const presignRes = await fetch("/api/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: key, contentType: "image/webp" }),
+          });
+          if (presignRes.ok) {
+            const { data } = await presignRes.json();
+            const uploadRes = await fetch(data.uploadUrl, {
+              method: "PUT",
+              body: compressed,
+              headers: { "Content-Type": "image/webp" },
+            });
+            if (uploadRes.ok) {
+              permanentInputUrl = data.publicUrl;
+            }
           }
         }
       }

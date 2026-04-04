@@ -1,10 +1,11 @@
 {
   "name": "phos-image-optimizer",
   "version": "1.0.0",
-  "description": "Lambda function for WebP image optimization (thumb/display/original)",
+  "description": "Lambda function for WebP image optimization (thumb/display/original) → Cloudflare R2",
   "type": "module",
   "dependencies": {
     "sharp": "^0.33.2",
-    "@supabase/supabase-js": "^2.49.1"
+    "@supabase/supabase-js": "^2.49.1",
+    "@aws-sdk/client-s3": "^3.1007.0"
   }
 }

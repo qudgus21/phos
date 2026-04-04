@@ -16,9 +16,9 @@ import { useToast } from "@/components/ui/toast";
 /** 이미지 최적화 우회 모드 (A/B 비교용) — 원본 그대로 unoptimized 표시 */
 const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
 
-/** Supabase Storage URL이면 이미 최적화된 WebP → unoptimized 가능 */
+/** R2/Supabase Storage URL이면 이미 최적화된 WebP → unoptimized 가능 */
 const isOptimizedUrl = (url: string) =>
-  SKIP_OPTIMIZER || url.includes("supabase.co/storage/");
+  SKIP_OPTIMIZER || url.includes("r2.dev/") || url.includes("supabase.co/storage/");
 
 async function downloadImage(src: string) {
   const res = await fetch(src);

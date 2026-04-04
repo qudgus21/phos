@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserCreditInfo } from "@/lib/services/credits";
 import { checkRateLimit } from "@/lib/services/contact/rate-limit";
 import { sendInquiryEmail } from "@/lib/services/contact/email";
+import { uploadToR2 } from "@/lib/r2/client";
 
 const CATEGORIES = [
   "payment_refund",
@@ -144,15 +145,15 @@ export async function POST(request: NextRequest) {
         content: buffer,
       });
 
-      const { error: uploadError } = await admin.storage
-        .from("inquiry-images")
-        .upload(path, buffer, { contentType: file.type });
-
-      if (!uploadError) {
-        const {
-          data: { publicUrl },
-        } = admin.storage.from("inquiry-images").getPublicUrl(path);
+      try {
+        const publicUrl = await uploadToR2(
+          buffer,
+          `inquiry-images/${path}`,
+          file.type
+        );
         imageUrls.push(publicUrl);
+      } catch (err) {
+        console.error("[contact] R2 upload error:", err);
       }
     }
 

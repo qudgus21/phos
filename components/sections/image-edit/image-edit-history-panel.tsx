@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 function HistoryThumbnail({ src }: { src: string }) {
   const [loaded, setLoaded] = useState(false);
-  const optimized = src?.includes("supabase.co/storage/") ?? false;
+  const optimized = src?.includes("r2.dev/") || src?.includes("supabase.co/storage/") ? true : false;
 
   return (
     <>

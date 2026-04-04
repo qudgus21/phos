@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { compressImageForFavorite } from "@/lib/utils/compress-image";
 import { queryKeys } from "@/lib/query-keys";
 import type { Database } from "@/lib/types/database";
+import type { ApiResponse } from "@/lib/types/api";
 
 type FavoriteRow = Database["public"]["Tables"]["favorites"]["Row"];
 
@@ -88,7 +89,7 @@ export function useFavorites(featureType: string = "image-edit", maxFavorites: n
         throw new Error(insertError?.message ?? "저장에 실패했습니다");
       }
 
-      // 참조이미지 압축 & Storage 업로드
+      // 참조이미지 압축 & R2 업로드
       if (input.images.length > 0) {
         const urls: string[] = [];
         const compressed = await Promise.all(
@@ -96,23 +97,35 @@ export function useFavorites(featureType: string = "image-edit", maxFavorites: n
         );
 
         for (let i = 0; i < compressed.length; i++) {
-          const path = `${user.id}/${row.id}/${i}.webp`;
-          const { error: uploadError } = await supabase.storage
-            .from("favorite-images")
-            .upload(path, compressed[i], {
-              contentType: "image/webp",
-              upsert: true,
-            });
+          const key = `favorite-images/${user.id}/${row.id}/${i}.webp`;
 
-          if (uploadError) {
-            console.error("Storage upload error:", uploadError);
+          // presigned URL 발급
+          const presignRes = await fetch("/api/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ path: key, contentType: "image/webp" }),
+          });
+          if (!presignRes.ok) {
+            console.error("Presign failed:", await presignRes.text());
+            continue;
+          }
+          const { data } = (await presignRes.json()) as ApiResponse<{
+            uploadUrl: string;
+            publicUrl: string;
+          }>;
+
+          // R2에 직접 업로드
+          const uploadRes = await fetch(data.uploadUrl, {
+            method: "PUT",
+            body: compressed[i],
+            headers: { "Content-Type": "image/webp" },
+          });
+          if (!uploadRes.ok) {
+            console.error("R2 upload failed:", uploadRes.status);
             continue;
           }
 
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("favorite-images").getPublicUrl(path);
-          urls.push(publicUrl);
+          urls.push(data.publicUrl);
         }
 
         // URL 업데이트
@@ -141,13 +154,24 @@ export function useFavorites(featureType: string = "image-edit", maxFavorites: n
       // 캐시에서 target 찾기 (optimistic에서 이미 제거되었으므로 previousData에서 찾음)
       const target = favorites.find((f) => f.id === id);
       if (target && target.reference_image_urls.length > 0) {
-        const paths = target.reference_image_urls.map((url) => {
-          const idx = url.indexOf("/favorite-images/");
-          return idx >= 0 ? url.slice(idx + "/favorite-images/".length) : "";
-        }).filter(Boolean);
+        // R2 public URL에서 key 추출: https://pub-xxx.r2.dev/{key}
+        const keys = target.reference_image_urls
+          .map((url) => {
+            try {
+              const u = new URL(url);
+              return u.pathname.slice(1); // leading slash 제거
+            } catch {
+              return "";
+            }
+          })
+          .filter(Boolean);
 
-        if (paths.length > 0) {
-          await supabase.storage.from("favorite-images").remove(paths);
+        if (keys.length > 0) {
+          await fetch("/api/upload", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paths: keys }),
+          });
         }
       }
 

@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 
-/** Supabase Storage URL이면 이미 최적화된 WebP → unoptimized 가능 */
+/** R2/Supabase Storage URL이면 이미 최적화된 WebP → unoptimized 가능 */
 const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
 const isOptimizedUrl = (url: string) =>
-  SKIP_OPTIMIZER || url.includes("supabase.co/storage/");
+  SKIP_OPTIMIZER || url.includes("r2.dev/") || url.includes("supabase.co/storage/");
 
 async function downloadImage(src: string) {
   const res = await fetch(src);

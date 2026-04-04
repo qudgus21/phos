@@ -1,11 +1,23 @@
 import sharp from "sharp";
 import { createClient } from "@supabase/supabase-js";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
+// Supabase — DB 업데이트 전용
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const BUCKET = "generation-outputs";
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// Cloudflare R2 — 이미지 저장
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_S3_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  },
+});
 
 /**
  * 이미지 URL에서 buffer를 가져온다.
@@ -52,17 +64,17 @@ async function processThumbAndOriginal(buffer) {
 }
 
 /**
- * Supabase Storage에 업로드하고 public URL 반환
+ * R2에 업로드하고 public URL 반환
  */
-async function uploadToStorage(buffer, path) {
-  const { error } = await supabase.storage.from(BUCKET).upload(path, buffer, {
-    contentType: "image/webp",
-    upsert: false,
-  });
-
-  if (error) throw new Error(`Storage upload failed: ${error.message}`);
-
-  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+async function uploadToR2(buffer, path) {
+  await s3.send(new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: `generation-outputs/${path}`,
+    Body: buffer,
+    ContentType: "image/webp",
+    CacheControl: "public, max-age=31536000, immutable",
+  }));
+  return `${R2_PUBLIC_URL}/generation-outputs/${path}`;
 }
 
 /**
@@ -112,7 +124,7 @@ export const handler = async (event) => {
       const displayBuf = await processDisplay(buffer);
       console.log(`[${i + 1}] Display: ${(displayBuf.length / 1024).toFixed(0)}KB`);
 
-      const displayUrl = await uploadToStorage(displayBuf, `${prefix}-display-${i}.webp`);
+      const displayUrl = await uploadToR2(displayBuf, `${prefix}-display-${i}.webp`);
       displayUrls.push(displayUrl);
     } catch (err) {
       console.error(`[${i + 1}] Display failed:`, err.message);
@@ -149,8 +161,8 @@ export const handler = async (event) => {
       );
 
       const [thumbUrl, originalUrl] = await Promise.all([
-        uploadToStorage(thumb, `${prefix}-thumb-${i}.webp`),
-        uploadToStorage(original, `${prefix}-original-${i}.webp`),
+        uploadToR2(thumb, `${prefix}-thumb-${i}.webp`),
+        uploadToR2(original, `${prefix}-original-${i}.webp`),
       ]);
 
       thumbUrls.push(thumbUrl);

@@ -62,6 +62,14 @@ export default function RootLayout({
           rel="dns-prefetch"
           href="https://ltqzuqvjbiecbjdqgjge.supabase.co"
         />
+        <link
+          rel="preconnect"
+          href="https://pub-fe00511f6c6940738366519b16c3c05c.r2.dev"
+        />
+        <link
+          rel="dns-prefetch"
+          href="https://pub-fe00511f6c6940738366519b16c3c05c.r2.dev"
+        />
         <link rel="preconnect" href="https://replicate.delivery" />
         <link rel="dns-prefetch" href="https://replicate.delivery" />
       </head>

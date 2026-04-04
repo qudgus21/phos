@@ -12,7 +12,7 @@ import { useSlider } from "@/hooks/use-slider";
 
 const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
 const isOptimizedUrl = (url: string) =>
-  SKIP_OPTIMIZER || url.includes("supabase.co/storage/");
+  SKIP_OPTIMIZER || url.includes("r2.dev/") || url.includes("supabase.co/storage/");
 
 async function downloadImage(src: string) {
   const res = await fetch(src);
