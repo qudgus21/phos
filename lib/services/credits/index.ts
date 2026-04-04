@@ -28,7 +28,7 @@ export async function getUserCreditInfo(
   ]);
 
   if (creditsRes.error || !creditsRes.data) {
-    throw new Error("크레딧 정보를 조회할 수 없습니다");
+    throw new Error("Failed to fetch credit info");
   }
 
   // 구독이 없으면 Free 기본값
@@ -88,7 +88,7 @@ export async function deductCredits(
 
   if (error) {
     console.error("[deductCredits] RPC failed:", error);
-    throw new Error("크레딧 차감 중 오류가 발생했습니다");
+    throw new Error("Failed to deduct credits");
   }
 
   const result = data as Record<string, unknown>;
@@ -134,7 +134,7 @@ export async function refundCredits(
         p_amount: onetimeAmount,
         p_credit_type: "onetime",
         p_transaction_type: "refund",
-        p_description: description ?? "생성 실패 환불 (onetime)",
+        p_description: description ?? "Generation failed refund (onetime)",
         p_metadata: metadata ?? {},
       }).then(({ error }) => {
         if (error) console.error("[refundCredits] onetime refund failed:", error);
@@ -149,7 +149,7 @@ export async function refundCredits(
         p_amount: subscriptionAmount,
         p_credit_type: "subscription",
         p_transaction_type: "refund",
-        p_description: description ?? "생성 실패 환불 (subscription)",
+        p_description: description ?? "Generation failed refund (subscription)",
         p_metadata: metadata ?? {},
       }).then(({ error }) => {
         if (error) console.error("[refundCredits] subscription refund failed:", error);

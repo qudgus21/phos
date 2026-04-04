@@ -37,28 +37,28 @@ export const POST = withAuth(async (request, { user }) => {
 
   // 기본 검증
   if (!modelId) {
-    throw new ValidationError("모델을 선택해주세요");
+    throw new ValidationError("Please select a model");
   }
   if (!prompt || prompt.length < 1) {
-    throw new ValidationError("프롬프트를 입력해주세요");
+    throw new ValidationError("Please enter a prompt");
   }
   if (prompt.length > 2000) {
-    throw new ValidationError("프롬프트는 2,000자 이내로 입력해주세요");
+    throw new ValidationError("Prompt must be 2,000 characters or less");
   }
   if (!["1K", "2K", "3K", "4K", "custom"].includes(imageSize)) {
-    throw new ValidationError("이미지 크기가 올바르지 않습니다");
+    throw new ValidationError("Invalid image size");
   }
   if (imageCount < 1 || imageCount > 4) {
-    throw new ValidationError("이미지 수는 1~4장이어야 합니다");
+    throw new ValidationError("Image count must be between 1 and 4");
   }
   if (isNaN(width) || isNaN(height) || isNaN(scale)) {
-    throw new ValidationError("크기/배율 값이 올바르지 않습니다");
+    throw new ValidationError("Invalid size/scale value");
   }
 
   // 2. 모델 설정 조회
   const modelDef = getModelDef(modelId);
   if (!modelDef) {
-    throw new ValidationError("지원하지 않는 모델입니다");
+    throw new ValidationError("Unsupported model");
   }
 
   // 3. 이미지 파일 처리 (응답 전에 완료해야 함 — after() 이후 FormData 접근 불가)
@@ -69,7 +69,7 @@ export const POST = withAuth(async (request, { user }) => {
       if (entry instanceof File) {
         if (entry.size > MAX_FILE_SIZE) {
           throw new ValidationError(
-            `파일 크기는 최대 ${MAX_FILE_SIZE / 1024 / 1024}MB까지 허용됩니다`
+            `File size must be ${MAX_FILE_SIZE / 1024 / 1024} MB or less`
           );
         }
         if (modelDef.provider === "replicate") {
@@ -85,7 +85,7 @@ export const POST = withAuth(async (request, { user }) => {
   // 참조 이미지 수 검증
   if (images.length > modelDef.maxImages) {
     throw new ValidationError(
-      `${modelDef.label}은 최대 ${modelDef.maxImages}개의 참조 이미지를 지원합니다`
+      `${modelDef.label} supports up to ${modelDef.maxImages} reference images`
     );
   }
 
@@ -100,13 +100,13 @@ export const POST = withAuth(async (request, { user }) => {
   );
   if (cooldownRemaining > 0) {
     throw new ValidationError(
-      `${Math.ceil(cooldownRemaining / 60)}분 후에 다시 시도해주세요`
+      `Please wait ${Math.ceil(cooldownRemaining / 60)} minutes before trying again`
     );
   }
 
   if (imageCount > creditInfo.plan.maxBatchSize) {
     throw new ValidationError(
-      `${creditInfo.plan.name} 플랜은 한 번에 최대 ${creditInfo.plan.maxBatchSize}장까지 생성할 수 있습니다`
+      `${creditInfo.plan.name} plan allows up to ${creditInfo.plan.maxBatchSize} images per batch`
     );
   }
 
@@ -129,13 +129,13 @@ export const POST = withAuth(async (request, { user }) => {
   const deductResult = await deductCredits(
     user.id,
     creditCost,
-    `이미지 생성 (${modelDef.label}, ${imageCount}장)`,
+    `Image generation (${modelDef.label}, ${imageCount} images)`,
     { modelId, imageCount, width, height }
   );
 
   if (!deductResult.success) {
     throw new CreditError(
-      "크레딧이 부족합니다",
+      "Insufficient credits",
       deductResult.required ?? creditCost,
       deductResult.available ?? 0
     );
@@ -164,7 +164,7 @@ export const POST = withAuth(async (request, { user }) => {
 
   if (historyError) {
     console.error("[generate] history insert failed:", historyError);
-    throw new Error("히스토리 저장에 실패했습니다");
+    throw new Error("Failed to save history");
   }
 
   // 8. 즉시 응답 반환

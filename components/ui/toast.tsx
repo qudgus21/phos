@@ -97,7 +97,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <span className="text-sm font-medium flex-1">{t.message}</span>
               <button
                 onClick={() => removeToast(t.id)}
-                aria-label="알림 닫기"
+                aria-label="Close"
                 className="p-0.5 rounded hover:bg-white/20 transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />

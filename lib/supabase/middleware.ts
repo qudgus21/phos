@@ -55,7 +55,7 @@ export function withAuth(handler: RouteHandler) {
       } = await supabase.auth.getUser();
 
       if (error || !user) {
-        throw new AuthError("인증이 필요합니다");
+        throw new AuthError("Authentication required");
       }
 
       const handlerResponse = await handler(request, {
@@ -84,10 +84,10 @@ export function withAuth(handler: RouteHandler) {
 
       console.error("[withAuth] unhandled error:", err);
 
-      let message = "서버 오류가 발생했습니다";
+      let message = "An unexpected error occurred";
       const errMsg = err instanceof Error ? err.message : String(err);
       if (errMsg.includes("Cannot connect") || errMsg.includes("Connect call failed")) {
-        message = "AI 서버에 일시적으로 연결할 수 없습니다. 잠시 후 다시 시도해주세요.";
+        message = "AI server temporarily unavailable. Please try again shortly.";
       }
 
       const body: ApiErrorResponse = {
@@ -109,7 +109,7 @@ export function withAdmin(handler: AdminRouteHandler) {
       .single();
 
     if (error || !userRow || userRow.role !== "admin") {
-      throw new ApiError("관리자 권한이 필요합니다", 403);
+      throw new ApiError("Admin access required", 403);
     }
 
     return handler(request, {

@@ -39,23 +39,23 @@ export const POST = withAuth(async (request, { user }) => {
 
   // 2. 검증
   if (!gender || !["female", "male"].includes(gender)) {
-    throw new ValidationError("성별을 선택해주세요");
+    throw new ValidationError("Please select a gender");
   }
   if (isNaN(strength) || strength < 0.1 || strength > 1) {
-    throw new ValidationError("변화 강도가 올바르지 않습니다");
+    throw new ValidationError("Invalid strength value");
   }
   if (!imageEntry) {
-    throw new ValidationError("이미지를 업로드해주세요");
+    throw new ValidationError("Please upload an image");
   }
   if (!maskEntry) {
-    throw new ValidationError("변경할 영역을 선택해주세요");
+    throw new ValidationError("Please select an area to edit");
   }
 
   if (imageEntry instanceof File && imageEntry.size > MAX_FILE_SIZE) {
-    throw new ValidationError(`파일 크기는 최대 ${MAX_FILE_SIZE / 1024 / 1024}MB까지 허용됩니다`);
+    throw new ValidationError(`File size must be ${MAX_FILE_SIZE / 1024 / 1024} MB or less`);
   }
   if (maskEntry instanceof File && maskEntry.size > MAX_FILE_SIZE) {
-    throw new ValidationError("마스크 파일이 너무 큽니다");
+    throw new ValidationError("Mask file is too large");
   }
 
   // 3. 크레딧 + 플랜 정보 조회
@@ -67,7 +67,7 @@ export const POST = withAuth(async (request, { user }) => {
   );
   if (cooldownRemaining > 0) {
     throw new ValidationError(
-      `${Math.ceil(cooldownRemaining / 60)}분 후에 다시 시도해주세요`
+      `Please wait ${Math.ceil(cooldownRemaining / 60)} minutes before trying again`
     );
   }
 
@@ -99,13 +99,13 @@ export const POST = withAuth(async (request, { user }) => {
   const deductResult = await deductCredits(
     user.id,
     CREDIT_COST,
-    "얼굴 변경 생성",
+    "Face edit generation",
     { gender, strength, scale }
   );
 
   if (!deductResult.success) {
     throw new CreditError(
-      "크레딧이 부족합니다",
+      "Insufficient credits",
       deductResult.required ?? CREDIT_COST,
       deductResult.available ?? 0
     );
@@ -134,7 +134,7 @@ export const POST = withAuth(async (request, { user }) => {
 
   if (historyError) {
     console.error("[face-edit] history insert failed:", historyError);
-    throw new Error("히스토리 저장에 실패했습니다");
+    throw new Error("Failed to save history");
   }
 
   // 8. 즉시 응답 반환

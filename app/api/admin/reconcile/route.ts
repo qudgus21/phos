@@ -16,7 +16,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
 
   if (!userId || typeof userId !== "string") {
     return NextResponse.json(
-      { success: false, error: { code: "INVALID_INPUT", message: "userId가 필요합니다" } },
+      { success: false, error: { code: "INVALID_INPUT", message: "userId is required" } },
       { status: 400 }
     );
   }
@@ -32,7 +32,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
 
   if (!userRow?.polar_customer_id) {
     return NextResponse.json(
-      { success: false, error: { code: "NO_CUSTOMER", message: "Polar 고객 ID가 없습니다" } },
+      { success: false, error: { code: "NO_CUSTOMER", message: "No Polar customer ID found" } },
       { status: 404 }
     );
   }
@@ -93,7 +93,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
   } catch (err) {
     console.error("[admin/reconcile] Error:", err);
     return NextResponse.json(
-      { success: false, error: { code: "RECONCILE_FAILED", message: "동기화 중 오류가 발생했습니다" } },
+      { success: false, error: { code: "RECONCILE_FAILED", message: "Reconciliation failed" } },
       { status: 500 }
     );
   }

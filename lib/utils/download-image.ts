@@ -39,7 +39,7 @@ export async function downloadImage(src: string, format: ImageFormat = "png") {
     const quality = format === "jpg" ? 0.95 : undefined;
     finalBlob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error("이미지 변환에 실패했습니다"))),
+        (b) => (b ? resolve(b) : reject(new Error("Image conversion failed"))),
         mime,
         quality,
       ),

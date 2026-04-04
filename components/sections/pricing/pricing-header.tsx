@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { fadeInUp } from "@/lib/animations";
 import { cn } from "@/lib/utils";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 type PricingTab = "monthly" | "onetime";
 
@@ -12,6 +13,8 @@ interface PricingHeaderProps {
 }
 
 export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
+  const dict = useDictionary();
+
   return (
     <div className="pt-32 pb-10 text-center">
       <motion.h2
@@ -20,7 +23,7 @@ export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
         animate="visible"
         className="text-[43px] font-extrabold text-foreground font-display mb-8"
       >
-        요금제
+        {dict.pricing.title}
       </motion.h2>
 
       <motion.div
@@ -38,7 +41,7 @@ export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
               : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
           )}
         >
-          월 구독
+          {dict.pricing.tabs.monthly}
         </button>
         <button
           onClick={() => onTabChange("onetime")}
@@ -49,7 +52,7 @@ export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
               : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
           )}
         >
-          단건구매
+          {dict.pricing.tabs.onetime}
         </button>
       </motion.div>
     </div>

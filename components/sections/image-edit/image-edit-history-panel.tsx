@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useHistory } from "@/hooks/use-history";
 import type { HistoryRow } from "@/hooks/use-history";
 import { cn } from "@/lib/utils";
+import { useDictionary, useLocale } from "@/lib/i18n/dictionary-context";
 
 function HistoryThumbnail({ src }: { src: string }) {
   const [loaded, setLoaded] = useState(false);
@@ -59,10 +60,18 @@ function DeleteConfirmModal({
   open,
   onConfirm,
   onCancel,
+  confirmText,
+  warningText,
+  cancelLabel,
+  deleteLabel,
 }: {
   open: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  confirmText: string;
+  warningText: string;
+  cancelLabel: string;
+  deleteLabel: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -87,10 +96,10 @@ function DeleteConfirmModal({
         className="relative z-10 w-[280px] rounded-xl glass-card border border-border p-5 shadow-elevated"
       >
         <p className="text-[14px] font-medium text-foreground text-center">
-          이 기록을 삭제할까요?
+          {confirmText}
         </p>
         <p className="text-[12px] text-muted-foreground text-center mt-1.5">
-          삭제된 기록은 복구할 수 없습니다
+          {warningText}
         </p>
         <div className="flex gap-2 mt-4">
           <button
@@ -98,43 +107,19 @@ function DeleteConfirmModal({
             onClick={onCancel}
             className="flex-1 py-2 rounded-lg text-[13px] font-medium text-foreground bg-muted/50 hover:bg-muted transition-colors"
           >
-            취소
+            {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className="flex-1 py-2 rounded-lg text-[13px] font-medium text-white bg-red-500/80 hover:bg-red-500 transition-colors"
           >
-            삭제
+            {deleteLabel}
           </button>
         </div>
       </motion.div>
     </div>
   );
-}
-
-/* 리터칭 히스토리: metadata → 옵션 요약 텍스트 */
-const FILTER_LABELS: Record<string, string> = { none: "필터 없음", studio: "스튜디오", brightening: "브라이트닝", glow: "글로우" };
-const MODE_LABELS: Record<string, string> = { natural: "보정", "soft-makeup": "메이크업", matte: "매트" };
-const GENDER_LABELS: Record<string, string> = { female: "여성", male: "남성" };
-
-function getRetouchingSummary(meta: Record<string, unknown> | null): string {
-  if (!meta) return "피부 보정";
-  const parts: string[] = [];
-  if (meta.filter && meta.filter !== "none") parts.push(FILTER_LABELS[meta.filter as string] ?? String(meta.filter));
-  parts.push(GENDER_LABELS[meta.gender as string] ?? "여성");
-  parts.push(MODE_LABELS[meta.mode as string] ?? "보정");
-  if (meta.faceReshape) parts.push("윤곽보정");
-  return parts.join(" · ");
-}
-
-function getFaceEditSummary(meta: Record<string, unknown> | null): string {
-  if (!meta) return "얼굴 변경";
-  const parts: string[] = [];
-  parts.push(GENDER_LABELS[meta.gender as string] ?? "여성");
-  if (meta.strength != null) parts.push(`강도 ${Number(meta.strength).toFixed(1)}`);
-  if (meta.scale && meta.scale !== "auto") parts.push(`${meta.scale}K`);
-  return parts.join(" · ");
 }
 
 interface ImageEditHistoryPanelProps {
@@ -148,6 +133,8 @@ export function ImageEditHistoryPanel({
   onSelect,
   onSelectPending,
 }: ImageEditHistoryPanelProps) {
+  const dict = useDictionary();
+  const locale = useLocale();
   const { history, isLoading, deleteHistory } = useHistory(featureType);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -182,13 +169,42 @@ export function ImageEditHistoryPanel({
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return "방금 전";
-    if (diffMin < 60) return `${diffMin}분 전`;
+    if (diffMin < 1) return dict.common.time.justNow;
+    if (diffMin < 60) return dict.common.time.minutesAgo.replace("{min}", String(diffMin));
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}시간 전`;
+    if (diffHr < 24) return dict.common.time.hoursAgo.replace("{hr}", String(diffHr));
     const diffDay = Math.floor(diffHr / 24);
-    if (diffDay < 7) return `${diffDay}일 전`;
-    return date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+    if (diffDay < 7) return dict.common.time.daysAgo.replace("{day}", String(diffDay));
+    return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
+  };
+
+  const getRetouchingSummary = (meta: Record<string, unknown> | null): string => {
+    if (!meta) return dict.tools.retouching.retouchSettings;
+    const parts: string[] = [];
+    if (meta.filter && meta.filter !== "none") {
+      const filterKey = meta.filter as keyof typeof dict.tools.retouching.filters;
+      parts.push(dict.tools.retouching.filters[filterKey] ?? String(meta.filter));
+    }
+    const genderKey = meta.gender as keyof typeof dict.tools.retouching.genders;
+    parts.push(dict.tools.retouching.genders[genderKey] ?? String(meta.gender ?? ""));
+    const modeMap: Record<string, string> = {
+      natural: dict.tools.retouching.modes.basic,
+      "soft-makeup": dict.tools.retouching.modes.makeup,
+      matte: dict.tools.retouching.modes.matte,
+    };
+    parts.push(modeMap[meta.mode as string] ?? String(meta.mode ?? ""));
+    if (meta.faceReshape) parts.push(dict.tools.retouching.reshapeLabel);
+    return parts.filter(Boolean).join(" · ");
+  };
+
+  const getFaceEditSummary = (meta: Record<string, unknown> | null): string => {
+    if (!meta) return dict.tools.faceEdit.header;
+    const parts: string[] = [];
+    const genderKey = meta.gender as keyof typeof dict.tools.retouching.genders;
+    parts.push(dict.tools.retouching.genders[genderKey] ?? String(meta.gender ?? ""));
+    if (meta.strength != null) parts.push(`${dict.tools.faceEdit.strengthLabel} ${Number(meta.strength).toFixed(1)}`);
+    if (meta.scale && meta.scale !== "auto") parts.push(`${meta.scale}K`);
+    return parts.filter(Boolean).join(" · ");
   };
 
   return (
@@ -197,7 +213,7 @@ export function ImageEditHistoryPanel({
       <div className="hidden lg:block px-4 py-3 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
           <Clock className="w-4 h-4 text-muted-foreground" />
-          히스토리
+          {dict.tools.history.title}
         </h2>
       </div>
 
@@ -209,7 +225,7 @@ export function ImageEditHistoryPanel({
         ) : history.length === 0 ? (
           <div className="flex flex-col items-center justify-center pt-12 gap-2">
             <Clock className="w-6 h-6 text-muted-foreground/50 dark:text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">기록이 없습니다</p>
+            <p className="text-sm text-muted-foreground">{dict.tools.history.empty}</p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
@@ -253,7 +269,7 @@ export function ImageEditHistoryPanel({
                   <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                     <p className="text-[11px] text-foreground truncate leading-tight">
                       {isPending
-                        ? "생성 중..."
+                        ? dict.tools.history.generating
                         : item.feature_type === "retouching"
                           ? getRetouchingSummary(item.metadata as Record<string, unknown> | null)
                           : item.feature_type === "face-edit"
@@ -263,7 +279,7 @@ export function ImageEditHistoryPanel({
                               : item.prompt}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {isPending ? "잠시만 기다려주세요" : formatTime(item.created_at)}
+                      {isPending ? dict.tools.history.generatingHint : formatTime(item.created_at)}
                     </p>
                   </div>
                   {/* Delete */}
@@ -289,6 +305,10 @@ export function ImageEditHistoryPanel({
         open={deleteTargetId !== null}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTargetId(null)}
+        confirmText={dict.tools.history.deleteConfirm}
+        warningText={dict.tools.history.deleteWarning}
+        cancelLabel={dict.common.cancel}
+        deleteLabel={dict.common.delete}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface ImageEditMobileTabsProps {
   activeTab: string;
@@ -8,17 +9,17 @@ interface ImageEditMobileTabsProps {
   isGenerating?: boolean;
 }
 
-const MOBILE_TABS = [
-  { id: "input", label: "입력" },
-  { id: "result", label: "결과" },
-  { id: "history", label: "히스토리" },
-];
-
 export function ImageEditMobileTabs({
   activeTab,
   onTabChange,
   isGenerating,
 }: ImageEditMobileTabsProps) {
+  const dict = useDictionary();
+  const MOBILE_TABS = [
+    { id: "input", label: dict.tools.imageEdit.input },
+    { id: "result", label: dict.tools.resultPanel.resultHeader },
+    { id: "history", label: dict.tools.history.title },
+  ];
   return (
     <div className="flex lg:hidden border-b border-border bg-card/80 shrink-0">
       {MOBILE_TABS.map((tab) => {

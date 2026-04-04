@@ -161,13 +161,13 @@ function buildFaceReshapePrompt(intensity: number, gender: string): string {
     ? intensity <= 0.3
       ? "sharper jawline definition, slightly refined nose bridge, cleaner forehead line, subtle cheekbone emphasis, slightly reduced overall face proportion. Changes should look natural as if the person simply has strong bone structure."
       : intensity <= 0.6
-        ? "defined angular jaw with sharper edges, refined nose with straighter bridge, pronounced cheekbone structure, clean forehead contour, smaller overall face proportion (소두 effect), overall more chiseled and defined facial structure. Results should still look like the same person, just more sculpted."
-        : "strongly defined angular jaw with sharp edges, visibly straighter and refined nose, high and pronounced cheekbones with strong shadow underneath, defined brow ridge, smaller overall face proportion (소두 effect), clean and balanced forehead contour, balanced facial symmetry. The result should look like a high-end men's magazine cover — powerful, chiseled, and commanding, but still recognizably the same person."
+        ? "defined angular jaw with sharper edges, refined nose with straighter bridge, pronounced cheekbone structure, clean forehead contour, smaller overall face proportion (small face effect), overall more chiseled and defined facial structure. Results should still look like the same person, just more sculpted."
+        : "strongly defined angular jaw with sharp edges, visibly straighter and refined nose, high and pronounced cheekbones with strong shadow underneath, defined brow ridge, smaller overall face proportion (small face effect), clean and balanced forehead contour, balanced facial symmetry. The result should look like a high-end men's magazine cover — powerful, chiseled, and commanding, but still recognizably the same person."
     : intensity <= 0.3
       ? "slimmer jawline toward a V-shape, refined nose bridge and tip, smoother forehead line, slightly lifted cheekbones. Changes should look natural as if the person simply has flattering angles."
       : intensity <= 0.6
         ? "defined V-line jaw, slimmer and refined nose, reduced cheekbone width, smooth and balanced forehead contour, overall more sculpted and defined facial structure. Results should still look like the same person, just more refined."
-        : "sharp and defined V-line jaw with tapered chin, visibly slimmer and straighter nose with refined tip, high and sculpted cheekbones with subtle hollowing underneath, smaller overall face proportion (소두 effect), smooth and lifted forehead contour, balanced facial symmetry. The result should look like a high-end beauty magazine cover — polished and refined, but still recognizably the same person.";
+        : "sharp and defined V-line jaw with tapered chin, visibly slimmer and straighter nose with refined tip, high and sculpted cheekbones with subtle hollowing underneath, smaller overall face proportion (small face effect), smooth and lifted forehead contour, balanced facial symmetry. The result should look like a high-end beauty magazine cover — polished and refined, but still recognizably the same person.";
 
   const lookDesc = isMale
     ? "a powerful, chiseled editorial men's look"

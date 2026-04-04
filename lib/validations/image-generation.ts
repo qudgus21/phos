@@ -6,7 +6,7 @@ export const imageGenerationSchema = z.object({
   images: z.array(
     z.string().refine(
       (s) => s.startsWith("http://") || s.startsWith("https://") || s.startsWith("data:image/"),
-      "유효한 이미지 URL 또는 data URI여야 합니다"
+      "Must be a valid image URL or data URI"
     )
   ).max(14).optional(),
   imageSize: z.enum(["1K", "2K", "3K", "4K", "custom"]),

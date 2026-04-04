@@ -23,7 +23,7 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
   {
     id: "1",
     thumbnail: "/images/retouching/sample1/thumbnail.webp",
-    label: "글로우 매트",
+    label: "Glow Matte",
     before: "/images/retouching/sample1/before.webp",
     after: "/images/retouching/sample1/after.webp",
     defaultCompare: true,
@@ -43,7 +43,7 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
   {
     id: "2",
     thumbnail: "/images/retouching/sample2/thumbnail.webp",
-    label: "스튜디오 메이크업",
+    label: "Studio Makeup",
     before: "/images/retouching/sample2/before.webp",
     after: "/images/retouching/sample2/after.webp",
     settings: {
@@ -62,7 +62,7 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
   {
     id: "3",
     thumbnail: "/images/retouching/sample3/thumbnail.webp",
-    label: "브라이트닝 내추럴",
+    label: "Brightening Natural",
     before: "/images/retouching/sample3/before.webp",
     after: "/images/retouching/sample3/after.webp",
     settings: {
@@ -81,7 +81,7 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
   {
     id: "4",
     thumbnail: "/images/retouching/sample4/thumb.webp",
-    label: "글로우 매트메이크업",
+    label: "Glow Matte Makeup",
     before: "/images/retouching/sample4/before.webp",
     after: "/images/retouching/sample4/after.webp",
     settings: {
@@ -100,7 +100,7 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
   {
     id: "5",
     thumbnail: "/images/retouching/sample5/thumb.webp",
-    label: "남성 스튜디오",
+    label: "Male Studio",
     before: "/images/retouching/sample5/before.webp",
     after: "/images/retouching/sample5/after.webp",
     settings: {
@@ -119,7 +119,7 @@ export const RETOUCHING_SAMPLES: RetouchingSample[] = [
   {
     id: "6",
     thumbnail: "/images/retouching/sample6/thumb.webp",
-    label: "남성 글로우",
+    label: "Male Glow",
     before: "/images/retouching/sample6/before.webp",
     after: "/images/retouching/sample6/after.webp",
     settings: {

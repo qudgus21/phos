@@ -52,29 +52,29 @@ export const POST = withAuth(async (request, { user }) => {
 
   // 2. 유효성 검증
   if (!imageFile || !(imageFile instanceof File) || imageFile.size === 0) {
-    throw new ValidationError("이미지를 업로드해주세요");
+    throw new ValidationError("Please upload an image");
   }
 
   const MAX_FILE_SIZE = 20 * 1024 * 1024;
   if (imageFile.size > MAX_FILE_SIZE) {
-    throw new ValidationError(`파일 크기는 최대 ${MAX_FILE_SIZE / 1024 / 1024}MB까지 허용됩니다`);
+    throw new ValidationError(`File size must be ${MAX_FILE_SIZE / 1024 / 1024} MB or less`);
   }
 
   if (!VALID_FILTERS.includes(filter as typeof VALID_FILTERS[number])) {
-    throw new ValidationError("올바르지 않은 필터입니다");
+    throw new ValidationError("Invalid filter");
   }
   if (!VALID_GENDERS.includes(gender as typeof VALID_GENDERS[number])) {
-    throw new ValidationError("올바르지 않은 성별입니다");
+    throw new ValidationError("Invalid gender");
   }
   if (!VALID_MODES.includes(mode as typeof VALID_MODES[number])) {
-    throw new ValidationError("올바르지 않은 모드입니다");
+    throw new ValidationError("Invalid mode");
   }
   if (!["auto", "2K", "4K"].includes(outputSize)) {
-    throw new ValidationError("올바르지 않은 출력 크기입니다");
+    throw new ValidationError("Invalid output size");
   }
   const VALID_RATIOS = ["1:1", "3:2", "2:3"] as const;
   if (!VALID_RATIOS.includes(ratio as typeof VALID_RATIOS[number])) {
-    throw new ValidationError("올바르지 않은 비율입니다");
+    throw new ValidationError("Invalid ratio");
   }
 
   const rawAreas = excludedAreasRaw ? excludedAreasRaw.split(",") : [];
@@ -86,7 +86,7 @@ export const POST = withAuth(async (request, { user }) => {
   // 3. 모델 설정
   const modelDef = getRetouchingModelDef(DEFAULT_MODEL_ID);
   if (!modelDef) {
-    throw new ValidationError("지원하지 않는 모델입니다");
+    throw new ValidationError("Unsupported model");
   }
 
   // 4. 프롬프트 생성
@@ -113,7 +113,7 @@ export const POST = withAuth(async (request, { user }) => {
   );
   if (cooldownRemaining > 0) {
     throw new ValidationError(
-      `${Math.ceil(cooldownRemaining / 60)}분 후에 다시 시도해주세요`
+      `Please wait ${Math.ceil(cooldownRemaining / 60)} minutes before trying again`
     );
   }
 
@@ -139,13 +139,13 @@ export const POST = withAuth(async (request, { user }) => {
   const deductResult = await deductCredits(
     user.id,
     CREDIT_COST,
-    `리터칭 (${modelDef.label})`,
+    `Retouching (${modelDef.label})`,
     { modelId: DEFAULT_MODEL_ID, filter, mode, gender }
   );
 
   if (!deductResult.success) {
     throw new CreditError(
-      "크레딧이 부족합니다",
+      "Insufficient credits",
       deductResult.required ?? CREDIT_COST,
       deductResult.available ?? 0
     );
@@ -185,7 +185,7 @@ export const POST = withAuth(async (request, { user }) => {
 
   if (historyError) {
     console.error("[retouching] history insert failed:", historyError);
-    throw new Error("히스토리 저장에 실패했습니다");
+    throw new Error("Failed to save history");
   }
 
   // 10. 즉시 응답 반환

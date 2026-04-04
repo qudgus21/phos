@@ -8,17 +8,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 import { DownloadButton, LightboxDownloadButton } from "@/components/ui/download-button";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 /** R2/Supabase Storage URL이면 이미 최적화된 WebP → unoptimized 가능 */
 const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
 const isOptimizedUrl = (url: string) =>
   SKIP_OPTIMIZER || url.includes("images.phos.studio/") || url.includes("r2.dev/") || url.includes("supabase.co/storage/");
-
-const WORKFLOW_STEPS = [
-  { icon: Upload, label: "이미지 업로드" },
-  { icon: SlidersHorizontal, label: "옵션 설정" },
-  { icon: Zap, label: "실행" },
-];
 
 interface RetouchingResultPanelProps {
   sampleId?: string | null;
@@ -68,13 +63,14 @@ function ImageActionBar({
   onZoom: () => void;
   onAddToInput?: (src: string) => void;
 }) {
+  const dict = useDictionary();
   return (
     <div className="absolute inset-x-0 bottom-0 flex justify-center p-6 opacity-0 group-hover:opacity-100 transition-opacity z-10">
       <div className="flex items-center gap-2 px-3 py-2 bg-black/70 backdrop-blur-md rounded-xl">
-        <ActionButton icon={ZoomIn} label="확대" onClick={(e) => { e.stopPropagation(); onZoom(); }} />
+        <ActionButton icon={ZoomIn} label={dict.tools.resultPanel.zoomLabel} onClick={(e) => { e.stopPropagation(); onZoom(); }} />
         <DownloadButton src={src} />
         {onAddToInput && (
-          <ActionButton icon={Plus} label="다시 보정" onClick={(e) => { e.stopPropagation(); onAddToInput(src); }} />
+          <ActionButton icon={Plus} label={dict.tools.retouching.addToInput} onClick={(e) => { e.stopPropagation(); onAddToInput(src); }} />
         )}
       </div>
     </div>
@@ -107,6 +103,7 @@ function RotatingText({ texts, interval = 4000 }: { texts: string[]; interval?: 
 
 /* ── 프로그레시브 블러 플레이스홀더 ── */
 function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase = "generating" }: { count: number; inputImage?: string | null; willUpscale?: boolean; phase?: "generating" | "loading" }) {
+  const dict = useDictionary();
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
@@ -186,10 +183,10 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
       <div className="text-center space-y-1.5">
         <p className="text-base font-bold text-foreground">
           {phase === "loading"
-            ? "저장 중"
+            ? dict.tools.resultPanel.saving
             : willUpscale && elapsed > 25
-              ? "업스케일 중"
-              : "이미지 보정 중"}
+              ? dict.tools.resultPanel.upscaling
+              : dict.tools.resultPanel.retouching}
         </p>
         <motion.p
           className="text-sm font-medium text-foreground/70"
@@ -199,14 +196,14 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
           <AnimatePresence mode="wait">
             {phase === "loading" ? (
               <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                결과를 불러오고 있습니다...
+                {dict.tools.resultPanel.loadingResult}
               </motion.span>
             ) : willUpscale && elapsed > 25 ? (
               <motion.span key="upscale" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                고해상도로 변환하고 있습니다...
+                {dict.tools.resultPanel.upscalingResult}
               </motion.span>
             ) : (
-              <RotatingText texts={["잠시만 기다려 주세요", "이미지를 만들고 있어요"]} interval={5000} />
+              <RotatingText texts={[dict.tools.resultPanel.waitHint, dict.tools.resultPanel.makingImageHint]} interval={5000} />
             )}
           </AnimatePresence>
         </motion.p>
@@ -231,6 +228,7 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
 
 /* ── 확대 모달 (라이트박스) ── */
 function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
+  const dict = useDictionary();
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -256,7 +254,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="닫기"
+          aria-label={dict.tools.resultPanel.closeLabel}
           className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer z-10"
         >
           <X className="w-5 h-5 text-white" />
@@ -268,7 +266,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
           exit={{ scale: 0.92, opacity: 0 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
           src={src}
-          alt="확대 보기"
+          alt={dict.tools.resultPanel.zoomAlt}
           className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
           onClick={(e) => e.stopPropagation()}
         />
@@ -289,6 +287,12 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
 }
 
 export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, generatingScale = 0, onAddToInput }: RetouchingResultPanelProps) {
+  const dict = useDictionary();
+  const WORKFLOW_STEPS = [
+    { icon: Upload, label: dict.tools.history.retouchingSteps[0] },
+    { icon: SlidersHorizontal, label: dict.tools.history.retouchingSteps[1] },
+    { icon: Zap, label: dict.tools.history.retouchingSteps[2] },
+  ];
   // 샘플 선택 시 after 이미지를 결과로 표시
   const activeSample = sampleId ? RETOUCHING_SAMPLES.find((s) => s.id === sampleId) : null;
   const effectiveDisplayUrls = activeSample ? [activeSample.after] : displayUrls;
@@ -324,7 +328,7 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isG
       <div className="hidden lg:block px-4 py-3 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
           <Sparkles className="w-4 h-4 text-secondary" />
-          결과
+          {dict.tools.resultPanel.resultHeader}
         </h2>
       </div>
 
@@ -339,7 +343,7 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isG
         <div className="relative flex-1 min-h-0 p-4 group">
           <Image
             src={outputs[0]}
-            alt="결과"
+            alt={dict.tools.resultPanel.resultHeader}
             fill
             priority
             unoptimized={isOptimizedUrl(outputs[0])}
@@ -359,11 +363,11 @@ export function RetouchingResultPanel({ sampleId, displayUrls, originalUrls, isG
             <Sparkles className="w-8 h-8 text-muted-foreground/70 dark:text-muted-foreground/50" />
           </div>
           <div className="text-center space-y-1.5">
-            <p className="text-sm font-semibold text-foreground">AI 보정 결과</p>
+            <p className="text-sm font-semibold text-foreground">{dict.tools.resultPanel.aiRetouchResult}</p>
             <p className="text-[13px] text-muted-foreground leading-relaxed">
-              이미지를 업로드하고 실행하면
+              {dict.tools.resultPanel.emptyUploadHint}
               <br />
-              결과가 여기에 표시됩니다
+              {dict.tools.resultPanel.emptyResultHint}
             </p>
           </div>
           <div className="flex items-center gap-3">

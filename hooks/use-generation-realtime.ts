@@ -54,7 +54,7 @@ export function useGenerationRealtime(
               optionsRef.current?.onFailed?.({
                 ...row,
                 status: "failed",
-                error_message: "생성 시간이 초과되었습니다",
+                error_message: "Generation timed out",
               } as HistoryRow);
             }
           }

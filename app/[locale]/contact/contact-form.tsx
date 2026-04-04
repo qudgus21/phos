@@ -16,16 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
-import { Footer } from "@/components/sections/footer";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 import type { User } from "@supabase/supabase-js";
-
-const CATEGORIES = [
-  { value: "bug_report", label: "오류 신고" },
-  { value: "feature_request", label: "기능 제안" },
-  { value: "account_issue", label: "계정 문제" },
-  { value: "payment_refund", label: "결제/환불" },
-  { value: "other", label: "기타" },
-];
 
 const MAX_CONTENT_LENGTH = 5000;
 const MAX_IMAGES = 5;
@@ -36,8 +28,9 @@ interface ImagePreview {
   url: string;
 }
 
-export default function ContactPage() {
+export default function ContactForm() {
   const { toast } = useToast();
+  const dict = useDictionary();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const supabase = useMemo(() => createClient(), []);
@@ -61,15 +54,15 @@ export default function ContactPage() {
       const newImages: ImagePreview[] = [];
       for (const file of Array.from(files)) {
         if (images.length + newImages.length >= MAX_IMAGES) {
-          toast(`최대 ${MAX_IMAGES}장까지 첨부 가능합니다.`, "warning");
+          toast(dict.contact.validation.maxImages.replace("{max}", String(MAX_IMAGES)), "warning");
           break;
         }
         if (file.size > MAX_IMAGE_SIZE) {
-          toast(`${file.name}: 5MB 이하 파일만 첨부 가능합니다.`, "warning");
+          toast(dict.contact.validation.maxFileSize, "warning");
           continue;
         }
         if (!file.type.startsWith("image/")) {
-          toast(`${file.name}: 이미지 파일만 첨부 가능합니다.`, "warning");
+          toast(dict.contact.validation.imageOnly, "warning");
           continue;
         }
         newImages.push({ file, url: URL.createObjectURL(file) });
@@ -96,13 +89,13 @@ export default function ContactPage() {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!category) newErrors.category = "문의 유형을 선택해주세요.";
-    if (!subject.trim()) newErrors.subject = "제목을 입력해주세요.";
-    if (!content.trim()) newErrors.content = "내용을 입력해주세요.";
+    if (!category) newErrors.category = dict.contact.validation.categoryRequired;
+    if (!subject.trim()) newErrors.subject = dict.contact.validation.titleRequired;
+    if (!content.trim()) newErrors.content = dict.contact.validation.contentRequired;
     if (content.length > MAX_CONTENT_LENGTH)
-      newErrors.content = `${MAX_CONTENT_LENGTH}자 이하로 입력해주세요.`;
+      newErrors.content = dict.contact.validation.contentRequired;
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      newErrors.email = "올바른 이메일을 입력해주세요.";
+      newErrors.email = dict.contact.validation.emailInvalid;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -128,11 +121,11 @@ export default function ContactPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast(data.error?.message ?? "문의 전송에 실패했습니다.", "error");
+        toast(data.error?.message ?? dict.contact.error, "error");
         return;
       }
 
-      toast("문의가 접수되었습니다. 빠르게 답변드리겠습니다.", "success");
+      toast(dict.contact.success, "success");
       setCategory("");
       setSubject("");
       setContent("");
@@ -141,7 +134,7 @@ export default function ContactPage() {
       setImages([]);
       setErrors({});
     } catch {
-      toast("문의 전송에 실패했습니다.", "error");
+      toast(dict.contact.error, "error");
     } finally {
       setLoading(false);
     }
@@ -162,10 +155,10 @@ export default function ContactPage() {
               <MessageSquare className="w-7 h-7 text-primary" />
             </div>
             <h1 className="text-3xl font-extrabold text-foreground font-display mb-2">
-              문의하기
+              {dict.contact.title}
             </h1>
             <p className="text-muted-foreground text-sm">
-              궁금한 점이나 불편한 점이 있으시면 알려주세요.
+              {dict.contact.description}
             </p>
           </motion.div>
 
@@ -180,16 +173,16 @@ export default function ContactPage() {
             {/* 문의 유형 */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">
-                문의 유형 <span className="text-error">*</span>
+                {dict.contact.form.categoryLabel}
               </label>
               <Dropdown
-                options={CATEGORIES}
+                options={dict.contact.categories}
                 value={category}
                 onChange={(val) => {
                   setCategory(val);
                   setErrors((prev) => ({ ...prev, category: "" }));
                 }}
-                placeholder="문의 유형을 선택해주세요"
+                placeholder={dict.contact.form.categoryPlaceholder}
                 variant="gradient"
               />
               {errors.category && (
@@ -200,7 +193,7 @@ export default function ContactPage() {
             {/* 제목 */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">
-                제목 <span className="text-error">*</span>
+                {dict.contact.form.titleLabel}
               </label>
               <Input
                 value={subject}
@@ -208,7 +201,7 @@ export default function ContactPage() {
                   setSubject(e.target.value);
                   setErrors((prev) => ({ ...prev, subject: "" }));
                 }}
-                placeholder="문의 제목을 입력해주세요"
+                placeholder={dict.contact.form.titlePlaceholder}
                 maxLength={200}
                 error={errors.subject}
               />
@@ -217,7 +210,7 @@ export default function ContactPage() {
             {/* 내용 */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">
-                내용 <span className="text-error">*</span>
+                {dict.contact.form.contentLabel}
               </label>
               <Textarea
                 value={content}
@@ -225,7 +218,7 @@ export default function ContactPage() {
                   setContent(e.target.value);
                   setErrors((prev) => ({ ...prev, content: "" }));
                 }}
-                placeholder="문의 내용을 자세히 입력해주세요"
+                placeholder={dict.contact.form.contentPlaceholder}
                 rows={6}
                 maxLength={MAX_CONTENT_LENGTH}
                 error={errors.content}
@@ -239,10 +232,7 @@ export default function ContactPage() {
             {!user && (
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">
-                  이메일{" "}
-                  <span className="text-muted-foreground font-normal text-xs">
-                    (선택 - 답변 받을 이메일)
-                  </span>
+                  {dict.contact.form.emailLabel}
                 </label>
                 <Input
                   type="email"
@@ -251,7 +241,7 @@ export default function ContactPage() {
                     setEmail(e.target.value);
                     setErrors((prev) => ({ ...prev, email: "" }));
                   }}
-                  placeholder="example@email.com"
+                  placeholder={dict.contact.form.emailPlaceholder}
                   error={errors.email}
                 />
               </div>
@@ -260,10 +250,7 @@ export default function ContactPage() {
             {/* 이미지 첨부 */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-2">
-                이미지 첨부{" "}
-                <span className="text-muted-foreground font-normal text-xs">
-                  (선택, 최대 {MAX_IMAGES}장)
-                </span>
+                {dict.contact.form.imageLabel}
               </label>
 
               <div
@@ -274,10 +261,10 @@ export default function ContactPage() {
               >
                 <ImagePlus className="w-6 h-6 text-muted-foreground mx-auto mb-1.5" />
                 <p className="text-sm text-muted-foreground">
-                  클릭하거나 이미지를 드래그해서 첨부
+                  {dict.contact.form.imageDragText}
                 </p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  JPG, PNG, GIF, WebP / 5MB 이하
+                  {dict.contact.form.imageFormats}
                 </p>
               </div>
 
@@ -311,7 +298,7 @@ export default function ContactPage() {
                       >
                         <img
                           src={img.url}
-                          alt={`첨부 ${i + 1}`}
+                          alt={dict.contact.form.attachmentAlt.replace("{index}", String(i + 1))}
                           className="w-18 h-18 object-cover rounded-lg border border-border"
                         />
                         <button
@@ -334,7 +321,7 @@ export default function ContactPage() {
             {/* 로그인 시 답변 이메일 안내 */}
             {user && (
               <p className="text-xs text-muted-foreground text-center">
-                답변은 <span className="text-foreground font-medium">{user.email}</span> 으로 발송됩니다
+                {dict.contact.replyNotice.replace("{email}", user.email ?? "")}
               </p>
             )}
 
@@ -349,19 +336,18 @@ export default function ContactPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  전송 중...
+                  {dict.contact.form.submitting}
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4 mr-2" />
-                  문의 보내기
+                  {dict.contact.form.submit}
                 </>
               )}
             </Button>
           </motion.form>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

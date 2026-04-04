@@ -1,23 +1,10 @@
-import { Hero } from "@/components/sections/hero";
-import { Upscale } from "@/components/sections/upscale";
-import { ImageEdit } from "@/components/sections/image-edit";
-import { SkinRetouch } from "@/components/sections/skin-retouch";
-import { FaceSwap } from "@/components/sections/face-swap";
-import { SkinRealism } from "@/components/sections/skin-realism";
-import { Pricing } from "@/components/sections/pricing";
-import { Footer } from "@/components/sections/footer";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { detectLocale } from "@/lib/i18n";
 
-export default function Home() {
-  return (
-    <div className="min-h-screen bg-background relative">
-      <Hero />
-      <ImageEdit />
-      <SkinRetouch />
-      <FaceSwap />
-      <SkinRealism />
-      <Upscale />
-      <Pricing />
-      <Footer />
-    </div>
-  );
+export default async function RootPage() {
+  const headerList = await headers();
+  const acceptLanguage = headerList.get("accept-language") ?? "";
+  const locale = detectLocale(acceptLanguage);
+  redirect(`/${locale}`);
 }

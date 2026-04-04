@@ -5,9 +5,14 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 import { getBlur } from "@/lib/constants/blur-placeholders";
-const tags = ["이미지 편집", "피부 리터칭", "얼굴 변경", "업스케일"];
+import type { Dictionary } from "@/lib/i18n";
 
-export function Hero() {
+interface HeroProps {
+  dict: Dictionary;
+  locale: string;
+}
+
+export function Hero({ dict, locale }: HeroProps) {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       {/* Background base */}
@@ -33,7 +38,7 @@ export function Hero() {
       <div className="absolute inset-y-0 right-0 w-full md:w-[65%] z-0">
         <Image
           src="/images/home/hero/hero-model.webp"
-          alt="AI로 보정된 고해상도 뷰티 이미지"
+          alt={dict.hero.heroImageAlt}
           fill
           className="object-cover object-top"
           priority
@@ -55,7 +60,7 @@ export function Hero() {
         <div className="max-w-xl">
           {/* Keyword tags — D */}
           <motion.div variants={fadeInUp} className="flex flex-wrap gap-2 mb-8">
-            {tags.map((tag) => (
+            {dict.hero.tags.map((tag) => (
               <span
                 key={tag}
                 className="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-500/10 border border-indigo-500/20 rounded-full dark:text-indigo-300"
@@ -70,12 +75,10 @@ export function Hero() {
             variants={fadeInUp}
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-8 font-display leading-[1.1] tracking-tight"
           >
-            편집, 보정, 생성
+            <span className="whitespace-nowrap">{dict.hero.headline}</span>
             <br />
-            <span className="bg-gradient-to-r from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">
-              스튜디오 퀄리티를
-              <br />
-              누구나
+            <span className="bg-gradient-to-r from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent whitespace-pre-line">
+              {dict.hero.headlineAccent}
             </span>
           </motion.h1>
 
@@ -84,28 +87,28 @@ export function Hero() {
             variants={fadeInUp}
             className="text-lg md:text-xl text-foreground/70 mb-12 leading-relaxed"
           >
-            이미지 편집 · 피부 보정 · 얼굴 변경
+            {dict.hero.subtitle}
             <br className="hidden md:block" />
-            하이엔드 실사 이미지, <span className="text-foreground/80">클릭 한 번</span>이면 충분합니다
+            {dict.hero.subtitleHighlight}
           </motion.p>
 
           {/* CTA — E */}
           <motion.div variants={fadeInUp} className="flex items-center gap-4 mb-8">
             <Link
-              href="/image-edit"
+              href={`/${locale}/image-edit`}
               className="inline-flex items-center px-10 py-5 text-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl btn-glow transition-all duration-300 ease-out hover:scale-[1.06] hover:brightness-110 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-[0.98]"
             >
-              무료로 시작하기
+              {dict.hero.cta}
             </Link>
             <span className="text-sm text-muted-foreground">
-              카드 등록 없이 · 무료 체험
+              {dict.hero.ctaHelper}
             </span>
           </motion.div>
 
           {/* Trust Bar */}
           <motion.div variants={fadeInUp}>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              포토그래퍼 · 디자이너 · 마케터 · 인플루언서 · 셀러를 위한 AI 이미지 도구
+              {dict.hero.trustBar}
             </p>
           </motion.div>
         </div>

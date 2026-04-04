@@ -12,7 +12,7 @@ export async function uploadFileToReplicate(
 ): Promise<string> {
   const apiToken = process.env.REPLICATE_API_TOKEN;
   if (!apiToken) {
-    throw new ApiError("REPLICATE_API_TOKEN 환경변수가 설정되지 않았습니다", 500);
+    throw new ApiError("REPLICATE_API_TOKEN environment variable is not set", 500);
   }
 
   const form = new FormData();
@@ -27,12 +27,12 @@ export async function uploadFileToReplicate(
   if (!res.ok) {
     const text = await res.text();
     console.error(`[replicate-files] upload failed (${res.status}):`, text);
-    throw new ApiError("이미지 업로드 중 오류가 발생했습니다", 502);
+    throw new ApiError("Failed to upload image", 502);
   }
 
   const data = (await res.json()) as { urls?: { get?: string } };
   if (!data.urls?.get) {
-    throw new ApiError("Replicate Files 응답에 URL이 없습니다", 502);
+    throw new ApiError("No URL in Replicate Files response", 502);
   }
   return data.urls.get;
 }

@@ -16,12 +16,12 @@ export const POST = withAuth(async (request, { user }) => {
   };
 
   if (!path || !contentType) {
-    throw new ValidationError("path와 contentType이 필요합니다");
+    throw new ValidationError("path and contentType are required");
   }
 
   // 경로에 유저 ID가 포함되어야 함 (RLS 대체)
   if (!path.includes(user.id)) {
-    throw new ValidationError("허용되지 않는 경로입니다");
+    throw new ValidationError("Path not allowed");
   }
 
   const uploadUrl = await createPresignedUploadUrl(path, contentType);
@@ -39,12 +39,12 @@ export const DELETE = withAuth(async (request, { user }) => {
   const { paths } = (await request.json()) as { paths?: string[] };
 
   if (!paths || !Array.isArray(paths) || paths.length === 0) {
-    throw new ValidationError("삭제할 경로가 필요합니다");
+    throw new ValidationError("Path is required for deletion");
   }
 
   // 모든 경로에 유저 ID가 포함되어야 함
   if (paths.some((p) => !p.includes(user.id))) {
-    throw new ValidationError("허용되지 않는 경로입니다");
+    throw new ValidationError("Path not allowed");
   }
 
   await deleteFromR2(paths);

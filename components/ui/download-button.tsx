@@ -9,6 +9,7 @@ import {
   type ImageFormat,
 } from "@/lib/utils/download-image";
 import { useToast } from "@/components/ui/toast";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 const FORMAT_OPTIONS: { value: ImageFormat; label: string }[] = [
   { value: "png", label: "PNG" },
@@ -22,6 +23,7 @@ export function DownloadButton({ src }: { src: string }) {
   const [showFormats, setShowFormats] = useState(false);
   const [defaultFormat, setDefaultFormat] = useState<ImageFormat>("png");
   const { toast } = useToast();
+  const dict = useDictionary();
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -39,12 +41,12 @@ export function DownloadButton({ src }: { src: string }) {
         await downloadImage(src, format);
         setDefaultFormat(format);
       } catch {
-        toast("다운로드에 실패했습니다", "error");
+        toast(dict.common.download.failed, "error");
       } finally {
         setIsDownloading(false);
       }
     },
-    [src, isDownloading, toast],
+    [src, isDownloading, toast, dict],
   );
 
   const handleButtonClick = useCallback(
@@ -75,7 +77,6 @@ export function DownloadButton({ src }: { src: string }) {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* 포맷 선택 팝업 */}
       <AnimatePresence>
         {showFormats && !isDownloading && (
           <motion.div
@@ -103,12 +104,11 @@ export function DownloadButton({ src }: { src: string }) {
         )}
       </AnimatePresence>
 
-      {/* 다운로드 버튼 */}
       <button
         type="button"
         onClick={handleButtonClick}
         disabled={isDownloading}
-        aria-label="다운로드"
+        aria-label={dict.tools.resultPanel.zoomLabel}
         className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors cursor-pointer disabled:cursor-wait"
       >
         {isDownloading ? (
@@ -127,6 +127,7 @@ export function LightboxDownloadButton({ src }: { src: string }) {
   const [showFormats, setShowFormats] = useState(false);
   const [defaultFormat, setDefaultFormat] = useState<ImageFormat>("png");
   const { toast } = useToast();
+  const dict = useDictionary();
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -143,12 +144,12 @@ export function LightboxDownloadButton({ src }: { src: string }) {
         await downloadImage(src, format);
         setDefaultFormat(format);
       } catch {
-        toast("다운로드에 실패했습니다", "error");
+        toast(dict.common.download.failed, "error");
       } finally {
         setIsDownloading(false);
       }
     },
-    [src, isDownloading, toast],
+    [src, isDownloading, toast, dict],
   );
 
   const handleButtonClick = useCallback(
@@ -222,7 +223,7 @@ export function LightboxDownloadButton({ src }: { src: string }) {
           <Download className="w-4 h-4" />
         )}
         {isDownloading
-          ? "다운로드 중..."
+          ? dict.tools.resultPanel.downloadingLabel
           : `${filename}.${defaultFormat}`}
       </button>
     </div>

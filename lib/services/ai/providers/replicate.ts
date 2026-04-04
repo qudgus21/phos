@@ -38,23 +38,23 @@ function parseReplicateError(error?: string | null): {
       return {
         code,
         retryable: false,
-        userMessage: "이미지 처리에 필요한 메모리가 부족합니다. 이미지 크기를 줄여주세요.",
+        userMessage: "Not enough memory to process. Please reduce the image size.",
       };
     case "E6716": // 시작 타임아웃
-      return { code, retryable: true, userMessage: "일시적 오류입니다. 다시 시도해주세요." };
+      return { code, retryable: true, userMessage: "Temporary error. Please try again." };
     case "E9825": // 파일 업로드 실패
-      return { code, retryable: true, userMessage: "파일 업로드에 실패했습니다. 다시 시도해주세요." };
+      return { code, retryable: true, userMessage: "File upload failed. Please try again." };
     case "E9243": // 시작 에러
-      return { code, retryable: true, userMessage: "일시적 오류입니다. 다시 시도해주세요." };
+      return { code, retryable: true, userMessage: "Temporary error. Please try again." };
     case "E8765": // 헬스체크 실패
-      return { code, retryable: true, userMessage: "AI 모델이 일시적으로 사용할 수 없습니다. 다시 시도해주세요." };
+      return { code, retryable: true, userMessage: "AI model temporarily unavailable. Please try again." };
     case "E4875": // 웹훅 URL 비어있음
-      return { code, retryable: false, userMessage: "AI 이미지 생성에 실패했습니다." };
+      return { code, retryable: false, userMessage: "AI image generation failed." };
     case "E8367": // 비정상 종료
-      return { code, retryable: true, userMessage: "일시적 오류입니다. 다시 시도해주세요." };
+      return { code, retryable: true, userMessage: "Temporary error. Please try again." };
     case "E1000": // 알 수 없는 에러
     default:
-      return { code, retryable: true, userMessage: "일시적 오류입니다. 다시 시도해주세요." };
+      return { code, retryable: true, userMessage: "Temporary error. Please try again." };
   }
 }
 
@@ -68,7 +68,7 @@ export class ReplicateProvider implements AIProvider {
     const apiToken = process.env.REPLICATE_API_TOKEN;
     if (!apiToken) {
       throw new ApiError(
-        "REPLICATE_API_TOKEN 환경변수가 설정되지 않았습니다",
+        "REPLICATE_API_TOKEN environment variable is not set",
         500
       );
     }
@@ -135,7 +135,7 @@ export class ReplicateProvider implements AIProvider {
       if (prediction.status === "succeeded") {
         const outputUrls = this.extractUrls(prediction.output);
         if (outputUrls.length === 0) {
-          throw new ApiError("Replicate에서 결과 URL을 받지 못했습니다", 502);
+          throw new ApiError("No result URL returned from Replicate", 502);
         }
         return {
           outputUrls,
@@ -155,7 +155,7 @@ export class ReplicateProvider implements AIProvider {
           prediction.id
         );
         if (attempt < maxGenerationRetries) continue;
-        throw new ApiError("AI 이미지 생성이 취소되었습니다. 다시 시도해주세요.", 502);
+        throw new ApiError("AI image generation was canceled. Please try again.", 502);
       }
 
       // failed — 에러 코드별 분기
@@ -175,7 +175,7 @@ export class ReplicateProvider implements AIProvider {
       throw new ApiError(userMessage, 502);
     }
 
-    throw new ApiError("AI 이미지 생성에 실패했습니다", 502);
+    throw new ApiError("AI image generation failed", 502);
   }
 
   private async fetchWithRetry(
@@ -196,13 +196,13 @@ export class ReplicateProvider implements AIProvider {
       if (!res.ok) {
         const text = await res.text();
         console.error(`[replicate] API error (${res.status}):`, text);
-        throw new ApiError("AI 이미지 생성 중 오류가 발생했습니다", 502);
+        throw new ApiError("AI image generation error", 502);
       }
 
       return res;
     }
 
-    throw new ApiError("Replicate API 재시도 횟수 초과 (429)", 502);
+    throw new ApiError("Replicate API retry limit exceeded (429)", 502);
   }
 
   private async poll(
@@ -212,7 +212,7 @@ export class ReplicateProvider implements AIProvider {
   ): Promise<ReplicatePrediction> {
     const pollUrl = prediction.urls?.get;
     if (!pollUrl) {
-      throw new ApiError("Replicate polling URL이 없습니다", 502);
+      throw new ApiError("Replicate polling URL is missing", 502);
     }
 
     for (let i = 0; i < maxAttempts; i++) {
@@ -223,7 +223,7 @@ export class ReplicateProvider implements AIProvider {
       });
 
       if (!res.ok) {
-        throw new ApiError(`Replicate polling 오류 (${res.status})`, 502);
+        throw new ApiError(`Replicate polling error (${res.status})`, 502);
       }
 
       const updated = (await res.json()) as ReplicatePrediction;
@@ -237,7 +237,7 @@ export class ReplicateProvider implements AIProvider {
       }
     }
 
-    throw new ApiError("Replicate 생성 시간 초과", 504);
+    throw new ApiError("Replicate generation timed out", 504);
   }
 
   private extractUrls(

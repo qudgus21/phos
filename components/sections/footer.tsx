@@ -1,34 +1,39 @@
 import Link from "next/link";
 import { Zap, Mail } from "lucide-react";
+import type { Dictionary } from "@/lib/i18n";
 
-const footerSections = [
-  {
-    title: "AI 기능",
-    links: [
-      { label: "이미지 편집", href: "/image-edit" },
-      { label: "피부 보정", href: "/retouching" },
-      { label: "얼굴 변경", href: "/face-edit" },
-    ],
-  },
-  {
-    title: "바로가기",
-    links: [
-      { label: "홈", href: "/" },
-      { label: "가격", href: "/pricing" },
-      { label: "문의하기", href: "/contact" },
-    ],
-  },
-  {
-    title: "정책",
-    links: [
-      { label: "이용약관", href: "/terms" },
-      { label: "개인정보처리방침", href: "/privacy" },
-      { label: "데이터 삭제", href: "/data-deletion" },
-    ],
-  },
-];
+interface FooterProps {
+  dict: Dictionary;
+  locale: string;
+}
 
-export function Footer() {
+export function Footer({ dict, locale }: FooterProps) {
+  const footerSections = [
+    {
+      title: dict.footer.sections.aiFeatures,
+      links: [
+        { label: dict.footer.links.imageEdit, href: `/${locale}/image-edit` },
+        { label: dict.footer.links.skinRetouch, href: `/${locale}/retouching` },
+        { label: dict.footer.links.faceEdit, href: `/${locale}/face-edit` },
+      ],
+    },
+    {
+      title: dict.footer.sections.quickLinks,
+      links: [
+        { label: dict.footer.links.home, href: `/${locale}` },
+        { label: dict.footer.links.pricing, href: `/${locale}/pricing` },
+        { label: dict.footer.links.contact, href: `/${locale}/contact` },
+      ],
+    },
+    {
+      title: dict.footer.sections.policies,
+      links: [
+        { label: dict.footer.links.terms, href: `/${locale}/terms` },
+        { label: dict.footer.links.privacy, href: `/${locale}/privacy` },
+        { label: dict.footer.links.dataDeletion, href: `/${locale}/data-deletion` },
+      ],
+    },
+  ];
   return (
     <footer className="border-t border-border bg-card">
       <div className="max-w-6xl mx-auto px-4 py-10 md:py-12">
@@ -44,7 +49,7 @@ export function Footer() {
               </h3>
             </div>
             <p className="text-sm text-muted-foreground max-w-xs">
-              AI 기반 이미지 편집, 보정, 생성 도구
+              {dict.footer.brand}
             </p>
           </div>
 
@@ -76,11 +81,11 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Phos AI. All rights reserved.
           </p>
           <Link
-            href="/contact"
+            href={`/${locale}/contact`}
             className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Mail className="w-3.5 h-3.5" />
-            문의하기
+            {dict.footer.contactLink}
           </Link>
         </div>
       </div>

@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { Sparkles, PenLine, ImagePlus, Zap, ZoomIn, Plus, X, Loader2 } from "lucide-react";
+import { Sparkles, PenLine, ImagePlus, Zap, ZoomIn, Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SAMPLES } from "@/lib/constants/samples";
 import { DownloadButton, LightboxDownloadButton } from "@/components/ui/download-button";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 /** 이미지 최적화 우회 모드 (A/B 비교용) — 원본 그대로 unoptimized 표시 */
 const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
@@ -16,11 +17,6 @@ const SKIP_OPTIMIZER = process.env.NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER === "true";
 const isOptimizedUrl = (url: string) =>
   SKIP_OPTIMIZER || url.includes("images.phos.studio/") || url.includes("r2.dev/") || url.includes("supabase.co/storage/");
 
-const WORKFLOW_STEPS = [
-  { icon: PenLine, label: "프롬프트 입력" },
-  { icon: ImagePlus, label: "참조 이미지" },
-  { icon: Zap, label: "실행" },
-];
 
 
 interface ImageEditResultPanelProps {
@@ -68,18 +64,22 @@ function ImageActionBar({
   src,
   onZoom,
   onAddToInput,
+  zoomLabel,
+  addToRefLabel,
 }: {
   src: string;
   onZoom: () => void;
   onAddToInput?: (src: string) => void;
+  zoomLabel: string;
+  addToRefLabel: string;
 }) {
   return (
     <div className="absolute inset-x-0 bottom-0 flex justify-center p-6 opacity-0 group-hover:opacity-100 transition-opacity z-10">
       <div className="flex items-center gap-2 px-3 py-2 bg-black/70 backdrop-blur-md rounded-xl">
-        <ActionButton icon={ZoomIn} label="확대" onClick={(e) => { e.stopPropagation(); onZoom(); }} />
+        <ActionButton icon={ZoomIn} label={zoomLabel} onClick={(e) => { e.stopPropagation(); onZoom(); }} />
         <DownloadButton src={src} />
         {onAddToInput && (
-          <ActionButton icon={Plus} label="참조에 추가" onClick={(e) => { e.stopPropagation(); onAddToInput(src); }} />
+          <ActionButton icon={Plus} label={addToRefLabel} onClick={(e) => { e.stopPropagation(); onAddToInput(src); }} />
         )}
       </div>
     </div>
@@ -111,7 +111,7 @@ function RotatingText({ texts, interval = 4000 }: { texts: string[]; interval?: 
 }
 
 /* ── 프로그레시브 블러 플레이스홀더 ── */
-function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase = "generating" }: { count: number; inputImage?: string | null; willUpscale?: boolean; phase?: "generating" | "loading" }) {
+function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase = "generating", savingLabel, upscalingLabel, generatingLabel, loadingResultLabel, upscalingResultLabel, waitLabel, makingLabel }: { count: number; inputImage?: string | null; willUpscale?: boolean; phase?: "generating" | "loading"; savingLabel: string; upscalingLabel: string; generatingLabel: string; loadingResultLabel: string; upscalingResultLabel: string; waitLabel: string; makingLabel: string }) {
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const startTimeRef = useRef(Date.now());
@@ -200,10 +200,10 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
       <div className="text-center space-y-1.5">
         <p className="text-base font-bold text-foreground">
           {phase === "loading"
-            ? "저장 중"
+            ? savingLabel
             : willUpscale && elapsed > 25
-              ? "업스케일 중"
-              : "이미지 생성 중"}
+              ? upscalingLabel
+              : generatingLabel}
         </p>
         <motion.p
           className="text-sm font-medium text-foreground/70"
@@ -213,14 +213,14 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
           <AnimatePresence mode="wait">
             {phase === "loading" ? (
               <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                결과를 불러오고 있습니다...
+                {loadingResultLabel}
               </motion.span>
             ) : willUpscale && elapsed > 25 ? (
               <motion.span key="upscale" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                고해상도로 변환하고 있습니다...
+                {upscalingResultLabel}
               </motion.span>
             ) : (
-              <RotatingText texts={["잠시만 기다려 주세요", "이미지를 만들고 있어요"]} interval={5000} />
+              <RotatingText texts={[waitLabel, makingLabel]} interval={5000} />
             )}
           </AnimatePresence>
         </motion.p>
@@ -263,7 +263,7 @@ function GeneratingPlaceholder({ count, inputImage, willUpscale = false, phase =
 }
 
 /* ── 확대 모달 (라이트박스) ── */
-function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
+function LightboxModal({ src, onClose, closeLabel, zoomAlt }: { src: string; onClose: () => void; closeLabel: string; zoomAlt: string }) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -289,7 +289,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="닫기"
+          aria-label={closeLabel}
           className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer z-10"
         >
           <X className="w-5 h-5 text-white" />
@@ -301,7 +301,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
           exit={{ scale: 0.92, opacity: 0 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
           src={src}
-          alt="확대 보기"
+          alt={zoomAlt}
           className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
           onClick={(e) => e.stopPropagation()}
         />
@@ -322,6 +322,7 @@ function LightboxModal({ src, onClose }: { src: string; onClose: () => void }) {
 }
 
 export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, originalUrls, isGenerating, generatingCount = 1, generatingInputImage, generatingScale = 0 }: ImageEditResultPanelProps) {
+  const dict = useDictionary();
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
 
   // display_urls가 있으면 사용, 없으면 샘플 fallback
@@ -363,7 +364,7 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
       <div className="hidden lg:block px-4 py-3 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
           <Sparkles className="w-4 h-4 text-secondary" />
-          결과
+          {dict.tools.resultPanel.resultHeader}
         </h2>
       </div>
 
@@ -373,12 +374,24 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
       )}
 
       {showPlaceholder ? (
-        <GeneratingPlaceholder count={generatingCount} inputImage={generatingInputImage} willUpscale={generatingScale > 1} phase={isImageLoading ? "loading" : "generating"} />
+        <GeneratingPlaceholder
+          count={generatingCount}
+          inputImage={generatingInputImage}
+          willUpscale={generatingScale > 1}
+          phase={isImageLoading ? "loading" : "generating"}
+          savingLabel={dict.tools.resultPanel.saving}
+          upscalingLabel={dict.tools.resultPanel.upscaling}
+          generatingLabel={dict.tools.resultPanel.generating}
+          loadingResultLabel={dict.tools.resultPanel.loadingResult}
+          upscalingResultLabel={dict.tools.resultPanel.upscalingResult}
+          waitLabel={dict.tools.resultPanel.waitHint}
+          makingLabel={dict.tools.resultPanel.makingImageHint}
+        />
       ) : outputs.length === 1 ? (
         <div className="relative flex-1 min-h-0 p-4 group">
           <Image
             src={outputs[0]}
-            alt="결과"
+            alt={dict.tools.resultPanel.resultHeader}
             fill
             priority
             unoptimized={isOptimizedUrl(outputs[0])}
@@ -389,6 +402,8 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
             src={originals[0]}
             onZoom={() => setLightboxSrc(originals[0])}
             onAddToInput={onAddToInput}
+            zoomLabel={dict.tools.resultPanel.zoomLabel}
+            addToRefLabel={dict.tools.imageEdit.addToRef}
           />
         </div>
       ) : outputs.length > 1 ? (
@@ -406,7 +421,7 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
                   <>
                     <Image
                       src={outputs[i]}
-                      alt={`결과 ${i + 1}`}
+                      alt={`${dict.tools.resultPanel.resultHeader} ${i + 1}`}
                       fill
                       priority={i === 0}
                       unoptimized={isOptimizedUrl(outputs[i])}
@@ -417,6 +432,8 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
                       src={originals[i]}
                       onZoom={() => setLightboxSrc(originals[i])}
                       onAddToInput={onAddToInput}
+                      zoomLabel={dict.tools.resultPanel.zoomLabel}
+                      addToRefLabel={dict.tools.imageEdit.addToRef}
                     />
                   </>
                 ) : null}
@@ -431,15 +448,19 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
             <Sparkles className="w-8 h-8 text-muted-foreground/70 dark:text-muted-foreground/50" />
           </div>
           <div className="text-center space-y-1.5">
-            <p className="text-sm font-semibold text-foreground">AI 생성 결과</p>
+            <p className="text-sm font-semibold text-foreground">{dict.tools.resultPanel.aiResult}</p>
             <p className="text-[13px] text-muted-foreground leading-relaxed">
-              프롬프트를 입력하고 실행하면
+              {dict.tools.resultPanel.emptyPromptHint}
               <br />
-              결과가 여기에 표시됩니다
+              {dict.tools.resultPanel.emptyResultHint}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {WORKFLOW_STEPS.map((step, i) => (
+            {([
+              { icon: PenLine, label: dict.tools.imageEdit.workflowSteps[0] },
+              { icon: ImagePlus, label: dict.tools.imageEdit.workflowSteps[1] },
+              { icon: Zap, label: dict.tools.imageEdit.workflowSteps[2] },
+            ] as { icon: React.ComponentType<{ className?: string }>; label: string }[]).map((step, i, arr) => (
               <div key={step.label} className="flex items-center gap-3">
                 <div className="flex flex-col items-center gap-1.5">
                   <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
@@ -449,7 +470,7 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
                     {step.label}
                   </span>
                 </div>
-                {i < WORKFLOW_STEPS.length - 1 && (
+                {i < arr.length - 1 && (
                   <span className="text-muted-foreground/50 dark:text-muted-foreground/30 text-xs mb-5">→</span>
                 )}
               </div>
@@ -460,7 +481,12 @@ export function ImageEditResultPanel({ sampleId, onAddToInput, displayUrls, orig
 
       {/* Lightbox Modal */}
       {lightboxSrc && (
-        <LightboxModal src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+        <LightboxModal
+          src={lightboxSrc}
+          onClose={() => setLightboxSrc(null)}
+          closeLabel={dict.tools.resultPanel.closeLabel}
+          zoomAlt={dict.tools.resultPanel.zoomAlt}
+        />
       )}
     </div>
   );

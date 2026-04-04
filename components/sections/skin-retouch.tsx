@@ -11,6 +11,12 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getBlur } from "@/lib/constants/blur-placeholders";
+import type { Dictionary } from "@/lib/i18n";
+
+interface SkinRetouchProps {
+  dict: Dictionary;
+  locale: string;
+}
 
 const samples = [
   { id: "sample6" },
@@ -29,7 +35,7 @@ function getSampleImages(id: string) {
   };
 }
 
-export function SkinRetouch() {
+export function SkinRetouch({ dict, locale }: SkinRetouchProps) {
   const [selected, setSelected] = useState("sample6");
   const { sliderPos, setSliderPos, sliderProps } = useSlider(70);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -100,10 +106,10 @@ export function SkinRetouch() {
       <div ref={sweepRef}>
       <motion.div variants={fadeInUp} className="text-center mb-6">
         <h2 className="text-3xl md:text-h3 font-black text-foreground mb-3 font-display">
-          보정, <span className="gradient-text">이 정도 차이</span>
+          {dict.features.skinRetouch.title} <span className="gradient-text">{dict.features.skinRetouch.titleAccent}</span>
         </h2>
         <p className="text-lg text-muted-foreground">
-          보정 전후를 직접 비교해보세요.
+          {dict.features.skinRetouch.subtitle}
         </p>
       </motion.div>
 
@@ -125,7 +131,7 @@ export function SkinRetouch() {
           >
             <Image
               src={getSampleImages(s.id).thumbnail}
-              alt="보정 샘플"
+              alt={dict.features.skinRetouch.sampleAlt}
               fill
               className="object-cover"
               sizes="40px"
@@ -171,7 +177,7 @@ export function SkinRetouch() {
             {/* After */}
             <Image
               src={images.after}
-              alt="보정 후"
+              alt={dict.features.skinRetouch.after}
               fill
               className="object-cover"
               draggable={false}
@@ -187,7 +193,7 @@ export function SkinRetouch() {
             >
               <Image
                 src={images.before}
-                alt="보정 전"
+                alt={dict.features.skinRetouch.before}
                 fill
                 className="object-cover"
                 draggable={false}
@@ -219,13 +225,13 @@ export function SkinRetouch() {
               className="absolute top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-white text-xs font-bold transition-opacity duration-200"
               style={{ left: "3%", opacity: sliderPos > 15 ? 1 : 0 }}
             >
-              Before
+              {dict.features.skinRetouch.before}
             </div>
             <div
               className="absolute top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-white text-xs font-bold transition-opacity duration-200"
               style={{ right: "3%", opacity: sliderPos < 85 ? 1 : 0 }}
             >
-              After
+              {dict.features.skinRetouch.after}
             </div>
           </div>
 
@@ -237,7 +243,7 @@ export function SkinRetouch() {
             )}>
               <div className="absolute top-2 left-2 z-10">
                 <Badge variant="outline" className="text-[10px] bg-black/50 text-white border-white/20 backdrop-blur-sm">
-                  Before
+                  {dict.features.skinRetouch.before}
                 </Badge>
               </div>
               <div
@@ -255,7 +261,7 @@ export function SkinRetouch() {
             )}>
               <div className="absolute top-2 left-2 z-10">
                 <Badge variant="outline" className="text-[10px] bg-black/50 text-white border-white/20 backdrop-blur-sm">
-                  After
+                  {dict.features.skinRetouch.after}
                 </Badge>
               </div>
               <div
@@ -271,7 +277,7 @@ export function SkinRetouch() {
               "text-xs text-center transition-colors duration-300",
               isHovering ? "text-primary" : "text-muted-foreground"
             )}>
-              {isHovering ? "마우스를 움직여 디테일 비교" : "슬라이더 위에서 마우스를 움직여보세요"}
+              {isHovering ? dict.features.skinRetouch.hoverHint : dict.features.skinRetouch.sliderHint}
             </p>
           </div>
         </motion.div>
@@ -280,10 +286,10 @@ export function SkinRetouch() {
       {/* Micro CTA */}
       <motion.div variants={fadeInUp} className="text-center mt-6">
         <Link
-          href="/retouching"
+          href={`/${locale}/retouching`}
           className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-base transition-all group"
         >
-          내 사진으로 확인하기
+          {dict.features.skinRetouch.cta}
           <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </motion.div>

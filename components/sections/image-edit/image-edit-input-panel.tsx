@@ -13,6 +13,7 @@ import { IMAGE_EDIT_MODELS, getImageEditCredits } from "@/lib/services/ai/models
 import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { compressImageForInput } from "@/lib/utils/compress-image";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface UploadedImage {
   file: File | null;
@@ -36,7 +37,7 @@ const ALL_SIZE_OPTIONS = [
   { value: "2K", label: "2K" },
   { value: "3K", label: "3K" },
   { value: "4K", label: "4K" },
-  { value: "custom", label: "커스텀" },
+  { value: "custom", label: "" },
 ];
 
 const RATIO_OPTIONS = [
@@ -81,6 +82,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { requireAuth, loginModal } = useRequireAuth();
+  const dict = useDictionary();
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
 
   const [model, setModelRaw] = useState(MODEL_OPTIONS[0].value);
@@ -101,7 +103,10 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const currentModelDef = IMAGE_EDIT_MODELS.find((m) => m.id === model);
   const maxImages = currentModelDef?.maxImages ?? DEFAULT_MAX_IMAGES;
   // 모델이 네이티브 지원하는 크기만 표시 (배율은 Real-ESRGAN으로 별도 처리)
-  const sizeOptions = ALL_SIZE_OPTIONS.filter(
+  const sizeOptionsWithLabels = ALL_SIZE_OPTIONS.map((opt) =>
+    opt.value === "custom" ? { ...opt, label: dict.tools.imageEdit.custom } : opt
+  );
+  const sizeOptions = sizeOptionsWithLabels.filter(
     (opt) => currentModelDef?.supportedSizes.includes(opt.value)
   );
 
@@ -208,12 +213,12 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   // 3-1: 생성 핸들러 추출 + 2-5: Cmd+Enter 단축키
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
-      toast("프롬프트를 입력해주세요", "warning");
+      toast(dict.tools.imageEdit.promptRequired, "warning");
       return;
     }
     if (isGenerating) return;
     if (images.some((img) => img.loading)) {
-      toast("이미지 처리 중입니다. 잠시 후 다시 시도해주세요", "warning");
+      toast(dict.common.errors.imageProcessing, "warning");
       return;
     }
     setIsGenerating(true);
@@ -264,7 +269,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       });
       const data = await res.json();
       if (!data.success) {
-        throw new Error(data.error?.message ?? "생성에 실패했습니다");
+        throw new Error(data.error?.message ?? dict.common.errors.generationFailed);
       }
       // 임시 ID → 실제 historyId로 교체
       replaceHistoryId(queryClient, "image-edit", tempId, data.data.historyId);
@@ -286,7 +291,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
         })
       );
       toast(
-        err instanceof Error ? err.message : "생성에 실패했습니다",
+        err instanceof Error ? err.message : dict.common.errors.generationFailed,
         "error"
       );
     } finally {
@@ -415,7 +420,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       } else {
         setImages([]);
       }
-      toast("즐겨찾기를 불러왔습니다", "success");
+      toast(dict.tools.imageEdit.favoriteLoaded, "success");
     },
     getCurrentSettings: () => ({
       model,
@@ -522,10 +527,10 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
             <PenLine className="w-4 h-4 text-muted-foreground" />
-            입력
+            {dict.tools.imageEdit.input}
           </h2>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold bg-gradient-to-r from-[#A5B4FC] to-[#67E8F9] bg-clip-text text-transparent">모델 선택</span>
+          <span className="text-[11px] font-semibold bg-gradient-to-r from-[#A5B4FC] to-[#67E8F9] bg-clip-text text-transparent">{dict.tools.imageEdit.modelSelect}</span>
           <Dropdown
             options={MODEL_OPTIONS}
             value={model}
@@ -540,7 +545,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
         {/* Prompt */}
         <div className="space-y-1.5 shrink-0">
           <label className="text-sm font-semibold text-foreground">
-            프롬프트 <span className="text-error">*</span>
+            {dict.tools.imageEdit.prompt}
           </label>
           <div className="gradient-border-wrap rounded-lg flex">
             <textarea
@@ -549,12 +554,12 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                 if (e.target.value.length <= 2000) setPrompt(e.target.value);
               }}
               maxLength={2000}
-              placeholder="예시: 미니멀 카페, 자연광, 따뜻한 톤"
+              placeholder={dict.tools.imageEdit.promptPlaceholder}
               className={cn(fieldBase, "focus:ring-0 focus:border-transparent w-full px-3.5 py-3 min-h-[110px] resize-y placeholder:text-muted-foreground/70 dark:placeholder:text-muted-foreground/50")}
             />
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-[13px] text-muted-foreground">장소, 스타일, 조명을 구체적으로 입력하세요</p>
+            <p className="text-[13px] text-muted-foreground">{dict.tools.imageEdit.promptHint}</p>
             <span className={cn("text-[12px] tabular-nums", prompt.length >= 2000 ? "text-error" : "text-muted-foreground")}>
               {prompt.length}/2,000
             </span>
@@ -575,18 +580,18 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             multiple
             onChange={handleFileChange}
             className="hidden"
-            aria-label="참조 이미지 파일 선택"
+            aria-label={dict.tools.imageEdit.refFileAriaLabel}
           />
 
           <div className="flex items-center justify-between shrink-0">
-            <span className="text-sm text-card-foreground">참조 이미지 ({images.length}/{maxImages})</span>
+            <span className="text-sm text-card-foreground">{dict.tools.imageEdit.refImages.replace("{count}", String(images.length)).replace("{max}", String(maxImages))}</span>
             <button
               type="button"
               onClick={openFilePicker}
               disabled={images.length >= maxImages}
               className="px-3 py-1.5 text-xs font-semibold text-foreground rounded-lg border border-border bg-muted hover:border-[#A5B4FC]/40 hover:bg-[#A5B4FC]/10 hover:text-[#A5B4FC] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
             >
-              이미지 추가
+              {dict.tools.imageEdit.addImage}
             </button>
           </div>
 
@@ -638,7 +643,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                       ) : (
                         <img
                           src={img.previewUrl}
-                          alt={`참조 이미지 ${i + 1}`}
+                          alt={`${dict.tools.imageEdit.refImageAlt} ${i + 1}`}
                           className="w-full h-full object-cover pointer-events-none"
                         />
                       )}
@@ -689,7 +694,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                     className="flex flex-col items-center justify-center gap-1 aspect-square h-full rounded-lg border-2 border-dashed border-primary/30 dark:border-white/[0.18] bg-muted/30 hover:border-primary dark:hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4 text-[#A5B4FC]" />
-                    <span className="text-[10px] text-muted-foreground dark:text-muted-foreground/60">이미지 추가</span>
+                    <span className="text-[10px] text-muted-foreground dark:text-muted-foreground/60">{dict.tools.imageEdit.addImage}</span>
                   </button>
                 ))}
             </div>
@@ -701,7 +706,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
         {/* Additional Settings */}
         <div className="space-y-3 shrink-0">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-foreground">추가 설정</h3>
+            <h3 className="text-base font-bold text-foreground">{dict.tools.imageEdit.extraSettings}</h3>
             <button
               type="button"
               onClick={() => {
@@ -713,7 +718,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                 setImageCount(1);
               }}
               className="p-1 text-muted-foreground/70 dark:text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-pointer"
-              title="추가 설정 초기화"
+              title={dict.tools.imageEdit.extraSettingsReset}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -723,8 +728,8 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             {/* 해상도 · 비율 (+ 크기: custom일 때만) */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
-                <label className="text-sm font-semibold text-card-foreground w-[70px]">해상도</label>
-                <label className="text-sm font-semibold text-card-foreground w-[80px] ml-1">비율</label>
+                <label className="text-sm font-semibold text-card-foreground w-[70px]">{dict.tools.imageEdit.resolution}</label>
+                <label className="text-sm font-semibold text-card-foreground w-[80px] ml-1">{dict.tools.imageEdit.ratio}</label>
               </div>
               <div className="flex items-center gap-1.5">
                 <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px]" openDirection="above" />
@@ -738,7 +743,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                       type="button"
                       onClick={() => { setWidth(1024); setHeight(1024); }}
                       className="relative w-7 h-7 rounded border border-border bg-muted/50 hover:border-border/80 hover:bg-muted transition-colors cursor-pointer flex items-center justify-center"
-                      title="크기 초기화"
+                      title={dict.tools.imageEdit.resetButton}
                     >
                       <Ruler className="w-3 h-3 text-muted-foreground" />
                     </button>
@@ -750,7 +755,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             {/* 배율 */}
             {imageSize !== "custom" && (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-card-foreground shrink-0 w-14">배율</span>
+                <span className="text-sm text-card-foreground shrink-0 w-14">{dict.tools.imageEdit.scale}</span>
                 <input type="range" min={1} max={4} step={0.2} value={scale} onChange={(e) => setScale(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
                 <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{scaleDisplay}</span>
               </div>
@@ -758,9 +763,9 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
             {/* 수량 */}
             <div className="flex items-center gap-3">
-              <span className="text-sm text-card-foreground shrink-0 w-14">수량</span>
+              <span className="text-sm text-card-foreground shrink-0 w-14">{dict.tools.imageEdit.count}</span>
               <input type="range" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
-              <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{imageCount}장</span>
+              <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{imageCount}{dict.tools.imageEdit.countUnit}</span>
             </div>
           </div>
         </div>
@@ -770,7 +775,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       <div className="px-4 py-2.5 border-t border-border">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            이미지당 {creditCost} 크레딧
+            {dict.tools.imageEdit.creditsPerImage.replace("{credits}", String(creditCost))}
           </span>
           <div className="flex items-center gap-3">
             <button
@@ -778,7 +783,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
               onClick={() => setShowResetConfirm(true)}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
-              초기화
+              {dict.tools.imageEdit.resetButton}
             </button>
             <button
               type="button"
@@ -794,11 +799,11 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
               {isGenerating ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  생성 중...
+                  {dict.tools.imageEdit.generatingButton}
                 </>
               ) : (
                 <>
-                  생성하기
+                  {dict.tools.imageEdit.generateButton}
                   <span className="ml-2 inline-flex items-center gap-0.5 bg-white/20 rounded-full px-1.5 py-0.5 text-[11px] font-semibold">
                     <Zap className="w-2.5 h-2.5" />
                     {creditCost * imageCount}
@@ -826,9 +831,9 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
           setScale(1);
           setImageCount(1);
         }}
-        title="초기화"
-        description="입력한 프롬프트와 참조 이미지, 설정이 모두 초기화됩니다."
-        confirmLabel="초기화"
+        title={dict.tools.imageEdit.resetConfirmTitle}
+        description={dict.tools.imageEdit.resetConfirmDesc}
+        confirmLabel={dict.tools.imageEdit.resetConfirmLabel}
         variant="danger"
       />
       {loginModal}

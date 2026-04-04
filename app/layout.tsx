@@ -1,10 +1,8 @@
-import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 import { ToastProvider } from "@/components/ui/toast";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { Navigation } from "@/components/sections/navigation";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -25,34 +23,13 @@ const pretendard = localFont({
   fallback: ["system-ui", "sans-serif"],
 });
 
-export const metadata: Metadata = {
-  title: "Phos AI — AI 보정 SaaS",
-  description:
-    "AI 기반 이미지 보정, 편집, 생성 도구. 초단위 디테일, 클릭 한 번으로 전문가 급.",
-  metadataBase: new URL("https://phos.studio"),
-  openGraph: {
-    title: "Phos AI — AI 보정 SaaS",
-    description:
-      "AI 기반 이미지 보정, 편집, 생성 도구. 초단위 디테일, 클릭 한 번으로 전문가 급.",
-    siteName: "Phos AI",
-    locale: "ko_KR",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Phos AI — AI 보정 SaaS",
-    description:
-      "AI 기반 이미지 보정, 편집, 생성 도구. 초단위 디테일, 클릭 한 번으로 전문가 급.",
-  },
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html suppressHydrationWarning>
       <head>
         <link
           rel="preconnect"
@@ -78,7 +55,6 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <QueryProvider>
-            <Navigation />
             <ToastProvider>{children}</ToastProvider>
           </QueryProvider>
         </ThemeProvider>

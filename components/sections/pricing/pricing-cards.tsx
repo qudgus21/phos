@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
@@ -11,6 +12,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { useCreditsBalance } from "@/hooks/use-credits";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 type PricingTab = "monthly" | "onetime";
 
@@ -23,81 +25,6 @@ interface Plan {
   features: string[];
   ctaText: string;
 }
-
-const monthlyPlans: Plan[] = [
-  {
-    id: "free",
-    name: "Free",
-    price: 0,
-    credits: 120,
-    features: [
-      "120 크레딧",
-      "⏱️ 5분당 1회 생성 제한",
-      "피부보정(기본)",
-      "AI 업스케일링",
-      "고해상도 변환",
-      "즐겨찾기 3개",
-    ],
-    ctaText: "현재 플랜",
-  },
-  {
-    id: "basic",
-    name: "Basic",
-    price: 9,
-    credits: 2000,
-    features: [
-      "2,000 크레딧",
-      "⚡ 생성 쿨타임 없음",
-      "한 번에 4장까지 생성 가능",
-      "피부보정(기본)",
-      "AI 업스케일링",
-      "고해상도 변환",
-      "실시간 처리",
-      "즐겨찾기 10개",
-    ],
-    ctaText: "시작하기",
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: 19,
-    credits: 4400,
-    recommended: true,
-    features: [
-      "4,400 크레딧",
-      "⚡ 생성 쿨타임 없음",
-      "한 번에 4장까지 생성 가능",
-      "피부보정(기본)",
-      "피부보정(메이크업)",
-      "AI 업스케일링",
-      "고해상도 변환",
-      "실시간 처리",
-      "무제한 업로드",
-      "즐겨찾기 20개",
-    ],
-    ctaText: "시작하기",
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 29,
-    credits: 7100,
-    features: [
-      "7,100 크레딧",
-      "⚡ 생성 쿨타임 없음",
-      "한 번에 4장까지 생성 가능",
-      "피부보정(기본)",
-      "피부보정(메이크업)",
-      "AI 업스케일링",
-      "고해상도 변환",
-      "실시간 처리",
-      "무제한 업로드",
-      "즐겨찾기 무제한",
-      "베타기능",
-    ],
-    ctaText: "시작하기",
-  },
-];
 
 interface CreditPack {
   price: number;
@@ -137,12 +64,51 @@ interface PricingCardsProps {
 }
 
 export function PricingCards({ activeTab }: PricingCardsProps) {
+  const dict = useDictionary();
   const { user, requireAuth, loginModal } = useRequireAuth();
   const { data: creditInfo } = useCreditsBalance(!!user);
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const locale = pathname.split("/")[1] ?? "en";
   const [loadingProduct, setLoadingProduct] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(MODAL_INITIAL);
   const [resultModal, setResultModal] = useState<ModalState>(MODAL_INITIAL);
+
+  const monthlyPlans: Plan[] = [
+    {
+      id: "free",
+      name: "Free",
+      price: 0,
+      credits: 120,
+      features: dict.pricing.plans.free.features,
+      ctaText: dict.pricing.plans.free.cta,
+    },
+    {
+      id: "basic",
+      name: "Basic",
+      price: 9,
+      credits: 2000,
+      features: dict.pricing.plans.basic.features,
+      ctaText: dict.pricing.plans.basic.cta,
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      price: 19,
+      credits: 4400,
+      recommended: true,
+      features: dict.pricing.plans.pro.features,
+      ctaText: dict.pricing.plans.pro.cta,
+    },
+    {
+      id: "premium",
+      name: "Premium",
+      price: 29,
+      credits: 7100,
+      features: dict.pricing.plans.premium.features,
+      ctaText: dict.pricing.plans.premium.cta,
+    },
+  ];
 
   const currentPlanId = creditInfo?.plan?.id ?? "free";
   const scheduledPlanId = creditInfo?.scheduledPlanId ?? null;
@@ -169,6 +135,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
           productType,
           ...(planId && { planId }),
           ...(creditPackCredits && { creditPackCredits: String(creditPackCredits) }),
+          locale,
         }),
       });
 
@@ -199,15 +166,15 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
         // Realtime이 DB 변경 감지 시 자동 갱신 (invalidate 안 함 — 낙관적 업데이트 보호)
         setResultModal({
           open: true,
-          title: "업그레이드 완료!",
+          title: dict.tools.pricing.upgradeComplete,
           description: (
             <div className="space-y-1">
-              <p>{json.data.toPlan.toUpperCase()} 플랜이 활성화되었습니다.</p>
-              <p>추가 크레딧이 즉시 반영되었습니다.</p>
-              <p className="text-indigo-300">새로운 기능을 즐겨보세요!</p>
+              <p>{dict.tools.pricing.planActivated.replace("{plan}", json.data.toPlan.toUpperCase())}</p>
+              <p>{dict.tools.pricing.creditsAdded}</p>
+              <p className="text-indigo-300">{dict.tools.pricing.enjoyFeatures}</p>
             </div>
           ),
-          confirmLabel: "시작하기",
+          confirmLabel: dict.tools.pricing.startButton,
           variant: "default",
           onConfirm: () => {},
         });
@@ -221,14 +188,14 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
         }
         setResultModal({
           open: true,
-          title: "플랜 변경 예약 완료",
+          title: dict.tools.pricing.scheduleComplete,
           description: (
             <div className="space-y-1">
-              <p>다음 결제일부터 {json.data.toPlan.toUpperCase()} 플랜이 적용됩니다.</p>
-              <p>현재 크레딧은 이번 주기 끝까지 그대로 사용하실 수 있습니다.</p>
+              <p>{dict.tools.pricing.scheduleApplied.replace("{plan}", json.data.toPlan.toUpperCase())}</p>
+              <p>{dict.tools.pricing.scheduleCreditsNote}</p>
             </div>
           ),
-          confirmLabel: "확인",
+          confirmLabel: dict.common.confirm,
           variant: "default",
           onConfirm: () => {},
         });
@@ -236,9 +203,9 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
         queryClient.setQueryData(queryKeys.credits.balance, prevCreditInfo);
         setResultModal({
           open: true,
-          title: "오류",
-          description: json.error?.message ?? "결제 처리에 실패했습니다.",
-          confirmLabel: "확인",
+          title: dict.tools.pricing.errorTitle,
+          description: json.error?.message ?? dict.tools.pricing.networkErrorDesc,
+          confirmLabel: dict.common.confirm,
           variant: "danger",
           onConfirm: () => {},
         });
@@ -247,9 +214,9 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
       queryClient.setQueryData(queryKeys.credits.balance, prevCreditInfo);
       setResultModal({
         open: true,
-        title: "네트워크 오류",
-        description: "네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-        confirmLabel: "확인",
+        title: dict.tools.pricing.networkError,
+        description: dict.tools.pricing.networkErrorDesc,
+        confirmLabel: dict.common.confirm,
         variant: "danger",
         onConfirm: () => {},
       });
@@ -286,50 +253,50 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
 
         setModal({
           open: true,
-          title: "플랜 업그레이드",
+          title: dict.tools.pricing.upgradeTitle,
           description: (
             <div className="space-y-3 text-left mt-1">
               <p className="text-[13px] text-slate-300">
-                {planId === "basic" && "크레딧 걱정 없이 자유롭게 생성해보세요."}
-                {planId === "pro" && "더 많은 크레딧과 고급 기능으로 작업 효율을 높여보세요."}
-                {planId === "premium" && "최대 크레딧과 모든 기능을 제한 없이 사용하세요."}
+                {planId === "basic" && dict.tools.pricing.upgradeDesc.basic}
+                {planId === "pro" && dict.tools.pricing.upgradeDesc.pro}
+                {planId === "premium" && dict.tools.pricing.upgradeDesc.premium}
               </p>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between py-2 px-3.5 rounded-lg bg-white/5">
-                  <span className="text-slate-400 text-[13px]">현재 잔액</span>
-                  <span className="text-white font-semibold text-[13px]">{subBalance.toLocaleString()} 크레딧</span>
+                  <span className="text-slate-400 text-[13px]">{dict.tools.pricing.currentBalance}</span>
+                  <span className="text-white font-semibold text-[13px]">{subBalance.toLocaleString()} {dict.tools.pricing.credits}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 px-3.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                  <span className="text-indigo-300 text-[13px]">추가될 크레딧 (남은 {remainingDays}일 비례)</span>
-                  <span className="text-indigo-200 font-bold text-[13px]">+{proportionalDiff.toLocaleString()} 크레딧</span>
+                  <span className="text-indigo-300 text-[13px]">{dict.tools.pricing.additionalCredits.replace("{days}", String(remainingDays))}</span>
+                  <span className="text-indigo-200 font-bold text-[13px]">+{proportionalDiff.toLocaleString()} {dict.tools.pricing.credits}</span>
                 </div>
               </div>
               <p className="text-[11px] text-slate-500">
-                남은 기간에 비례하여 차액 청구 · 결제일 변경 없음
+                {dict.tools.pricing.proportionalNote}
               </p>
             </div>
           ),
-          confirmLabel: "업그레이드",
+          confirmLabel: dict.tools.pricing.upgradeConfirm,
           variant: "default",
           onConfirm: () => executeCheckout("subscription", planId),
         });
       } else {
         setModal({
           open: true,
-          title: "플랜 다운그레이드",
+          title: dict.tools.pricing.downgradeTitle,
           description: (
             <div className="space-y-2 text-left mt-1">
               <div className="flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                <span className="text-[13px]">현재 크레딧은 이번 주기 끝까지 그대로 사용 가능</span>
+                <span className="text-[13px]">{dict.tools.pricing.downgradeCreditsNote}</span>
               </div>
               <div className="flex items-start gap-2.5">
                 <CalendarClock className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                <span className="text-[13px]">다음 결제일부터 <strong className="text-white">{targetPlan?.name}</strong> 플랜 적용</span>
+                <span className="text-[13px]">{dict.tools.pricing.downgradeScheduleNote.replace("{plan}", targetPlan?.name ?? "")}</span>
               </div>
             </div>
           ),
-          confirmLabel: "변경 예약",
+          confirmLabel: dict.tools.pricing.scheduleConfirm,
           variant: "danger",
           onConfirm: () => executeCheckout("subscription", planId),
         });
@@ -354,9 +321,9 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
       } else {
         setResultModal({
           open: true,
-          title: "오류",
-          description: json.error?.message ?? "포털 접속에 실패했습니다.",
-          confirmLabel: "확인",
+          title: dict.tools.pricing.errorTitle,
+          description: json.error?.message ?? dict.tools.pricing.portalError,
+          confirmLabel: dict.common.confirm,
           variant: "danger",
           onConfirm: () => {},
         });
@@ -364,9 +331,9 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
     } catch {
       setResultModal({
         open: true,
-        title: "네트워크 오류",
-        description: "네트워크 오류가 발생했습니다.",
-        confirmLabel: "확인",
+        title: dict.tools.pricing.networkError,
+        description: dict.tools.pricing.networkErrorDesc,
+        confirmLabel: dict.common.confirm,
         variant: "danger",
         onConfirm: () => {},
       });
@@ -398,7 +365,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
                   ${pack.price}
                 </p>
                 <p className="text-sm text-muted-foreground mb-6">
-                  {pack.label} 크레딧
+                  {pack.label} {dict.tools.pricing.credits}
                 </p>
                 <button
                   disabled={isLoading}
@@ -411,7 +378,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
                     isLoading && "opacity-70 cursor-not-allowed"
                   )}
                 >
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "구매하기"}
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : dict.tools.pricing.buyButton}
                 </button>
               </motion.div>
             );
@@ -459,20 +426,20 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
                 <>
                   <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-indigo-500 to-violet-500" />
                   <Badge variant="primary" className="absolute -top-3 right-5 bg-primary text-white">
-                    추천
+                    {dict.tools.pricing.recommendedBadge}
                   </Badge>
                 </>
               )}
 
               {isCurrentPlan && !isFree && (
                 <Badge className="absolute -top-3 left-5 bg-emerald-500 text-white">
-                  현재 플랜
+                  {dict.tools.pricing.currentPlanBadge}
                 </Badge>
               )}
 
               {scheduledPlanId === plan.id && !isCurrentPlan && (
                 <Badge className="absolute -top-3 left-5 bg-amber-500 text-white">
-                  다음 달부터 적용
+                  {dict.tools.pricing.scheduledBadge}
                 </Badge>
               )}
 
@@ -497,7 +464,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
                   disabled
                   className="w-full py-3 rounded-xl text-base font-bold bg-muted text-muted-foreground cursor-not-allowed"
                 >
-                  {isCurrentPlan ? "현재 플랜" : "기본 플랜"}
+                  {isCurrentPlan ? dict.tools.pricing.currentPlan : dict.tools.pricing.defaultPlan}
                 </button>
               ) : isCurrentPlan ? (
                 <button
@@ -509,7 +476,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      구독 관리
+                      {dict.tools.pricing.manageButton}
                       <ExternalLink className="w-4 h-4" />
                     </>
                   )}
@@ -531,12 +498,12 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
                   ) : isUpgradeTarget ? (
                     <>
                       <ArrowUp className="w-4 h-4" />
-                      업그레이드
+                      {dict.tools.pricing.upgradeButton}
                     </>
                   ) : isDowngradeTarget ? (
                     <>
                       <ArrowDown className="w-4 h-4" />
-                      다운그레이드
+                      {dict.tools.pricing.downgradeButton}
                     </>
                   ) : (
                     plan.ctaText

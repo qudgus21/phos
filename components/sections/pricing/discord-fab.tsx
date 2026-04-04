@@ -1,15 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 export function DiscordFab() {
+  const dict = useDictionary();
+
   return (
     <motion.a
       href="https://discord.gg/phos"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="디스코드 서버로 이동"
-      title="디스코드 서버로 이동"
+      aria-label={dict.pricing.discordLabel}
+      title={dict.pricing.discordLabel}
       className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-12 h-12 rounded-full bg-[#5865F2] text-white shadow-lg hover:brightness-110 transition-all cursor-pointer"
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}

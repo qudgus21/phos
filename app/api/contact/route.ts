@@ -19,9 +19,9 @@ const CATEGORIES = [
 
 const contactSchema = z.object({
   category: z.enum(CATEGORIES),
-  subject: z.string().min(1, "제목을 입력해주세요").max(200),
-  content: z.string().min(1, "내용을 입력해주세요").max(5000),
-  email: z.email("올바른 이메일을 입력해주세요").optional().or(z.literal("")),
+  subject: z.string().min(1, "Subject is required").max(200),
+  content: z.string().min(1, "Message is required").max(5000),
+  email: z.email("Invalid email address").optional().or(z.literal("")),
 });
 
 const MAX_IMAGES = 5;
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: {
             code: "RATE_LIMIT",
-            message: `너무 많은 문의를 보냈습니다. ${Math.ceil(rateResult.retryAfterSeconds / 60)}분 후에 다시 시도해주세요.`,
+            message: `Too many requests. Please try again in ${Math.ceil(rateResult.retryAfterSeconds / 60)} minutes.`,
           },
         },
         {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
             success: false,
             error: {
               code: "VALIDATION_ERROR",
-              message: "이미지 파일 크기는 5MB 이하여야 합니다.",
+              message: "Image file size must be 5 MB or less.",
             },
           },
           { status: 400 }
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
             success: false,
             error: {
               code: "VALIDATION_ERROR",
-              message: "JPG, PNG, GIF, WebP 파일만 첨부 가능합니다.",
+              message: "Only JPG, PNG, GIF, and WebP files are allowed.",
             },
           },
           { status: 400 }
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: { code: "INTERNAL_ERROR", message: "문의 저장에 실패했습니다." },
+          error: { code: "INTERNAL_ERROR", message: "Failed to save your message." },
         },
         { status: 500 }
       );
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: { code: "INTERNAL_ERROR", message: "서버 오류가 발생했습니다." },
+        error: { code: "INTERNAL_ERROR", message: "An unexpected error occurred." },
       },
       { status: 500 }
     );

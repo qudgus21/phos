@@ -31,13 +31,13 @@ async function fetchWithRetry(
     if (!res.ok) {
       const text = await res.text();
       console.error(`[upscaler] API error (${res.status}):`, text);
-      throw new ApiError("이미지 업스케일 중 오류가 발생했습니다", 502);
+      throw new ApiError("Image upscaling error", 502);
     }
 
     return res;
   }
 
-  throw new ApiError("Upscaler API 재시도 횟수 초과 (429)", 502);
+  throw new ApiError("Upscaler API retry limit exceeded (429)", 502);
 }
 
 /**
@@ -52,7 +52,7 @@ export async function upscaleImage(
 ): Promise<string> {
   const apiToken = process.env.REPLICATE_API_TOKEN;
   if (!apiToken) {
-    throw new ApiError("REPLICATE_API_TOKEN 환경변수가 설정되지 않았습니다", 500);
+    throw new ApiError("REPLICATE_API_TOKEN environment variable is not set", 500);
   }
 
   const scale = Math.min(Math.max(Math.round(scaleFactor), 2), 4);
@@ -84,11 +84,11 @@ export async function upscaleImage(
 
   if (prediction.status === "failed") {
     console.error("[upscaler] prediction failed:", prediction.error);
-    throw new ApiError("이미지 업스케일에 실패했습니다", 502);
+    throw new ApiError("Image upscaling failed", 502);
   }
 
   if (!prediction.output || typeof prediction.output !== "string") {
-    throw new ApiError("Upscaler에서 결과 URL을 받지 못했습니다", 502);
+    throw new ApiError("No result URL returned from Upscaler", 502);
   }
 
   return prediction.output;
@@ -116,7 +116,7 @@ async function poll(
 ): Promise<ReplicatePrediction> {
   const pollUrl = prediction.urls?.get;
   if (!pollUrl) {
-    throw new ApiError("Upscaler polling URL이 없습니다", 502);
+    throw new ApiError("Upscaler polling URL is missing", 502);
   }
 
   for (let i = 0; i < maxAttempts; i++) {
@@ -125,7 +125,7 @@ async function poll(
       headers: { Authorization: `Bearer ${apiToken}` },
     });
     if (!res.ok) {
-      throw new ApiError(`Upscaler polling 오류 (${res.status})`, 502);
+      throw new ApiError(`Upscaler polling error (${res.status})`, 502);
     }
     const updated = (await res.json()) as ReplicatePrediction;
     if (updated.status === "succeeded" || updated.status === "failed") {
@@ -133,5 +133,5 @@ async function poll(
     }
   }
 
-  throw new ApiError("Upscale 시간 초과", 504);
+  throw new ApiError("Upscale timed out", 504);
 }

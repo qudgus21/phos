@@ -12,11 +12,7 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { useCreditsBalance } from "@/hooks/use-credits";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import type { RetouchingInputPanelHandle } from "@/components/sections/retouching/retouching-input-panel";
-
-const TABS = [
-  { id: "samples", label: "샘플" },
-  { id: "favorites", label: "즐겨찾기" },
-];
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface RetouchingSampleSidebarProps {
   inputPanelRef: RefObject<RetouchingInputPanelHandle | null>;
@@ -29,6 +25,11 @@ export function RetouchingSampleSidebar({
   selectedSampleId,
   onSelectSample,
 }: RetouchingSampleSidebarProps) {
+  const dict = useDictionary();
+  const TABS = [
+    { id: "samples", label: dict.common.tabs.samples },
+    { id: "favorites", label: dict.common.tabs.favorites },
+  ];
   const [activeTab, setActiveTab] = useState("samples");
   const { toast } = useToast();
 
@@ -68,7 +69,7 @@ export function RetouchingSampleSidebar({
         excludedAreas: settings.excludedAreas,
       },
     });
-    toast("즐겨찾기에 저장했습니다", "success");
+    toast(dict.tools.favorites.saved, "success");
   }, [inputPanelRef, saveFavorite, toast]);
 
   const handleLoadFavorite = useCallback((fav: typeof favorites[0]) => {
@@ -128,7 +129,7 @@ export function RetouchingSampleSidebar({
             >
               <Image
                 src={sample.thumbnail}
-                alt={sample.label}
+                alt={dict.tools.retouching.sampleLabels[sample.id] ?? sample.label}
                 width={200}
                 height={200}
                 loading="lazy"
@@ -150,10 +151,10 @@ export function RetouchingSampleSidebar({
                   ? "border-border text-muted-foreground/60 dark:text-muted-foreground/40 cursor-not-allowed"
                   : "border-indigo-500/40 text-foreground bg-indigo-500/20 hover:bg-indigo-500/35 hover:border-indigo-500/60"
               )}
-              title={favFull ? `최대 ${maxFavorites}개` : "현재 설정 저장"}
+              title={favFull ? dict.tools.favorites.maxFavTitle.replace("{max}", String(maxFavorites)) : dict.tools.favorites.saveFavTitle}
             >
               <Plus className="w-3 h-3" />
-              저장 ({favorites.length}/{maxFavorites})
+              {dict.tools.favorites.countBadge.replace("{current}", String(favorites.length)).replace("{max}", String(maxFavorites))}
             </button>
 
             {/* 즐겨찾기 리스트 */}
@@ -165,7 +166,7 @@ export function RetouchingSampleSidebar({
               <div className="flex flex-col items-center justify-center pt-6 gap-1.5">
                 <Star className="w-5 h-5 text-muted-foreground/50 dark:text-muted-foreground/30" />
                 <p className="text-[10px] text-muted-foreground/70 dark:text-muted-foreground/50 text-center leading-tight">
-                  설정을 저장하면<br />여기에 표시됩니다
+                  {dict.tools.favorites.emptyHint.split("\n").map((l, i) => i === 0 ? <>{l}<br /></> : l)}
                 </p>
               </div>
             ) : (
@@ -231,17 +232,17 @@ export function RetouchingSampleSidebar({
         if (deletingFavId) {
           try {
             await deleteFavorite(deletingFavId);
-            toast("즐겨찾기를 삭제했습니다", "success");
+            toast(dict.tools.favorites.deleted, "success");
           } catch {
-            toast("삭제에 실패했습니다", "error");
+            toast(dict.tools.favorites.deleteFailed, "error");
           } finally {
             setDeletingFavId(null);
           }
         }
       }}
-      title="즐겨찾기 삭제"
-      description="이 즐겨찾기를 삭제하시겠습니까?"
-      confirmLabel="삭제"
+      title={dict.tools.favorites.deleteTitle}
+      description={dict.tools.favorites.deleteDesc}
+      confirmLabel={dict.common.delete}
       variant="danger"
     />
     {loginModal}

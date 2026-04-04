@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Star, Loader2, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { FaceEditFavoriteSaveModal } from "@/components/sections/face-edit/face-edit-favorite-save-modal";
 import { useFavorites } from "@/hooks/use-favorites";
@@ -33,7 +34,7 @@ export const FACE_EDIT_SAMPLES: FaceEditSampleData[] = [
   {
     id: "sample1",
     gender: "female",
-    label: "여성 글래머러스",
+    label: "sample1",
     thumbnail: "/images/face-edit/sample1/thumbnail.webp",
     before: "/images/face-edit/sample1/before.webp",
     after: "/images/face-edit/sample1/after.webp",
@@ -43,7 +44,7 @@ export const FACE_EDIT_SAMPLES: FaceEditSampleData[] = [
   {
     id: "sample2",
     gender: "male",
-    label: "남성 클린",
+    label: "sample2",
     thumbnail: "/images/face-edit/sample2/thumbnail.webp",
     before: "/images/face-edit/sample2/before.webp",
     after: "/images/face-edit/sample2/after.webp",
@@ -53,29 +54,27 @@ export const FACE_EDIT_SAMPLES: FaceEditSampleData[] = [
   {
     id: "sample3",
     gender: "male",
-    label: "남성 클린",
+    label: "sample3",
     thumbnail: "/images/face-edit/sample3/thumbnail.webp",
     before: "/images/face-edit/sample3/before.webp",
     after: "/images/face-edit/sample3/after.webp",
     mask: "/images/face-edit/sample3/mask.webp",
-
     settings: { gender: "male", strength: 0.7, scale: "auto" },
   },
   {
     id: "sample4",
     gender: "female",
-    label: "여성 스튜디오",
+    label: "sample4",
     thumbnail: "/images/face-edit/sample4/thumbnail.webp",
     before: "/images/face-edit/sample4/before.webp",
     after: "/images/face-edit/sample4/after.webp",
     mask: "/images/face-edit/sample4/mask.webp",
-
     settings: { gender: "female", strength: 0.8, scale: "auto" },
   },
   {
     id: "sample5",
     gender: "female",
-    label: "여성 내추럴",
+    label: "sample5",
     thumbnail: "/images/face-edit/sample5/thumbnail.webp",
     before: "/images/face-edit/sample5/before.webp",
     after: "/images/face-edit/sample5/after.webp",
@@ -85,7 +84,7 @@ export const FACE_EDIT_SAMPLES: FaceEditSampleData[] = [
   {
     id: "sample6",
     gender: "male",
-    label: "남성 내추럴",
+    label: "sample6",
     thumbnail: "/images/face-edit/sample6/thumbnail.webp",
     before: "/images/face-edit/sample6/before.webp",
     after: "/images/face-edit/sample6/after.webp",
@@ -94,10 +93,6 @@ export const FACE_EDIT_SAMPLES: FaceEditSampleData[] = [
   },
 ];
 
-const TABS = [
-  { id: "samples", label: "샘플" },
-  { id: "favorites", label: "즐겨찾기" },
-];
 
 interface FaceEditSampleSidebarProps {
   inputPanelRef: RefObject<FaceEditInputPanelHandle | null>;
@@ -108,6 +103,12 @@ interface FaceEditSampleSidebarProps {
 export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelectSample }: FaceEditSampleSidebarProps) {
   const [activeTab, setActiveTab] = useState("samples");
   const { toast } = useToast();
+  const dict = useDictionary();
+
+  const TABS = [
+    { id: "samples", label: dict.common.tabs.samples },
+    { id: "favorites", label: dict.common.tabs.favorites },
+  ];
 
   const { data: creditInfo } = useCreditsBalance(true);
   const planMaxFavorites = creditInfo?.plan?.maxFavorites ?? 3;
@@ -141,8 +142,8 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
         scale: settings.scale,
       },
     });
-    toast("즐겨찾기에 저장했습니다", "success");
-  }, [inputPanelRef, saveFavorite, toast]);
+    toast(dict.tools.favorites.saved, "success");
+  }, [inputPanelRef, saveFavorite, toast, dict]);
 
   const handleLoadFavorite = useCallback((fav: typeof favorites[0]) => {
     inputPanelRef.current?.loadFavorite(fav);
@@ -198,7 +199,7 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
             >
               <Image
                 src={sample.thumbnail}
-                alt={sample.label}
+                alt={dict.tools.faceEdit.sampleLabels[sample.id] ?? sample.label}
                 width={200}
                 height={200}
                 priority
@@ -216,7 +217,7 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
                 requireAuth(() => {
                   const settings = inputPanelRef.current?.getCurrentSettings();
                   if (!settings?.image) {
-                    toast("이미지를 업로드해주세요", "warning");
+                    toast(dict.common.errors.uploadRequired, "warning");
                     return;
                   }
                   setShowSaveModal(true);
@@ -229,10 +230,10 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
                   ? "border-border text-muted-foreground/60 dark:text-muted-foreground/40 cursor-not-allowed"
                   : "border-indigo-500/40 text-foreground bg-indigo-500/20 hover:bg-indigo-500/35 hover:border-indigo-500/60"
               )}
-              title={favFull ? `최대 ${maxFavorites}개` : "현재 설정 저장"}
+              title={favFull ? dict.tools.favorites.maxFavTitle.replace("{max}", String(maxFavorites)) : dict.tools.favorites.saveFavTitle}
             >
               <Plus className="w-3 h-3" />
-              저장 ({favorites.length}/{maxFavorites})
+              {dict.tools.favorites.countBadge.replace("{current}", String(favorites.length)).replace("{max}", String(maxFavorites))}
             </button>
 
             {/* 즐겨찾기 리스트 */}
@@ -243,8 +244,8 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
             ) : favorites.length === 0 ? (
               <div className="flex flex-col items-center justify-center pt-6 gap-1.5">
                 <Star className="w-5 h-5 text-muted-foreground/50 dark:text-muted-foreground/30" />
-                <p className="text-[10px] text-muted-foreground/70 dark:text-muted-foreground/50 text-center leading-tight">
-                  설정을 저장하면<br />여기에 표시됩니다
+                <p className="text-[10px] text-muted-foreground/70 dark:text-muted-foreground/50 text-center leading-tight whitespace-pre-line">
+                  {dict.tools.favorites.emptyHint}
                 </p>
               </div>
             ) : (
@@ -310,17 +311,17 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
         if (deletingFavId) {
           try {
             await deleteFavorite(deletingFavId);
-            toast("즐겨찾기를 삭제했습니다", "success");
+            toast(dict.tools.favorites.deleted, "success");
           } catch {
-            toast("삭제에 실패했습니다", "error");
+            toast(dict.tools.favorites.deleteFailed, "error");
           } finally {
             setDeletingFavId(null);
           }
         }
       }}
-      title="즐겨찾기 삭제"
-      description="이 즐겨찾기를 삭제하시겠습니까?"
-      confirmLabel="삭제"
+      title={dict.tools.favorites.deleteTitle}
+      description={dict.tools.favorites.deleteDesc}
+      confirmLabel={dict.common.delete}
       variant="danger"
     />
     {loginModal}

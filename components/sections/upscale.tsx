@@ -9,8 +9,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import type { Dictionary } from "@/lib/i18n";
 
-export function Upscale() {
+interface UpscaleProps {
+  dict: Dictionary;
+  locale: string;
+}
+
+export function Upscale({ dict, locale }: UpscaleProps) {
   const { sliderPos, setSliderPos, sliderProps } = useSlider(70);
   const [hasInteracted, setHasInteracted] = useState(false);
   const sweepRef = useRef<HTMLDivElement>(null);
@@ -69,12 +75,12 @@ export function Upscale() {
       <div ref={sweepRef}>
         <motion.div variants={fadeInUp} className="text-center mb-12">
           <h2 className="text-3xl md:text-h2 font-black text-foreground mb-4 font-display">
-            흐릿한 이미지, 선명하게
+            {dict.features.upscale.title}
           </h2>
           <p className="text-lg md:text-2xl text-muted-foreground">
-            최대{" "}
-            <span className="font-black text-primary">4x 업스케일</span>로
-            디테일을 복원합니다
+            {dict.features.upscale.subtitlePrefix}{" "}
+            <span className="font-black text-primary">{dict.features.upscale.subtitleHighlight}</span>
+            {dict.features.upscale.subtitleSuffix}
           </p>
         </motion.div>
 
@@ -98,14 +104,14 @@ export function Upscale() {
                 variant="primary"
                 className="backdrop-blur-md bg-black/50 border border-primary/10 text-white"
               >
-                4x 업스케일
+                {dict.features.upscale.badge}
               </Badge>
             </div>
 
             {/* After */}
             <Image
               src="/images/home/hero/hero-after.webp"
-              alt="업스케일 후"
+              alt={dict.features.upscale.afterAlt}
               fill
               className="object-cover"
               style={{ objectPosition: "center 25%" }}
@@ -121,7 +127,7 @@ export function Upscale() {
             >
               <Image
                 src="/images/home/hero/hero-before.webp"
-                alt="업스케일 전"
+                alt={dict.features.upscale.beforeAlt}
                 fill
                 className="object-cover blur-[1px]"
                 style={{ objectPosition: "center 25%" }}
@@ -165,13 +171,13 @@ export function Upscale() {
               className="absolute top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-white text-xs font-bold transition-opacity duration-200"
               style={{ left: "3%", opacity: sliderPos > 15 ? 1 : 0 }}
             >
-              Before
+              {dict.features.upscale.before}
             </div>
             <div
               className="absolute top-1/2 -translate-y-1/2 z-20 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-white text-xs font-bold transition-opacity duration-200"
               style={{ right: "3%", opacity: sliderPos < 85 ? 1 : 0 }}
             >
-              After
+              {dict.features.upscale.after}
             </div>
           </div>
         </motion.div>
@@ -179,10 +185,10 @@ export function Upscale() {
         {/* 마이크로 CTA */}
         <motion.div variants={fadeInUp} className="text-center mt-6">
           <Link
-            href="/image-edit"
+            href={`/${locale}/image-edit`}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-base transition-all group"
           >
-            이미지 편집 시작하기
+            {dict.features.upscale.cta}
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </motion.div>

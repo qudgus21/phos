@@ -1,19 +1,22 @@
-import { Clock, Upload, SlidersHorizontal, Play } from "lucide-react";
+"use client";
 
-const GUIDE_STEPS = [
-  { icon: Upload, label: "이미지 업로드" },
-  { icon: SlidersHorizontal, label: "옵션 설정" },
-  { icon: Play, label: "생성 실행" },
-];
+import { Clock, Upload, SlidersHorizontal, Play } from "lucide-react";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 export function RetouchingHistoryPanel() {
+  const dict = useDictionary();
+  const GUIDE_STEPS = [
+    { icon: Upload, label: dict.tools.history.retouchingSteps[0] },
+    { icon: SlidersHorizontal, label: dict.tools.history.retouchingSteps[1] },
+    { icon: Play, label: dict.tools.history.retouchingSteps[2] },
+  ];
   return (
     <div className="h-full rounded-2xl glass-card shadow-elevated flex flex-col overflow-hidden">
       {/* Header */}
       <div className="hidden lg:block px-4 py-3 border-b border-border">
         <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-foreground">
           <Clock className="w-4 h-4 text-muted-foreground" />
-          이미지 히스토리
+          {dict.tools.history.retouchingHistory}
         </h2>
       </div>
 
@@ -25,12 +28,10 @@ export function RetouchingHistoryPanel() {
           </div>
           <div className="text-center space-y-1">
             <p className="text-sm font-semibold text-card-foreground">
-              생성 결과
+              {dict.tools.history.retouchingEmpty}
             </p>
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
-              생성된 이미지가
-              <br />
-              이곳에 표시됩니다
+            <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-line">
+              {dict.tools.history.retouchingEmptyHint}
             </p>
           </div>
 

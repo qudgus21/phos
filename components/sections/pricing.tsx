@@ -8,54 +8,9 @@ import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Dictionary } from "@/lib/i18n";
 
 type PricingTab = "monthly" | "onetime";
-
-const monthlyPlans = [
-  {
-    name: "Basic",
-    description: "기본",
-    price: 9,
-    recommended: false,
-    features: [
-      "2,000 크레딧",
-      "업스케일링",
-      "피부 보정 (기본)",
-      "고해상도 변환",
-      "실시간 처리",
-    ],
-  },
-  {
-    name: "Pro",
-    description: "전체 기능",
-    price: 19,
-    recommended: true,
-    features: [
-      "4,400 크레딧",
-      "업스케일링",
-      "피부 보정 (기본)",
-      "피부 보정 (메이크업)",
-      "고해상도 변환",
-      "실시간 처리",
-      "무제한 업로드",
-    ],
-  },
-  {
-    name: "Premium",
-    description: "전체 기능 + 베타",
-    price: 29,
-    recommended: false,
-    features: [
-      "7,100 크레딧",
-      "업스케일링",
-      "피부 보정 (기본)",
-      "피부 보정 (메이크업)",
-      "고해상도 변환",
-      "실시간 처리",
-      "베타 기능 무료 제공",
-    ],
-  },
-];
 
 const onetimePacks = [
   { price: 5, credits: "700" },
@@ -65,19 +20,49 @@ const onetimePacks = [
   { price: 30, credits: "5,100" },
 ];
 
-export function Pricing() {
+interface PricingProps {
+  dict: Dictionary;
+  locale: string;
+}
+
+export function Pricing({ dict, locale }: PricingProps) {
   const [activeTab, setActiveTab] = useState<PricingTab>("monthly");
+
+  const monthlyPlans = [
+    {
+      name: "Basic",
+      description: dict.pricing.plans.basic.description,
+      price: 9,
+      recommended: false,
+      features: dict.pricing.plans.basic.features,
+      cta: dict.pricing.plans.basic.cta,
+    },
+    {
+      name: "Pro",
+      description: dict.pricing.plans.pro.description,
+      price: 19,
+      recommended: true,
+      features: dict.pricing.plans.pro.features,
+      cta: dict.pricing.plans.pro.cta,
+    },
+    {
+      name: "Premium",
+      description: dict.pricing.plans.premium.description,
+      price: 29,
+      recommended: false,
+      features: dict.pricing.plans.premium.features,
+      cta: dict.pricing.plans.premium.cta,
+    },
+  ];
 
   return (
     <SectionWrapper id="pricing">
-      {/* 섹션 헤더 */}
       <motion.div variants={fadeInUp} className="text-center mb-6">
         <h2 className="text-3xl md:text-h2 font-black text-foreground font-display">
-          요금제
+          {dict.pricing.title}
         </h2>
       </motion.div>
 
-      {/* 월 구독 / 단건구매 탭 */}
       <motion.div
         variants={fadeInUp}
         className="flex items-center justify-center gap-0 mb-8"
@@ -91,7 +76,7 @@ export function Pricing() {
               : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
           )}
         >
-          월 구독
+          {dict.pricing.tabs.monthly}
         </button>
         <button
           onClick={() => setActiveTab("onetime")}
@@ -102,12 +87,11 @@ export function Pricing() {
               : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
           )}
         >
-          단건구매
+          {dict.pricing.tabs.onetime}
         </button>
       </motion.div>
 
       {activeTab === "monthly" ? (
-        /* 월 구독 카드 */
         <motion.div
           variants={staggerContainer}
           initial="hidden"
@@ -135,7 +119,7 @@ export function Pricing() {
                     variant="primary"
                     className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white"
                   >
-                    추천
+                    {dict.pricing.recommended}
                   </Badge>
                 </>
               )}
@@ -151,7 +135,9 @@ export function Pricing() {
                 <span className="text-5xl font-black text-primary tabular-nums">
                   ${plan.price}
                 </span>
-                <span className="text-muted-foreground text-sm">/월</span>
+                <span className="text-muted-foreground text-sm">
+                  /{dict.pricing.perMonth}
+                </span>
               </div>
 
               <ul className="flex-1 space-y-3 mb-8">
@@ -167,16 +153,15 @@ export function Pricing() {
               </ul>
 
               <Link
-                href="/pricing"
+                href={`/${locale}/pricing`}
                 className="block w-full text-center py-3 rounded-xl font-bold transition-all bg-gradient-to-r from-indigo-600 to-violet-500 text-white hover:brightness-110"
               >
-                시작하기
+                {plan.cta}
               </Link>
             </motion.div>
           ))}
         </motion.div>
       ) : (
-        /* 단건구매 크레딧팩 */
         <motion.div
           variants={staggerContainer}
           initial="hidden"
@@ -195,19 +180,18 @@ export function Pricing() {
                 ${pack.price}
               </p>
               <p className="text-sm text-muted-foreground mb-6">
-                {pack.credits} 크레딧
+                {pack.credits} {dict.common.credits}
               </p>
               <Link
-                href="/pricing"
+                href={`/${locale}/pricing`}
                 className="w-full text-center py-3 rounded-xl text-sm font-bold transition-all bg-gradient-to-r from-indigo-600 to-violet-500 text-white hover:brightness-110"
               >
-                구매하기
+                {dict.pricing.packs.cta}
               </Link>
             </motion.div>
           ))}
         </motion.div>
       )}
-
     </SectionWrapper>
   );
 }

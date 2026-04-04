@@ -15,7 +15,7 @@ export const POST = withAuth(async (_request, { user }) => {
 
   if (!userRow?.polar_customer_id) {
     return NextResponse.json(
-      { success: false, error: { code: "NO_CUSTOMER", message: "결제 이력이 없습니다" } },
+      { success: false, error: { code: "NO_CUSTOMER", message: "No payment history found" } },
       { status: 404 }
     );
   }
@@ -34,7 +34,7 @@ export const POST = withAuth(async (_request, { user }) => {
   } catch (err) {
     console.error("[portal] Customer session creation failed:", err);
     return NextResponse.json(
-      { success: false, error: { code: "PORTAL_FAILED", message: "고객 포털 세션 생성에 실패했습니다" } },
+      { success: false, error: { code: "PORTAL_FAILED", message: "Failed to create billing portal session" } },
       { status: 500 }
     );
   }

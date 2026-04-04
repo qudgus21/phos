@@ -8,7 +8,7 @@ export const DELETE = withAuth(async (request, { user }) => {
   const { id } = (await request.json()) as { id?: string };
 
   if (!id || typeof id !== "string") {
-    throw new ValidationError("삭제할 히스토리 ID가 필요합니다");
+    throw new ValidationError("History ID is required");
   }
 
   const supabase = createAdminClient();
@@ -21,7 +21,7 @@ export const DELETE = withAuth(async (request, { user }) => {
     .eq("user_id", user.id);
 
   if (error) {
-    throw new ValidationError("삭제에 실패했습니다");
+    throw new ValidationError("Failed to delete");
   }
 
   const body: ApiResponse<{ deleted: true }> = {

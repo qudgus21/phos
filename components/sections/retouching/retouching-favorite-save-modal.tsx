@@ -3,19 +3,7 @@
 import { useState } from "react";
 import { Star, Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
-
-const FILTER_LABELS: Record<string, string> = {
-  none: "없음",
-  studio: "스튜디오",
-  brightening: "브라이트닝",
-  glow: "글로우",
-};
-const GENDER_LABELS: Record<string, string> = { female: "여성", male: "남성" };
-const MODE_LABELS: Record<string, string> = {
-  natural: "보정(기본)",
-  "soft-makeup": "보정(메이크업)",
-  matte: "보정(매트메이크업)",
-};
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface RetouchingFavoriteSaveModalProps {
   open: boolean;
@@ -43,6 +31,22 @@ export function RetouchingFavoriteSaveModal({
   maxCount,
   preview,
 }: RetouchingFavoriteSaveModalProps) {
+  const dict = useDictionary();
+  const FILTER_LABELS: Record<string, string> = {
+    none: dict.tools.retouching.filters.none,
+    studio: dict.tools.retouching.filters.studio,
+    brightening: dict.tools.retouching.filters.brightening,
+    glow: dict.tools.retouching.filters.glow,
+  };
+  const GENDER_LABELS: Record<string, string> = {
+    female: dict.tools.retouching.genders.female,
+    male: dict.tools.retouching.genders.male,
+  };
+  const MODE_LABELS: Record<string, string> = {
+    natural: dict.tools.retouching.modes.basic,
+    "soft-makeup": dict.tools.retouching.modes.makeup,
+    matte: dict.tools.retouching.modes.matte,
+  };
   const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -50,7 +54,7 @@ export function RetouchingFavoriteSaveModal({
   const handleSave = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("이름을 입력해주세요");
+      setError(dict.tools.favorites.nameRequired);
       return;
     }
     setIsSaving(true);
@@ -60,7 +64,7 @@ export function RetouchingFavoriteSaveModal({
       setName("");
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장에 실패했습니다");
+      setError(e instanceof Error ? e.message : dict.tools.favorites.saveFailed);
     } finally {
       setIsSaving(false);
     }
@@ -82,8 +86,8 @@ export function RetouchingFavoriteSaveModal({
             <Star className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-foreground">즐겨찾기 저장</h3>
-            <p className="text-xs text-muted-foreground">{currentCount}/{maxCount} 사용 중</p>
+            <h3 className="text-base font-bold text-foreground">{dict.tools.favorites.saveTitle}</h3>
+            <p className="text-xs text-muted-foreground">{dict.tools.favorites.usage.replace("{current}", String(currentCount)).replace("{max}", String(maxCount))}</p>
           </div>
         </div>
 
@@ -92,7 +96,7 @@ export function RetouchingFavoriteSaveModal({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value.slice(0, 30))}
-          placeholder="즐겨찾기 이름 (최대 30자)"
+          placeholder={dict.tools.favorites.namePlaceholder}
           className="w-full px-3 py-2 mb-3 rounded-lg border border-border bg-muted text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors placeholder:text-muted-foreground/70 dark:placeholder:text-muted-foreground/50"
           autoFocus
           onKeyDown={(e) => {
@@ -107,10 +111,10 @@ export function RetouchingFavoriteSaveModal({
           {preview.filter !== "none" && (
             <Badge>{FILTER_LABELS[preview.filter] ?? preview.filter} {Math.round(preview.filterIntensity * 100)}%</Badge>
           )}
-          {preview.faceReshape && <Badge>윤곽보정</Badge>}
+          {preview.faceReshape && <Badge>{dict.tools.retouching.reshapeLabel}</Badge>}
           <Badge>{preview.ratio}</Badge>
           {preview.scale > 1 && <Badge>{preview.scale}K</Badge>}
-          {preview.hasImage && <Badge>참조이미지</Badge>}
+          {preview.hasImage && <Badge>{dict.tools.retouching.uploadedAlt}</Badge>}
         </div>
 
         {/* Error */}
@@ -126,7 +130,7 @@ export function RetouchingFavoriteSaveModal({
             disabled={isSaving}
             className="flex-1 py-2 text-sm font-semibold text-muted-foreground rounded-lg border border-border bg-muted hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50"
           >
-            취소
+            {dict.common.cancel}
           </button>
           <button
             type="button"
@@ -137,10 +141,10 @@ export function RetouchingFavoriteSaveModal({
             {isSaving ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                저장 중...
+                {dict.common.saving}
               </>
             ) : (
-              "저장"
+              dict.common.save
             )}
           </button>
         </div>

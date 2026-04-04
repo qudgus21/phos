@@ -23,7 +23,7 @@ export class BytePlusProvider implements AIProvider {
   ): Promise<GenerationResult> {
     const apiKey = process.env.ARK_API_KEY;
     if (!apiKey) {
-      throw new ApiError("ARK_API_KEY 환경변수가 설정되지 않았습니다", 500);
+      throw new ApiError("ARK_API_KEY environment variable is not set", 500);
     }
 
     const { width, height, n } = (input.params ?? {}) as {
@@ -64,7 +64,7 @@ export class BytePlusProvider implements AIProvider {
     if (!res.ok) {
       const text = await res.text();
       console.error(`[byteplus] API error (${res.status}):`, text);
-      throw new ApiError("AI 이미지 생성 중 오류가 발생했습니다", 502);
+      throw new ApiError("AI image generation failed", 502);
     }
 
     const json = (await res.json()) as ArkResponse;

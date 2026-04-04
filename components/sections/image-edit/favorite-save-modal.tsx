@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Star, Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface FavoriteSaveModalProps {
   open: boolean;
@@ -29,6 +30,7 @@ export function FavoriteSaveModal({
   maxCount,
   preview,
 }: FavoriteSaveModalProps) {
+  const dict = useDictionary();
   const [name, setName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -36,7 +38,7 @@ export function FavoriteSaveModal({
   const handleSave = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("이름을 입력해주세요");
+      setError(dict.tools.favorites.nameRequired);
       return;
     }
     setIsSaving(true);
@@ -46,7 +48,7 @@ export function FavoriteSaveModal({
       setName("");
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장에 실패했습니다");
+      setError(e instanceof Error ? e.message : dict.tools.favorites.saveFailed);
     } finally {
       setIsSaving(false);
     }
@@ -68,8 +70,8 @@ export function FavoriteSaveModal({
             <Star className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-foreground">즐겨찾기 저장</h3>
-            <p className="text-xs text-muted-foreground">{currentCount}/{maxCount} 사용 중</p>
+            <h3 className="text-base font-bold text-foreground">{dict.tools.favorites.saveTitle}</h3>
+            <p className="text-xs text-muted-foreground">{dict.tools.favorites.usage.replace("{current}", String(currentCount)).replace("{max}", String(maxCount))}</p>
           </div>
         </div>
 
@@ -78,7 +80,7 @@ export function FavoriteSaveModal({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value.slice(0, 30))}
-          placeholder="즐겨찾기 이름 (최대 30자)"
+          placeholder={dict.tools.favorites.namePlaceholder}
           className="w-full px-3 py-2 mb-3 rounded-lg border border-border bg-muted text-sm text-foreground outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors placeholder:text-muted-foreground/70 dark:placeholder:text-muted-foreground/50"
           autoFocus
           onKeyDown={(e) => {
@@ -92,9 +94,9 @@ export function FavoriteSaveModal({
           <Badge>{preview.ratio}</Badge>
           <Badge>{preview.imageSize}</Badge>
           {preview.scale > 1 && <Badge>{preview.scale}x</Badge>}
-          <Badge>{preview.imageCount}장</Badge>
+          <Badge>{preview.imageCount}{dict.tools.imageEdit.countUnit}</Badge>
           {preview.imageCountRef > 0 && (
-            <Badge>참조 {preview.imageCountRef}장</Badge>
+            <Badge>{dict.tools.favorites.refImages.replace("{count}", String(preview.imageCountRef))}</Badge>
           )}
         </div>
 
@@ -111,7 +113,7 @@ export function FavoriteSaveModal({
             disabled={isSaving}
             className="flex-1 py-2 text-sm font-semibold text-muted-foreground rounded-lg border border-border bg-muted hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50"
           >
-            취소
+            {dict.common.cancel}
           </button>
           <button
             type="button"
@@ -122,10 +124,10 @@ export function FavoriteSaveModal({
             {isSaving ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                저장 중...
+                {dict.common.saving}
               </>
             ) : (
-              "저장"
+              dict.common.save
             )}
           </button>
         </div>

@@ -18,39 +18,13 @@ import { useRequireAuth } from "@/hooks/use-require-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 import { compressImageForInput } from "@/lib/utils/compress-image";
-
-/* ── Filter Chips ── */
-const FILTERS = [
-  { id: "none", label: "없음" },
-  { id: "studio", label: "스튜디오" },
-  { id: "brightening", label: "브라이트닝" },
-  { id: "glow", label: "글로우" },
-];
-
-/* ── Retouching Area Options (for dropdown) ── */
-const RETOUCH_AREAS = [
-  { id: "lips", label: "입술" },
-  { id: "eyebrows", label: "눈썹" },
-  { id: "nose", label: "코" },
-  { id: "hair", label: "헤어" },
-  { id: "background", label: "배경" },
-  { id: "clothes", label: "의상" },
-];
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 /* ── Dropdown options ── */
 const RATIO_OPTIONS = [
   { value: "1:1", label: "1:1" },
   { value: "3:2", label: "3:2" },
   { value: "2:3", label: "2:3" },
-];
-const GENDER_OPTIONS = [
-  { value: "female", label: "여성" },
-  { value: "male", label: "남성" },
-];
-const MODE_OPTIONS = [
-  { value: "natural", label: "보정(기본)" },
-  { value: "soft-makeup", label: "보정(메이크업)" },
-  { value: "matte", label: "보정(매트메이크업)" },
 ];
 
 const CREDIT_COST = 110;
@@ -66,13 +40,24 @@ const SCALE_OPTIONS = [
 function ExcludeAreasDropdown({
   selected,
   onToggle,
+  dict,
 }: {
   selected: string[];
   onToggle: (id: string) => void;
+  dict: ReturnType<typeof useDictionary>;
 }) {
   const [open, setOpen] = useState(false);
   const [direction, setDirection] = useState<"below" | "above">("below");
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const RETOUCH_AREAS = [
+    { id: "lips", label: dict.tools.retouching.areas.lips },
+    { id: "eyebrows", label: dict.tools.retouching.areas.eyebrows },
+    { id: "nose", label: dict.tools.retouching.areas.nose },
+    { id: "hair", label: dict.tools.retouching.areas.hair },
+    { id: "background", label: dict.tools.retouching.areas.background },
+    { id: "clothes", label: dict.tools.retouching.areas.clothing },
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -95,7 +80,7 @@ function ExcludeAreasDropdown({
     setOpen((v) => !v);
   };
 
-  const label = selected.length === 0 ? "기본 (전체 보정)" : `${selected.length}개 부위 제외`;
+  const label = selected.length === 0 ? dict.tools.retouching.excludeDefault : dict.tools.retouching.excludeCount.replace("{count}", String(selected.length));
 
   return (
     <div ref={containerRef} className="relative">
@@ -148,7 +133,7 @@ function ExcludeAreasDropdown({
                   >
                     {isSelected && <Check className="w-3 h-3 text-white" />}
                   </div>
-                  <span>{area.label} 제외</span>
+                  <span>{area.label} {dict.tools.retouching.excludeAreaSuffix}</span>
                 </button>
               );
             })}
@@ -179,7 +164,24 @@ interface RetouchingInputPanelProps {
 }
 
 export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, RetouchingInputPanelProps>(function RetouchingInputPanel({ sampleId, isGenerating: isGeneratingExternal, onSubmit, onSubmitError, onPendingStart, externalImageUrl }, ref) {
+  const dict = useDictionary();
   const queryClient = useQueryClient();
+
+  const FILTERS = [
+    { id: "none", label: dict.tools.retouching.filters.none },
+    { id: "studio", label: dict.tools.retouching.filters.studio },
+    { id: "brightening", label: dict.tools.retouching.filters.brightening },
+    { id: "glow", label: dict.tools.retouching.filters.glow },
+  ];
+  const GENDER_OPTIONS = [
+    { value: "female", label: dict.tools.retouching.genders.female },
+    { value: "male", label: dict.tools.retouching.genders.male },
+  ];
+  const MODE_OPTIONS = [
+    { value: "natural", label: dict.tools.retouching.modes.basic },
+    { value: "soft-makeup", label: dict.tools.retouching.modes.makeup },
+    { value: "matte", label: dict.tools.retouching.modes.matte },
+  ];
   /* Image upload */
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -215,7 +217,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       setUploadedFile(compressed);
       setUploadedImage(URL.createObjectURL(compressed));
     } catch {
-      toast("이미지 처리에 실패했습니다", "warning");
+      toast(dict.tools.retouching.imageProcessError, "warning");
     } finally {
       setIsImageLoading(false);
     }
@@ -346,13 +348,13 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             setUploadedFile(compressed);
             setUploadedImage(URL.createObjectURL(compressed));
           } catch {
-            toast("이미지를 불러오지 못했습니다. 다시 업로드해주세요", "warning");
+            toast(dict.tools.retouching.imageLoadError, "warning");
           } finally {
             setIsImageLoading(false);
           }
         })();
       }
-      toast("즐겨찾기를 불러왔습니다", "success");
+      toast(dict.tools.retouching.favoriteLoaded, "success");
     },
     getCurrentSettings: () => ({
       filter: activeFilter,
@@ -371,12 +373,12 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
   /* ── 생성 핸들러 ── */
   const handleGenerate = useCallback(async () => {
     if (!uploadedFile) {
-      toast("이미지를 업로드해주세요", "warning");
+      toast(dict.common.errors.uploadRequired, "warning");
       return;
     }
     if (isGenerating) return;
     if (isImageLoading) {
-      toast("이미지 처리 중입니다. 잠시 후 다시 시도해주세요", "warning");
+      toast(dict.common.errors.imageProcessing, "warning");
       return;
     }
 
@@ -419,7 +421,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       });
       const data = await res.json();
       if (!data.success) {
-        throw new Error(data.error?.message ?? "생성에 실패했습니다");
+        throw new Error(data.error?.message ?? dict.common.errors.generationFailed);
       }
       replaceHistoryId(queryClient, "retouching", tempId, data.data.historyId);
       onPendingStart?.(data.data.historyId);
@@ -439,7 +441,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
         })
       );
       toast(
-        err instanceof Error ? err.message : "생성에 실패했습니다",
+        err instanceof Error ? err.message : dict.common.errors.generationFailed,
         "error"
       );
     } finally {
@@ -491,7 +493,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             <>
               <img
                 src={uploadedImage!}
-                alt="업로드된 이미지"
+                alt={dict.tools.retouching.uploadedAlt}
                 className="max-h-full max-w-full object-contain rounded-lg p-1"
               />
               <button
@@ -509,7 +511,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             <>
               <Upload className="w-8 h-8 text-muted-foreground/70 dark:text-muted-foreground/50" />
               <p className="text-sm font-bold text-card-foreground">
-                Drop image here or click to upload
+                {dict.tools.retouching.uploadImage}
               </p>
               <p className="text-xs text-muted-foreground">
                 JPG, PNG, WebP
@@ -522,7 +524,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
                 }}
                 className="text-[12px] font-semibold text-primary hover:text-[#818CF8] transition-colors cursor-pointer mt-1"
               >
-                생성 이미지 가이드 →
+                {dict.tools.retouching.guideButton}
               </button>
             </>
           )}
@@ -534,14 +536,14 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
           accept="image/jpeg,image/png,image/webp"
           onChange={handleFileSelect}
           className="hidden"
-          aria-label="이미지 파일 선택"
+          aria-label={dict.tools.retouching.uploadedAlt}
         />
 
         {/* ── 필터 선택 ── */}
         <div className="space-y-1.5 shrink-0">
           <div className="flex items-center justify-between">
             <span className="text-[13px] font-medium text-card-foreground">
-              필터 선택
+              {dict.tools.retouching.filterSection}
             </span>
             <span className="text-[13px] font-bold text-primary">
               {FILTERS.find((f) => f.id === activeFilter)?.label}
@@ -574,7 +576,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
               value={activeFilter === "none" ? 0 : filterIntensity}
               onChange={(e) => setFilterIntensity(Number(e.target.value))}
               disabled={activeFilter === "none"}
-              aria-label="필터 강도"
+              aria-label={dict.tools.retouching.filterSection}
               className={cn(
                 "flex-1 h-1.5 rounded-full appearance-none",
                 activeFilter === "none"
@@ -602,7 +604,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
         {/* ── 보정 설정 (성별 + 모드) ── */}
         <div className="space-y-1.5 shrink-0">
           <span className="text-[13px] font-medium text-card-foreground">
-            보정 설정
+            {dict.tools.retouching.retouchSettings}
           </span>
           <div className="flex gap-1.5">
             <Dropdown options={GENDER_OPTIONS} value={gender} onChange={setGender} className="flex-1" />
@@ -615,7 +617,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="text-[13px] font-medium text-card-foreground">
-                윤곽 보정
+                {dict.tools.retouching.reshapeLabel}
               </span>
             </div>
             <button
@@ -645,7 +647,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
               value={faceReshape ? faceReshapeIntensity : 0}
               onChange={(e) => setFaceReshapeIntensity(Number(e.target.value))}
               disabled={!faceReshape}
-              aria-label="얼굴 보정 강도"
+              aria-label={dict.tools.retouching.reshapeLabel}
               className={cn(
                 "flex-1 h-1.5 rounded-full appearance-none",
                 faceReshape
@@ -673,9 +675,9 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
         {/* ── 보정 제외 부위 ── */}
         <div className="space-y-1.5 shrink-0">
           <span className="text-[12px] text-muted-foreground">
-            보정 제외 부위
+            {dict.tools.retouching.excludeSection}
           </span>
-          <ExcludeAreasDropdown selected={excludedAreas} onToggle={toggleArea} />
+          <ExcludeAreasDropdown selected={excludedAreas} onToggle={toggleArea} dict={dict} />
         </div>
       </div>
 
@@ -703,11 +705,11 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                생성 중...
+                {dict.tools.retouching.generatingButton}
               </>
             ) : (
               <>
-                생성하기
+                {dict.tools.retouching.generateButton}
                 <span className="ml-1.5 inline-flex items-center gap-0.5 bg-white/20 rounded-full px-1.5 py-0.5 text-[11px] font-semibold">
                   <Zap className="w-2.5 h-2.5" />
                   {CREDIT_COST}
@@ -726,18 +728,18 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
               className="rounded-xl border border-border bg-card shadow-[0_8px_30px_rgba(0,0,0,0.55)] p-5 space-y-3 max-w-xs w-full mx-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="text-sm font-bold text-card-foreground">생성 이미지 가이드</p>
+              <p className="text-sm font-bold text-card-foreground">{dict.tools.retouching.guideTitle}</p>
               <ul className="space-y-1.5 text-[12px] text-card-foreground/80 leading-relaxed">
-                <li>· 최소 1024x1024 해상도 이상을 권장합니다.</li>
-                <li>· 큰 이미지는 자동으로 리사이즈되어 업로드됩니다.</li>
-                <li>· 필터 강도는 0~1 선택이며 1에 가까울수록 강합니다.</li>
+                <li>· {dict.tools.retouching.guideItems[0]}</li>
+                <li>· {dict.tools.retouching.guideItems[1]}</li>
+                <li>· {dict.tools.retouching.guideItems[2]}</li>
               </ul>
               <button
                 type="button"
                 onClick={() => setShowGuide(false)}
                 className="w-full py-2 rounded-lg text-[13px] font-semibold text-white bg-primary hover:bg-[#818CF8] transition-colors cursor-pointer"
               >
-                확인
+                {dict.tools.retouching.guideConfirm}
               </button>
             </div>
           </div>

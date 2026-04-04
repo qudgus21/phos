@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, ArrowRight, Mail, Lock, Check, AlertCircle, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useDictionary, useLocale } from "@/lib/i18n/dictionary-context";
+import type { Dictionary } from "@/lib/i18n/config";
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.96 },
@@ -61,28 +63,26 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-// 비밀번호 유효성 검증
-const passwordRules = [
-  { key: "length", label: "8 characters or more", test: (pw: string) => pw.length >= 8 },
-  { key: "letter", label: "At least one letter", test: (pw: string) => /[a-zA-Z]/.test(pw) },
-  { key: "number", label: "At least one number", test: (pw: string) => /\d/.test(pw) },
-] as const;
+const passwordTests = [
+  { key: "chars" as const, test: (pw: string) => pw.length >= 8 },
+  { key: "letter" as const, test: (pw: string) => /[a-zA-Z]/.test(pw) },
+  { key: "number" as const, test: (pw: string) => /\d/.test(pw) },
+];
 
 function isPasswordValid(password: string) {
-  return passwordRules.every((r) => r.test(password));
+  return passwordTests.every((r) => r.test(password));
 }
 
 function isEmailValid(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// Supabase 에러 메시지 매핑
-function mapAuthError(message: string): string {
-  if (message.includes("Invalid login credentials")) return "Invalid email or password.";
-  if (message.includes("Email not confirmed")) return "Please verify your email first.";
-  if (message.includes("User already registered")) return "This email is already registered.";
-  if (message.includes("rate limit")) return "Too many attempts. Please try again later.";
-  if (message.includes("Password should be at least")) return "Password must be at least 8 characters.";
+function mapAuthError(message: string, errors: Dictionary["auth"]["errors"]): string {
+  if (message.includes("Invalid login credentials")) return errors.invalidCredentials;
+  if (message.includes("Email not confirmed")) return errors.emailNotVerified;
+  if (message.includes("User already registered")) return errors.emailExists;
+  if (message.includes("rate limit")) return errors.tooManyAttempts;
+  if (message.includes("Password should be at least")) return errors.passwordTooShort;
   return message;
 }
 
@@ -100,6 +100,8 @@ interface LoginModalProps {
 type Mode = "login" | "signup" | "check-email";
 
 export function LoginModal({ isOpen, onClose }: LoginModalProps) {
+  const dict = useDictionary();
+  const locale = useLocale();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
@@ -129,12 +131,11 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }, 200);
   };
 
-  // 클라이언트 유효성 검증 — submit 시에만
   const validate = (): string | null => {
-    if (!email.trim()) return "Please enter your email address.";
-    if (!isEmailValid(email)) return "Please enter a valid email address.";
-    if (!password.trim()) return "Please enter your password.";
-    if (mode === "signup" && !isPasswordValid(password)) return "Password doesn't meet the requirements below.";
+    if (!email.trim()) return dict.auth.errors.enterEmail;
+    if (!isEmailValid(email)) return dict.auth.errors.invalidEmail;
+    if (!password.trim()) return dict.auth.errors.enterPassword;
+    if (mode === "signup" && !isPasswordValid(password)) return dict.auth.errors.passwordRequirements;
     return null;
   };
 
@@ -156,13 +157,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setLoading(false);
 
     if (authError) {
-      setError(mapAuthError(authError.message));
+      setError(mapAuthError(authError.message, dict.auth.errors));
       return;
     }
 
-    // 이미 가입된 이메일이면 identities가 빈 배열 (email enumeration protection)
     if (data.user && data.user.identities?.length === 0) {
-      setError("This email is already registered. Try signing in with Google or Facebook.");
+      setError(dict.auth.errors.emailExists);
       return;
     }
 
@@ -186,7 +186,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setLoading(false);
 
     if (authError) {
-      setError(mapAuthError(authError.message));
+      setError(mapAuthError(authError.message, dict.auth.errors));
       return;
     }
 
@@ -287,13 +287,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                       <Mail className="w-8 h-8 text-white" />
                     </div>
                     <h2 className="text-2xl font-extrabold text-white font-display tracking-tight">
-                      Check your email
+                      {dict.auth.checkEmailTitle}
                     </h2>
                     <p className="text-sm text-slate-300 mt-3 leading-relaxed max-w-[300px]">
-                      We sent a verification link to{" "}
-                      <span className="text-indigo-300 font-semibold">{email}</span>.
-                      <br />
-                      Click the link to activate your account.
+                      {dict.auth.checkEmailMessage.split("{email}")[0]}
+                      <span className="text-indigo-300 font-semibold">{email}</span>
+                      {dict.auth.checkEmailMessage.split("{email}")[1]}
                     </p>
 
                     <button
@@ -302,7 +301,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                       className="mt-6 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/15 text-sm text-slate-200 font-medium hover:bg-white/15 transition-all cursor-pointer disabled:opacity-50"
                     >
                       <RefreshCw className={`w-4 h-4 ${resending ? "animate-spin" : ""}`} />
-                      {resending ? "Sending..." : "Resend email"}
+                      {resending ? dict.auth.resending : dict.auth.resendEmail}
                     </button>
 
                     <button
@@ -312,7 +311,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                       }}
                       className="mt-4 text-sm text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                     >
-                      Back to sign in
+                      {dict.auth.backToSignIn}
                     </button>
                   </motion.div>
                 ) : (
@@ -336,12 +335,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         <Sparkles className="w-7 h-7 text-white" />
                       </motion.div>
                       <h2 className="text-2xl font-extrabold text-white font-display tracking-tight">
-                        {mode === "login" ? "Sign in to Phos AI" : "Get started with Phos AI"}
+                        {mode === "login" ? dict.auth.signInTitle : dict.auth.signUpTitle}
                       </h2>
                       <p className="text-sm text-indigo-300 mt-1.5 font-medium">
                         {mode === "login"
-                          ? "The new standard for AI image editing"
-                          : "Create your free account"}
+                          ? dict.auth.signInSubtitle
+                          : dict.auth.signUpSubtitle}
                       </p>
                     </div>
 
@@ -356,7 +355,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold text-[15px] hover:bg-gray-50 hover:shadow-md transition-all shadow-sm cursor-pointer"
                           >
                             <GoogleIcon className="w-5 h-5 shrink-0" />
-                            <span className="flex-1 text-center pr-8">Continue with Google</span>
+                            <span className="flex-1 text-center pr-8">{dict.auth.continueWithGoogle}</span>
                           </motion.button>
                           <motion.button
                             whileHover={{ scale: 1.02 }}
@@ -365,14 +364,14 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-[#1877F2] text-white font-semibold text-[15px] hover:bg-[#166AE0] hover:shadow-md transition-all shadow-sm cursor-pointer"
                           >
                             <FacebookIcon className="w-5 h-5 shrink-0" />
-                            <span className="flex-1 text-center pr-8">Continue with Facebook</span>
+                            <span className="flex-1 text-center pr-8">{dict.auth.continueWithFacebook}</span>
                           </motion.button>
                         </div>
 
                         {/* Divider */}
                         <div className="flex items-center gap-4 my-6">
                           <div className="flex-1 h-px bg-white/15" />
-                          <span className="text-xs text-slate-400 font-medium">or</span>
+                          <span className="text-xs text-slate-400 font-medium">{dict.auth.or}</span>
                           <div className="flex-1 h-px bg-white/15" />
                         </div>
                       </>
@@ -386,7 +385,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                           type="email"
                           value={email}
                           onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
-                          placeholder="Email address"
+                          placeholder={dict.auth.emailPlaceholder}
                           className={emailHasError ? inputError : inputBase}
                         />
                       </div>
@@ -396,7 +395,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                           type="password"
                           value={password}
                           onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
-                          placeholder="Password"
+                          placeholder={dict.auth.passwordPlaceholder}
                           className={passwordHasError ? inputError : inputBase}
                         />
                       </div>
@@ -408,7 +407,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                           animate={{ opacity: 1, height: "auto" }}
                           className="flex flex-col gap-1.5 pt-1"
                         >
-                          {passwordRules.map((rule) => {
+                          {passwordTests.map((rule) => {
                             const pass = rule.test(password);
                             return (
                               <div key={rule.key} className="flex items-center gap-2 text-xs">
@@ -416,7 +415,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                                   className={`w-3.5 h-3.5 ${pass ? "text-emerald-400" : "text-slate-500"}`}
                                 />
                                 <span className={pass ? "text-emerald-400" : "text-slate-400"}>
-                                  {rule.label}
+                                  {dict.auth.passwordRules[rule.key]}
                                 </span>
                               </div>
                             );
@@ -451,7 +450,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                           <RefreshCw className="w-4 h-4 animate-spin" />
                         ) : (
                           <>
-                            {mode === "login" ? "Sign in" : "Create account"}
+                            {mode === "login" ? dict.auth.signInButton : dict.auth.signUpButton}
                             <ArrowRight className="w-4 h-4" />
                           </>
                         )}
@@ -462,22 +461,22 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <p className="text-sm text-slate-400 text-center mt-6">
                       {mode === "login" ? (
                         <>
-                          Don&apos;t have an account?{" "}
+                          {dict.auth.noAccount}{" "}
                           <button
                             onClick={() => { setMode("signup"); setError(""); setSubmitted(false); }}
                             className="font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent hover:from-indigo-200 hover:to-violet-200 transition-all cursor-pointer"
                           >
-                            Sign up
+                            {dict.auth.signUpLink}
                           </button>
                         </>
                       ) : (
                         <>
-                          Already have an account?{" "}
+                          {dict.auth.hasAccount}{" "}
                           <button
                             onClick={() => { setMode("login"); setError(""); setSubmitted(false); }}
                             className="font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent hover:from-indigo-200 hover:to-violet-200 transition-all cursor-pointer"
                           >
-                            Sign in
+                            {dict.auth.signInLink}
                           </button>
                         </>
                       )}
@@ -485,15 +484,15 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
                     {/* Terms */}
                     <p className="text-[11px] text-slate-500 text-center mt-4 leading-relaxed">
-                      By continuing, you agree to our{" "}
-                      <Link href="/terms" className="text-slate-400 underline underline-offset-2 hover:text-indigo-300 transition-colors">
-                        Terms of Service
+                      {dict.auth.termsNotice.split("{terms}")[0]}
+                      <Link href={`/${locale}/terms`} className="text-slate-400 underline underline-offset-2 hover:text-indigo-300 transition-colors">
+                        {dict.auth.termsLabel}
                       </Link>
-                      {" "}and{" "}
-                      <Link href="/privacy" className="text-slate-400 underline underline-offset-2 hover:text-indigo-300 transition-colors">
-                        Privacy Policy
+                      {dict.auth.termsNotice.split("{terms}")[1]?.split("{privacy}")[0]}
+                      <Link href={`/${locale}/privacy`} className="text-slate-400 underline underline-offset-2 hover:text-indigo-300 transition-colors">
+                        {dict.auth.privacyLabel}
                       </Link>
-                      .
+                      {dict.auth.termsNotice.split("{privacy}")[1]}
                     </p>
                   </motion.div>
                 )}

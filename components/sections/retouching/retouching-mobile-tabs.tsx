@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface RetouchingMobileTabsProps {
   activeTab: string;
@@ -8,17 +9,17 @@ interface RetouchingMobileTabsProps {
   isGenerating?: boolean;
 }
 
-const MOBILE_TABS = [
-  { id: "input", label: "설정" },
-  { id: "result", label: "결과" },
-  { id: "history", label: "히스토리" },
-];
-
 export function RetouchingMobileTabs({
   activeTab,
   onTabChange,
   isGenerating,
 }: RetouchingMobileTabsProps) {
+  const dict = useDictionary();
+  const MOBILE_TABS = [
+    { id: "input", label: dict.common.tabs.input },
+    { id: "result", label: dict.common.tabs.result },
+    { id: "history", label: dict.common.tabs.history },
+  ];
   return (
     <div className="flex lg:hidden border-b border-border bg-card/80 shrink-0">
       {MOBILE_TABS.map((tab) => {

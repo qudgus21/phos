@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-export const alt = "Phos AI — AI 기반 이미지 보정, 편집, 생성";
+export const alt = "Phos AI — AI Image Editing & Retouching";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -87,7 +87,7 @@ export default function Image() {
             fontWeight: 500,
           }}
         >
-          AI 기반 이미지 보정 · 편집 · 생성
+          AI-powered image editing, retouching & generation
         </div>
 
         {/* Domain */}

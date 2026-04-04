@@ -27,7 +27,7 @@ export function Dropdown({
   value,
   onChange,
   className,
-  placeholder = "선택",
+  placeholder = "",
   variant = "default",
   openDirection = "auto",
   columns = 1,

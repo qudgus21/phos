@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 type ModalSize = "sm" | "md" | "lg";
 
@@ -23,6 +24,7 @@ const sizeStyles: Record<ModalSize, string> = {
 };
 
 export function Modal({ open, onClose, title, children, size = "md" }: ModalProps) {
+  const dict = useDictionary();
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -66,7 +68,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
                 <h3 className="text-lg font-bold text-card-foreground">{title}</h3>
                 <button
                   onClick={onClose}
-                  aria-label="닫기"
+                  aria-label={dict.common.close}
                   className="p-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -76,7 +78,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: ModalProp
             {!title && (
               <button
                 onClick={onClose}
-                aria-label="닫기"
+                aria-label={dict.common.close}
                 className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
               >
                 <X className="w-5 h-5" />

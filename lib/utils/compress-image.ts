@@ -69,7 +69,7 @@ async function compressImage(
 
   return new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("이미지 변환에 실패했습니다"))),
+      (b) => (b ? resolve(b) : reject(new Error("Image conversion failed"))),
       "image/webp",
       quality
     )

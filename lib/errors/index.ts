@@ -18,7 +18,7 @@ export class ApiError extends AppError {
 }
 
 export class AuthError extends AppError {
-  constructor(message: string = "인증이 필요합니다") {
+  constructor(message: string = "Authentication required") {
     super(message, "AUTH_ERROR", 401);
     this.name = "AuthError";
   }
@@ -26,7 +26,7 @@ export class AuthError extends AppError {
 
 export class CreditError extends AppError {
   constructor(
-    message: string = "크레딧이 부족합니다",
+    message: string = "Insufficient credits",
     public readonly required: number = 0,
     public readonly available: number = 0
   ) {

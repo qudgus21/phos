@@ -8,17 +8,22 @@ import { getBlur } from "@/lib/constants/blur-placeholders";
 import { SectionWrapper } from "@/components/ui/section-wrapper";
 import { Scan, Layers, Sun, Sparkles, SlidersHorizontal, Palette } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
+import type { Dictionary } from "@/lib/i18n";
 
-const features = [
-  { icon: Scan, title: "정체성 보존", desc: "고유한 특성 유지" },
-  { icon: Layers, title: "실제 질감", desc: "미세한 피부 표면 재현" },
-  { icon: Sun, title: "3D 음영", desc: "자연스러운 조명과 그림자" },
-  { icon: Sparkles, title: "하이라이트", desc: "사실적인 빛 반사" },
-  { icon: SlidersHorizontal, title: "필터", desc: "분위기에 맞는 톤 조절" },
-  { icon: Palette, title: "메이크업 보정", desc: "스타일별 메이크업 적용" },
-];
+interface SkinRealismProps {
+  dict: Dictionary;
+  locale: string;
+}
 
-export function SkinRealism() {
+const featureIcons = [Scan, Layers, Sun, Sparkles, SlidersHorizontal, Palette];
+
+export function SkinRealism({ dict, locale }: SkinRealismProps) {
+  const features = dict.features.skinRealism.features.map((f, i) => ({
+    icon: featureIcons[i],
+    title: f.title,
+    desc: f.desc,
+  }));
+
   const [isHovering, setIsHovering] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,7 +66,7 @@ export function SkinRealism() {
             >
               <Image
                 src="/images/retouching/sample1/after.webp"
-                alt="AI 피부 보정 결과 — 실사 퀄리티 피부 질감"
+                alt={dict.features.skinRealism.imageAlt}
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -108,7 +113,7 @@ export function SkinRealism() {
                 }}
               >
                 <span className="text-xs text-white font-medium whitespace-nowrap">
-                  마우스를 올려 디테일 확인
+                  {dict.features.skinRealism.hoverHint}
                 </span>
               </div>
             </div>
@@ -125,7 +130,7 @@ export function SkinRealism() {
             <motion.div variants={fadeInUp} className="mb-5">
               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-indigo-500/10 text-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-300 border border-indigo-500/20">
                 <span>✨</span>
-                ULTRA SKIN ENHANCEMENT
+                {dict.features.skinRealism.badge}
               </span>
             </motion.div>
 
@@ -133,16 +138,15 @@ export function SkinRealism() {
               variants={fadeInUp}
               className="text-3xl md:text-h3 font-black text-foreground mb-4 font-display"
             >
-              차원이 다른{" "}
-              <span className="gradient-text">피부 리얼리즘</span>
+              {dict.features.skinRealism.title}{" "}
+              <span className="gradient-text">{dict.features.skinRealism.titleAccent}</span>
             </motion.h2>
 
             <motion.p
               variants={fadeInUp}
               className="text-base md:text-lg text-muted-foreground mb-8 leading-relaxed"
             >
-              섬세한 피부 질감과 사실적인 디테일로 생생한 결과물을
-              만듭니다.
+              {dict.features.skinRealism.description}
             </motion.p>
 
             {/* Feature grid — Lucide icons + premium cards */}
@@ -176,10 +180,10 @@ export function SkinRealism() {
 
             <motion.div variants={fadeInUp}>
               <Link
-                href="/retouching"
+                href={`/${locale}/retouching`}
                 className="inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-500 rounded-xl btn-glow transition-all hover:scale-105 hover:brightness-110"
               >
-                지금 체험하기
+                {dict.features.skinRealism.cta}
               </Link>
             </motion.div>
           </motion.div>

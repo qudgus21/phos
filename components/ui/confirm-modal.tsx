@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface ConfirmModalProps {
   open: boolean;
@@ -33,12 +34,17 @@ export function ConfirmModal({
   open,
   onClose,
   onConfirm,
-  title = "확인",
-  description = "이 작업을 진행하시겠습니까?",
-  confirmLabel = "확인",
-  cancelLabel = "취소",
+  title,
+  description,
+  confirmLabel,
+  cancelLabel,
   variant = "default",
 }: ConfirmModalProps) {
+  const dict = useDictionary();
+  const resolvedTitle = title ?? dict.common.confirmModal.defaultTitle;
+  const resolvedDescription = description ?? dict.common.confirmModal.defaultDescription;
+  const resolvedConfirmLabel = confirmLabel ?? dict.common.confirmModal.confirmLabel;
+  const resolvedCancelLabel = cancelLabel ?? dict.common.confirmModal.cancelLabel;
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -127,17 +133,17 @@ export function ConfirmModal({
 
                 {/* Title */}
                 <h2 className="text-lg font-extrabold text-white tracking-tight mt-4">
-                  {title}
+                  {resolvedTitle}
                 </h2>
 
                 {/* Description */}
                 <div className="text-sm text-slate-300 mt-3.5 leading-relaxed">
-                  {description}
+                  {resolvedDescription}
                 </div>
 
                 {/* Buttons */}
                 <div className="flex items-center gap-2.5 w-full mt-6">
-                  {cancelLabel && (
+                  {resolvedCancelLabel && (
                     <motion.button
                       type="button"
                       whileHover={{ scale: 1.02 }}
@@ -145,7 +151,7 @@ export function ConfirmModal({
                       onClick={onClose}
                       className="flex-1 py-3 text-sm font-semibold text-slate-300 rounded-xl bg-white/10 border border-white/10 hover:bg-white/15 transition-all cursor-pointer"
                     >
-                      {cancelLabel}
+                      {resolvedCancelLabel}
                     </motion.button>
                   )}
                   <motion.button
@@ -162,7 +168,7 @@ export function ConfirmModal({
                         : "flex-1 py-3 text-sm font-extrabold text-white rounded-xl bg-gradient-to-r from-primary to-secondary shadow-[0_0_16px_rgba(99,102,241,0.35)] hover:shadow-[0_0_28px_rgba(99,102,241,0.5)] hover:brightness-110 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                     }
                   >
-                    {confirmLabel}
+                    {resolvedConfirmLabel}
                   </motion.button>
                 </div>
               </div>

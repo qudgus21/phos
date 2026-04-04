@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMaskCanvas, MaskMode } from "@/hooks/use-mask-canvas";
+import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface FaceEditMaskEditorProps {
   isOpen: boolean;
@@ -24,12 +25,6 @@ interface FaceEditMaskEditorProps {
   initialMaskDataUrl?: string | null;
 }
 
-const TOOLS: { mode: MaskMode; label: string; icon: typeof Paintbrush; shortcut: string }[] = [
-  { mode: "draw", label: "브러시", icon: Paintbrush, shortcut: "B" },
-  { mode: "erase", label: "지우개", icon: Eraser, shortcut: "E" },
-  { mode: "rect", label: "사각형", icon: Square, shortcut: "R" },
-];
-
 export function FaceEditMaskEditor({
   isOpen,
   onClose,
@@ -37,6 +32,12 @@ export function FaceEditMaskEditor({
   imageSrc,
   initialMaskDataUrl,
 }: FaceEditMaskEditorProps) {
+  const dict = useDictionary();
+  const TOOLS: { mode: MaskMode; label: string; icon: typeof Paintbrush; shortcut: string }[] = [
+    { mode: "draw", label: dict.tools.faceEdit.brushTool, icon: Paintbrush, shortcut: "B" },
+    { mode: "erase", label: dict.tools.faceEdit.eraserTool, icon: Eraser, shortcut: "E" },
+    { mode: "rect", label: dict.tools.faceEdit.rectTool, icon: Square, shortcut: "R" },
+  ];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
@@ -177,35 +178,35 @@ export function FaceEditMaskEditor({
             transition={{ duration: 0.2 }}
             role="dialog"
             aria-modal="true"
-            aria-label="마스크 편집"
+            aria-label={dict.tools.faceEdit.maskEditorTitle}
             className="flex flex-col bg-card rounded-2xl border border-border shadow-2xl overflow-hidden"
             style={{ maxWidth: 720, maxHeight: "85vh", width: "calc(100vw - 48px)" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <h2 className="text-sm font-bold text-foreground">마스크 편집</h2>
+              <h2 className="text-sm font-bold text-foreground">{dict.tools.faceEdit.maskEditorTitle}</h2>
               <div className="flex items-center gap-2">
-                <button
+                {/* <button
                   type="button"
                   onClick={handleDownloadMask}
                   className="px-3 py-1.5 text-xs font-medium text-yellow-400/70 hover:text-yellow-400 border border-yellow-400/30 rounded-lg transition-colors cursor-pointer"
                 >
-                  마스크 다운로드
-                </button>
+                  {dict.tools.faceEdit.downloadMask}
+                </button> */}
                 <button
                   type="button"
                   onClick={handleClose}
                   className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
-                  취소
+                  {dict.common.cancel}
                 </button>
                 <button
                   type="button"
                   onClick={handleSave}
                   className="px-4 py-1.5 text-xs font-bold text-white rounded-lg bg-primary hover:bg-primary/80 transition-colors cursor-pointer"
                 >
-                  저장
+                  {dict.common.save}
                 </button>
               </div>
             </div>
@@ -216,7 +217,7 @@ export function FaceEditMaskEditor({
                 <img
                   ref={imgRef}
                   src={imageSrc}
-                  alt="원본"
+                  alt={dict.tools.faceEdit.uploadedAlt}
                   className="block max-w-full max-h-[calc(85vh-8rem)] rounded-lg select-none"
                   draggable={false}
                   onLoad={handleImageLoad}
@@ -266,7 +267,7 @@ export function FaceEditMaskEditor({
               <button
                 type="button"
                 onClick={undo}
-                title="실행 취소 (⌘Z)"
+                title={dict.tools.faceEdit.undoTitle}
                 className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
               >
                 <Undo2 className="w-3.5 h-3.5" />
@@ -274,7 +275,7 @@ export function FaceEditMaskEditor({
               <button
                 type="button"
                 onClick={redo}
-                title="다시 실행 (⌘⇧Z)"
+                title={dict.tools.faceEdit.redoTitle}
                 className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
               >
                 <Redo2 className="w-3.5 h-3.5" />
@@ -296,7 +297,7 @@ export function FaceEditMaskEditor({
                   max={MAX_BRUSH}
                   value={brushSize}
                   onChange={(e) => setBrushSize(Number(e.target.value))}
-                  aria-label="브러시 크기"
+                  aria-label={dict.tools.faceEdit.brushSizeLabel}
                   className={cn(
                     "w-16 h-1 rounded-full appearance-none cursor-pointer bg-muted-foreground/30",
                     "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-sm [&::-webkit-slider-thumb]:cursor-pointer",
@@ -321,7 +322,7 @@ export function FaceEditMaskEditor({
                 className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                초기화
+                {dict.tools.faceEdit.resetCanvas}
               </button>
             </div>
 
@@ -345,7 +346,7 @@ export function FaceEditMaskEditor({
                     className="flex flex-col items-center gap-4 px-6 py-5 bg-card rounded-xl border border-border shadow-2xl max-w-[280px] w-full"
                   >
                     <p className="text-sm font-semibold text-foreground text-center">
-                      변경사항을 저장하시겠습니까?
+                      {dict.tools.faceEdit.saveConfirmMessage}
                     </p>
                     <div className="flex items-center gap-2 w-full">
                       <button
@@ -353,14 +354,14 @@ export function FaceEditMaskEditor({
                         onClick={handleConfirmDiscard}
                         className="flex-1 px-3 py-2 text-xs font-semibold text-muted-foreground rounded-lg bg-muted hover:bg-muted/80 hover:text-foreground transition-colors cursor-pointer"
                       >
-                        저장 안 함
+                        {dict.tools.faceEdit.discardButton}
                       </button>
                       <button
                         type="button"
                         onClick={handleConfirmSave}
                         className="flex-1 px-3 py-2 text-xs font-bold text-white rounded-lg bg-primary hover:bg-primary/80 transition-colors cursor-pointer"
                       >
-                        저장
+                        {dict.common.save}
                       </button>
                     </div>
                   </motion.div>

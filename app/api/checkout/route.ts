@@ -25,10 +25,12 @@ const checkoutSchema = z.discriminatedUnion("productType", [
   z.object({
     productType: z.literal("subscription"),
     planId: z.enum(["basic", "pro", "premium"]),
+    locale: z.string().optional(),
   }),
   z.object({
     productType: z.literal("credit_pack"),
     creditPackCredits: z.enum(["700", "1500", "2400", "3300", "5100"]).transform(Number),
+    locale: z.string().optional(),
   }),
 ]);
 
@@ -39,7 +41,7 @@ export const POST = withAuth(async (request, { user }) => {
   const parsed = checkoutSchema.safeParse(body);
 
   if (!parsed.success) {
-    throw new ValidationError("잘못된 요청입니다", parsed.error.flatten().fieldErrors);
+    throw new ValidationError("Invalid request", parsed.error.flatten().fieldErrors);
   }
 
   const data = parsed.data;
@@ -54,7 +56,7 @@ export const POST = withAuth(async (request, { user }) => {
   }
 
   if (!polarProductId) {
-    throw new ValidationError("상품을 찾을 수 없습니다");
+    throw new ValidationError("Product not found");
   }
 
   // 2. 더블 클릭 방지
@@ -64,7 +66,7 @@ export const POST = withAuth(async (request, { user }) => {
 
   if (lastCheckout && Date.now() - lastCheckout < 60_000) {
     return NextResponse.json(
-      { success: false, error: { code: "RATE_LIMITED", message: "잠시 후 다시 시도해주세요" } },
+      { success: false, error: { code: "RATE_LIMITED", message: "Please try again shortly" } },
       { status: 429 }
     );
   }
@@ -128,13 +130,15 @@ export const POST = withAuth(async (request, { user }) => {
 
     // ── 신규 구독 또는 크레딧 팩 → 체크아웃 세션 ────────────
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const checkoutLocale = data.locale ?? "en";
 
     const checkout = await polar.checkouts.create({
       products: [polarProductId],
       customerEmail: user.email ?? undefined,
       externalCustomerId: user.id,
-      successUrl: `${appUrl}/pricing?checkout=success`,
+      successUrl: `${appUrl}/${checkoutLocale}/pricing?checkout=success`,
       allowDiscountCodes: true,
+      locale: checkoutLocale,
     });
 
     return NextResponse.json({
@@ -146,7 +150,7 @@ export const POST = withAuth(async (request, { user }) => {
 
     console.error("[checkout] Polar API failed:", err);
     return NextResponse.json(
-      { success: false, error: { code: "CHECKOUT_FAILED", message: "결제 처리에 실패했습니다" } },
+      { success: false, error: { code: "CHECKOUT_FAILED", message: "Checkout failed" } },
       { status: 500 }
     );
   }

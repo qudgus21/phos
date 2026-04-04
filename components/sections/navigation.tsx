@@ -8,19 +8,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sparkles, LogOut, Zap, Plus } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LoginModal } from "@/components/ui/login-modal";
+import { LanguageSelector } from "@/components/ui/language-selector";
 import { createClient } from "@/lib/supabase/client";
 import { useCreditsBalance } from "@/hooks/use-credits";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import type { User } from "@supabase/supabase-js";
 import type { UserCreditInfo } from "@/lib/types/credits";
-
-const navItems = [
-  { label: "이미지 편집", href: "/image-edit" },
-  { label: "피부 보정", href: "/retouching" },
-  { label: "얼굴 변경", href: "/face-edit" },
-  { label: "가격", href: "/pricing" },
-];
+import type { Dictionary } from "@/lib/i18n";
 
 const PLAN_BADGE: Record<string, { label: string; className: string }> = {
   free: { label: "Free", className: "text-slate-500 dark:text-slate-400 bg-slate-500/15" },
@@ -98,7 +93,18 @@ const mobileItemVariants = {
   exit: { opacity: 0, x: -8, transition: { duration: 0.1 } },
 };
 
-export function Navigation() {
+interface NavigationProps {
+  dict: Dictionary;
+  locale: string;
+}
+
+export function Navigation({ dict, locale }: NavigationProps) {
+  const navItems = [
+    { label: dict.nav.imageEdit, href: `/${locale}/image-edit` },
+    { label: dict.nav.skinRetouch, href: `/${locale}/retouching` },
+    { label: dict.nav.faceEdit, href: `/${locale}/face-edit` },
+    { label: dict.nav.pricing, href: `/${locale}/pricing` },
+  ];
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoveredHref, setHoveredHref] = useState<string | null>(null);
   const [clickedHref, setClickedHref] = useState<string | null>(null);
@@ -198,7 +204,7 @@ export function Navigation() {
         )}
       >
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 shrink-0">
+        <Link href={`/${locale}`} className="flex items-center gap-3 shrink-0">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-indigo-400">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
@@ -207,7 +213,7 @@ export function Navigation() {
               Phos AI
             </span>
             <span className="text-[11px] font-semibold text-muted-foreground leading-tight tracking-widest uppercase hidden sm:block">
-              Studio quality. Single click.
+              {dict.nav.tagline}
             </span>
           </div>
         </Link>
@@ -263,12 +269,13 @@ export function Navigation() {
           <div className="hidden md:block w-[100px]" />
         ) : user ? (
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSelector locale={locale} />
             <ThemeToggle />
 
             {/* 크레딧 뱃지 */}
             {creditInfo && (
               <Link
-                href="/pricing"
+                href={`/${locale}/pricing`}
                 className="group flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25 hover:border-indigo-400/40 transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]"
               >
                 <Zap className="w-4 h-4 text-indigo-400" />
@@ -331,7 +338,7 @@ export function Navigation() {
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
-                        Sign out
+                        {dict.nav.signOut}
                       </button>
                     </div>
                   </motion.div>
@@ -341,12 +348,13 @@ export function Navigation() {
           </div>
         ) : (
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSelector locale={locale} />
             <ThemeToggle />
             <button
               onClick={() => setLoginOpen(true)}
               className="inline-flex items-center px-6 py-2.5 text-[15px] font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-500 rounded-xl hover:brightness-110 transition-all cursor-pointer"
             >
-              로그인하기
+              {dict.nav.signIn}
             </button>
           </div>
         )}
@@ -354,7 +362,7 @@ export function Navigation() {
         {/* Mobile: 크레딧 뱃지 */}
         {user && creditInfo && (
           <Link
-            href="/pricing"
+            href={`/${locale}/pricing`}
             className="md:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25"
           >
             <Zap className="w-3.5 h-3.5 text-indigo-400" />
@@ -366,7 +374,7 @@ export function Navigation() {
         <button
           className="md:hidden p-2 text-foreground cursor-pointer"
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
+          aria-label={dict.nav.toggleMenu}
         >
           {mobileOpen ? (
             <X className="w-5 h-5" />
@@ -438,7 +446,8 @@ export function Navigation() {
                 );
               })}
               <motion.div variants={mobileItemVariants}>
-                <div className="flex justify-center mt-2">
+                <div className="flex justify-center items-center gap-3 mt-2">
+                  <LanguageSelector locale={locale} />
                   <ThemeToggle />
                 </div>
               </motion.div>
@@ -475,7 +484,7 @@ export function Navigation() {
                         }}
                       >
                         <LogOut className="w-4 h-4" />
-                        Sign out
+                        {dict.nav.signOut}
                       </button>
                     </div>
                   ) : (
@@ -486,7 +495,7 @@ export function Navigation() {
                         setLoginOpen(true);
                       }}
                     >
-                      로그인하기
+                      {dict.nav.signIn}
                     </button>
                   )}
                 </div>

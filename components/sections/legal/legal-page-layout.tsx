@@ -1,23 +1,28 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Footer } from "@/components/sections/footer";
+import type { Dictionary } from "@/lib/i18n";
 
 interface LegalPageLayoutProps {
   title: string;
   lastUpdated: string;
   children: React.ReactNode;
+  dict: Dictionary;
+  locale: string;
 }
 
 export function LegalPageLayout({
   title,
   lastUpdated,
   children,
+  dict,
+  locale,
 }: LegalPageLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 pt-28 pb-20">
         <Link
-          href="/"
+          href={`/${locale}`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -35,7 +40,7 @@ export function LegalPageLayout({
           {children}
         </div>
       </div>
-      <Footer />
+      <Footer dict={dict} locale={locale} />
     </div>
   );
 }

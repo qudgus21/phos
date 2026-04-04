@@ -10,6 +10,12 @@ import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import type { Dictionary } from "@/lib/i18n";
+
+interface FaceSwapProps {
+  dict: Dictionary;
+  locale: string;
+}
 
 const samples = [
   { id: "sample1" },
@@ -20,7 +26,7 @@ const samples = [
   { id: "sample6" },
 ];
 
-export function FaceSwap() {
+export function FaceSwap({ dict, locale }: FaceSwapProps) {
   const [selected, setSelected] = useState("sample1");
 
   return (
@@ -34,11 +40,11 @@ export function FaceSwap() {
         {/* Headline */}
         <motion.div variants={fadeInUp} className="text-center mb-10">
           <h2 className="text-3xl md:text-h3 font-black text-foreground mb-3 font-display">
-            모델 없이 완성하는{" "}
-            <span className="gradient-text">새로운 얼굴</span>
+            {dict.features.faceSwap.title}{" "}
+            <span className="gradient-text">{dict.features.faceSwap.titleAccent}</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            영역을 지정하고, 새로운 얼굴을 만들어보세요.
+            {dict.features.faceSwap.subtitle}
           </p>
         </motion.div>
 
@@ -60,7 +66,7 @@ export function FaceSwap() {
             >
               <Image
                 src={`/images/face-edit/${s.id}/thumbnail.webp`}
-                alt="얼굴 변경 샘플"
+                alt={dict.features.faceSwap.sampleAlt}
                 fill
                 className="object-cover"
                 sizes="40px"
@@ -87,7 +93,7 @@ export function FaceSwap() {
                 <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-border">
                   <Image
                     src={`/images/face-edit/${selected}/before.webp`}
-                    alt="원본 이미지"
+                    alt={dict.features.faceSwap.originalAlt}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 40vw, 250px"
@@ -97,7 +103,7 @@ export function FaceSwap() {
                   <div className="absolute inset-0 mix-blend-multiply opacity-40">
                     <Image
                       src={`/images/face-edit/${selected}/mask.webp`}
-                      alt="마스크 영역"
+                      alt={dict.features.faceSwap.maskAlt}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 40vw, 250px"
@@ -109,7 +115,7 @@ export function FaceSwap() {
                     variant="primary"
                     className="absolute top-2 left-2 md:top-3 md:left-3 text-[10px] bg-black/50 backdrop-blur-sm text-white"
                   >
-                    마스크 지정
+                    {dict.features.faceSwap.maskBadge}
                   </Badge>
                 </div>
 
@@ -120,7 +126,7 @@ export function FaceSwap() {
                 <div className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-primary/20">
                   <Image
                     src={`/images/face-edit/${selected}/after.webp`}
-                    alt="얼굴 변경 결과"
+                    alt={dict.features.faceSwap.resultAlt}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 40vw, 250px"
@@ -131,7 +137,7 @@ export function FaceSwap() {
                     variant="primary"
                     className="absolute top-2 right-2 md:top-3 md:right-3 text-[10px] bg-black/50 backdrop-blur-sm text-white"
                   >
-                    AI 생성
+                    {dict.features.faceSwap.aiGenerated}
                   </Badge>
                 </div>
               </div>
@@ -143,10 +149,10 @@ export function FaceSwap() {
         {/* CTA */}
         <motion.div variants={fadeInUp} className="text-center mt-6">
           <Link
-            href="/face-edit"
+            href={`/${locale}/face-edit`}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 font-bold text-base transition-all group"
           >
-            얼굴 변경 시작하기
+            {dict.features.faceSwap.cta}
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </motion.div>

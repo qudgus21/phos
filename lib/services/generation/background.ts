@@ -63,7 +63,7 @@ export async function runGenerationInBackground(params: BackgroundGenerationPara
       });
     }
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     console.error("[background] generation failed:", err);
 
     // 실패: status → failed
@@ -80,7 +80,7 @@ export async function runGenerationInBackground(params: BackgroundGenerationPara
       userId,
       onetimeDeducted,
       subscriptionDeducted,
-      `생성 실패 환불 (${modelLabel}, ${imageCount}장)`,
+      `Generation failed refund (${modelLabel}, ${imageCount} images)`,
       { historyId, reason: errorMessage }
     );
   }

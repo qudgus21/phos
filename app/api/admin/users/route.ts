@@ -39,7 +39,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
       .single();
 
     if (error || !user) {
-      throw new ApiError("유저를 찾을 수 없습니다", 404);
+      throw new ApiError("User not found", 404);
     }
 
     const [creditsRes, subRes] = await Promise.all([
@@ -94,7 +94,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    throw new ApiError("유저 목록 조회 실패", 500);
+    throw new ApiError("Failed to fetch user list", 500);
   }
 
   const result: AdminUserInfo[] = (users ?? []).map((u) => {

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { locales, detectLocale } from "@/lib/i18n";
 
 function requireEnv(key: string): string {
   const value = process.env[key];
@@ -7,7 +8,7 @@ function requireEnv(key: string): string {
   return value;
 }
 
-export async function middleware(request: NextRequest) {
+async function handleSupabase(request: NextRequest): Promise<NextResponse> {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -31,11 +32,8 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // 세션 갱신 — getUser()가 쿠키 refresh를 트리거
   const { error } = await supabase.auth.getUser();
 
-  // 세션 쿠키가 있는데 유저가 유효하지 않은 경우 → 쿠키 정리
-  // auth callback 경로는 제외 (PKCE code_verifier 쿠키가 signOut으로 삭제되면 OAuth 실패)
   const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/");
   if (error && !isAuthCallback) {
     const hasAuthCookies = request.cookies
@@ -47,6 +45,47 @@ export async function middleware(request: NextRequest) {
   }
 
   return supabaseResponse;
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Static files, API, auth, webhooks — skip locale handling
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/auth/") ||
+    pathname.includes(".")
+  ) {
+    return handleSupabase(request);
+  }
+
+  // Check if first segment is a valid locale
+  const segments = pathname.split("/").filter(Boolean);
+  const firstSegment = segments[0];
+  const hasLocale =
+    firstSegment !== undefined &&
+    locales.includes(firstSegment as (typeof locales)[number]);
+
+  if (!hasLocale) {
+    // No locale prefix — detect and redirect
+    const detected = detectLocale(
+      request.headers.get("accept-language") ?? ""
+    );
+    const url = request.nextUrl.clone();
+    url.pathname =
+      pathname === "/" ? `/${detected}` : `/${detected}${pathname}`;
+    return NextResponse.redirect(url, 307);
+  }
+
+  // Valid locale — proceed with Supabase session + set locale headers
+  const response = await handleSupabase(request);
+  response.headers.set("x-locale", firstSegment);
+  response.headers.set(
+    "x-dir",
+    firstSegment === "ar" ? "rtl" : "ltr"
+  );
+  return response;
 }
 
 export const config = {
