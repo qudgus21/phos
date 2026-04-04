@@ -201,6 +201,7 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
                 alt={sample.label}
                 width={200}
                 height={200}
+                priority
                 className="w-full h-full object-cover"
               />
             </button>
