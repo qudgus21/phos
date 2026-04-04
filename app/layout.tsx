@@ -64,11 +64,11 @@ export default function RootLayout({
         />
         <link
           rel="preconnect"
-          href="https://pub-fe00511f6c6940738366519b16c3c05c.r2.dev"
+          href="https://images.phos.studio"
         />
         <link
           rel="dns-prefetch"
-          href="https://pub-fe00511f6c6940738366519b16c3c05c.r2.dev"
+          href="https://images.phos.studio"
         />
         <link rel="preconnect" href="https://replicate.delivery" />
         <link rel="dns-prefetch" href="https://replicate.delivery" />

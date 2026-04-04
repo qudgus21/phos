@@ -12,7 +12,7 @@ function requireEnv(key: string): string {
   return value;
 }
 
-const R2_PUBLIC_URL = "https://pub-fe00511f6c6940738366519b16c3c05c.r2.dev";
+const R2_PUBLIC_URL = "https://images.phos.studio";
 
 function getS3Client(): S3Client {
   const cached = (globalThis as Record<string, unknown>).__r2Client as S3Client | undefined;

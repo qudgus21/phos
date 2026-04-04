@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "pub-fe00511f6c6940738366519b16c3c05c.r2.dev",
+        hostname: "images.phos.studio",
       },
       {
         protocol: "https",
