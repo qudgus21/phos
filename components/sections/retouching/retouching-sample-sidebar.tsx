@@ -33,10 +33,10 @@ export function RetouchingSampleSidebar({
   const [activeTab, setActiveTab] = useState("samples");
   const { toast } = useToast();
 
-  const { data: creditInfo } = useCreditsBalance(true);
+  const { user, requireAuth, loginModal } = useRequireAuth();
+  const { data: creditInfo } = useCreditsBalance(!!user);
   const planMaxFavorites = creditInfo?.plan?.maxFavorites ?? 3;
   const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("retouching", planMaxFavorites);
-  const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);
 

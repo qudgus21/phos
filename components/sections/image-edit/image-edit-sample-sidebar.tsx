@@ -30,10 +30,10 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
     { id: "favorites", label: dict.common.tabs.favorites },
   ];
 
-  const { data: creditInfo } = useCreditsBalance(true);
+  const { user, requireAuth, loginModal } = useRequireAuth();
+  const { data: creditInfo } = useCreditsBalance(!!user);
   const planMaxFavorites = creditInfo?.plan?.maxFavorites ?? 3;
   const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("image-edit", planMaxFavorites);
-  const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);
 
@@ -102,7 +102,7 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-2 pt-0 space-y-2">
         {activeTab === "samples" &&
-          SAMPLES.map((sample) => (
+          SAMPLES.map((sample, idx) => (
             <button
               key={sample.id}
               type="button"
@@ -120,6 +120,7 @@ export function ImageEditSampleSidebar({ inputPanelRef, selectedSampleId, onSele
                 width={200}
                 height={200}
                 className="w-full h-full object-cover"
+                {...(idx === 0 && { priority: true })}
               />
             </button>
           ))}

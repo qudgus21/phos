@@ -110,10 +110,10 @@ export function FaceEditSampleSidebar({ inputPanelRef, selectedSampleId, onSelec
     { id: "favorites", label: dict.common.tabs.favorites },
   ];
 
-  const { data: creditInfo } = useCreditsBalance(true);
+  const { user, requireAuth, loginModal } = useRequireAuth();
+  const { data: creditInfo } = useCreditsBalance(!!user);
   const planMaxFavorites = creditInfo?.plan?.maxFavorites ?? 3;
   const { favorites, isLoading: favLoading, saveFavorite, deleteFavorite, maxFavorites, isFull: favFull } = useFavorites("face-edit", planMaxFavorites);
-  const { requireAuth, loginModal } = useRequireAuth();
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [deletingFavId, setDeletingFavId] = useState<string | null>(null);
 
