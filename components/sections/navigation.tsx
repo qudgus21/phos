@@ -230,7 +230,7 @@ export function Navigation({ dict, locale }: NavigationProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative px-4 py-2.5 text-[15px] font-semibold transition-colors",
+                  "relative px-4 py-2.5 text-[15px] font-semibold transition-colors whitespace-nowrap",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
                 onMouseEnter={() => !clickedHref && setHoveredHref(item.href)}
@@ -359,29 +359,32 @@ export function Navigation({ dict, locale }: NavigationProps) {
           </div>
         )}
 
-        {/* Mobile: 크레딧 뱃지 */}
-        {user && creditInfo && (
-          <Link
-            href={`/${locale}/pricing`}
-            className="md:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25"
-          >
-            <Zap className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-xs font-bold text-foreground tabular-nums">
-              {creditInfo.balance.total.toLocaleString()}
-            </span>
-          </Link>
-        )}
-        <button
-          className="md:hidden p-2 text-foreground cursor-pointer"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={dict.nav.toggleMenu}
-        >
-          {mobileOpen ? (
-            <X className="w-5 h-5" />
-          ) : (
-            <Menu className="w-5 h-5" />
+        {/* Mobile: 크레딧 뱃지 + 햄버거 */}
+        <div className="md:hidden flex items-center gap-2">
+          {user && creditInfo && (
+            <Link
+              href={`/${locale}/pricing`}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 to-cyan-500/15 border border-indigo-500/25"
+            >
+              <Zap className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-xs font-bold text-foreground tabular-nums max-w-[80px] truncate">
+                {creditInfo.balance.total.toLocaleString()}
+              </span>
+              <Plus className="w-3 h-3 text-indigo-400" />
+            </Link>
           )}
-        </button>
+          <button
+            className="p-2 text-foreground cursor-pointer"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={dict.nav.toggleMenu}
+          >
+            {mobileOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
+          </button>
+        </div>
       </nav>
 
       {/* D: 스크롤 프로그레스 바 */}

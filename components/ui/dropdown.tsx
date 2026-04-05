@@ -181,7 +181,7 @@ export function Dropdown({
             transition={{ duration: 0.15, ease: "easeOut" }}
             className={cn(
               "absolute z-[9999] min-w-[100px] rounded-lg border border-border bg-card py-1 shadow-[0_8px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.55)]",
-              columns === 1 ? "w-full max-h-52 overflow-y-auto" : "w-max",
+              columns === 1 ? "w-full max-h-52 overflow-y-auto" : "w-max max-w-[calc(100vw-2rem)]",
               direction === "above" ? "bottom-full mb-1" : "top-full mt-1",
               align === "right" ? "right-0" : "left-0"
             )}

@@ -37,13 +37,13 @@ export function Hero({ dict, locale }: HeroProps) {
           alt={dict.hero.heroImageAlt}
           fill
           sizes="(max-width: 768px) 100vw, 65vw"
-          className="object-cover object-top"
+          className="object-cover object-top md:object-center"
           priority
           placeholder="blur"
           blurDataURL={getBlur("/images/home/hero/hero-model.webp")}
         />
-        {/* Left fade */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white from-5% via-white/40 via-30% to-transparent to-60% dark:from-[#1a1b2e] dark:via-[#1a1b2e]/40 dark:to-transparent" />
+        {/* Left fade — 모바일: 더 강한 오버레이로 텍스트 가독성 확보 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-white/40 md:from-white md:from-5% md:via-white/40 md:via-30% md:to-transparent md:to-60% dark:from-[#1a1b2e] dark:via-[#1a1b2e]/80 dark:to-[#1a1b2e]/40 md:dark:via-[#1a1b2e]/40 md:dark:to-transparent" />
       </div>
 
       {/* Content */}
@@ -79,18 +79,18 @@ export function Hero({ dict, locale }: HeroProps) {
 
           {/* Subtitle — A (no animation for LCP optimization) */}
           <p
-            className="text-lg md:text-xl text-foreground/70 mb-12 leading-relaxed"
+            className="text-base md:text-xl text-foreground/70 mb-10 md:mb-12 leading-relaxed"
           >
             {dict.hero.subtitle}
-            <br className="hidden md:block" />
+            <br />
             {dict.hero.subtitleHighlight}
           </p>
 
           {/* CTA — E */}
-          <motion.div variants={fadeInUp} className="flex items-center gap-4 mb-8">
+          <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-8">
             <Link
               href={`/${locale}/image-edit`}
-              className="inline-flex items-center px-10 py-5 text-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl btn-glow transition-all duration-300 ease-out hover:scale-[1.06] hover:brightness-110 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-[0.98]"
+              className="inline-flex items-center px-8 py-4 md:px-10 md:py-5 text-lg md:text-xl font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl btn-glow transition-all duration-300 ease-out hover:scale-[1.06] hover:brightness-110 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-[0.98]"
             >
               {dict.hero.cta}
             </Link>

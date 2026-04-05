@@ -598,7 +598,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
           <div
             ref={scrollContainerRef}
             className={cn(
-              "flex-1 overflow-x-auto min-h-[150px] rounded-lg transition-colors",
+              "flex-1 overflow-x-auto min-h-[100px] lg:min-h-[150px] rounded-lg transition-colors",
               isDragOver && "bg-[#A5B4FC]/10 ring-2 ring-[#818CF8] ring-dashed"
             )}
           >
@@ -727,16 +727,16 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
           <div className="space-y-3">
             {/* 해상도 · 비율 (+ 크기: custom일 때만) */}
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
+              <div className="hidden lg:flex items-center gap-1.5">
                 <label className="text-sm font-semibold text-card-foreground w-[70px]">{dict.tools.imageEdit.resolution}</label>
                 <label className="text-sm font-semibold text-card-foreground w-[80px] ml-1">{dict.tools.imageEdit.ratio}</label>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px]" openDirection="above" />
-                <div className="ml-1"><Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[72px]" openDirection="above" columns={5} /></div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Dropdown options={sizeOptions} value={imageSize} onChange={setImageSize} className="w-[70px] min-w-[70px]" openDirection="above" />
+                <div className="ml-0 lg:ml-1"><Dropdown options={RATIO_OPTIONS} value={ratio} onChange={setRatio} className="w-[72px]" openDirection="above" columns={5} /></div>
                 {isCustomSize && (
-                  <>
-                    <input type="number" min={1024} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[62px] px-1.5 py-1.5 text-center text-sm ml-1")} />
+                  <div className="flex items-center gap-1.5 w-full lg:w-auto">
+                    <input type="number" min={1024} max={4096} value={width} onChange={(e) => setWidth(Number(e.target.value))} className={cn(fieldBase, "w-[62px] px-1.5 py-1.5 text-center text-sm")} />
                     <span className="text-sm text-muted-foreground">×</span>
                     <input type="number" min={1024} max={4096} value={height} onChange={(e) => setHeight(Number(e.target.value))} className={cn(fieldBase, "w-[62px] px-1.5 py-1.5 text-center text-sm")} />
                     <button
@@ -747,7 +747,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                     >
                       <Ruler className="w-3 h-3 text-muted-foreground" />
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
@@ -790,7 +790,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
               disabled={isGenerating}
               onClick={() => requireAuth(handleGenerate)}
               className={cn(
-                "flex items-center gap-2 px-5 py-2.5 text-[15px] font-extrabold rounded-xl transition-all duration-300 cursor-pointer tracking-wide",
+                "flex items-center gap-2 px-3 lg:px-5 py-2.5 text-[13px] lg:text-[15px] font-extrabold rounded-xl transition-all duration-300 cursor-pointer tracking-wide",
                 prompt.trim() && !isGenerating
                   ? "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.03]"
                   : "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
