@@ -180,6 +180,7 @@ export function Navigation({ dict, locale }: NavigationProps) {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setDropdownOpen(false);
+    router.push("/");
     router.refresh();
   };
 

@@ -191,6 +191,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }
 
     handleClose();
+    router.push("/");
     router.refresh();
   };
 
