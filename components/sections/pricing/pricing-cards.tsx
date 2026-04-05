@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { useCreditsBalance } from "@/hooks/use-credits";
 import { useDictionary } from "@/lib/i18n/dictionary-context";
+import { getApiErrorMessage } from "@/lib/utils/api-error-message";
 
 type PricingTab = "monthly" | "onetime";
 
@@ -205,7 +206,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
         setResultModal({
           open: true,
           title: dict.tools.pricing.errorTitle,
-          description: json.error?.message ?? dict.tools.pricing.networkErrorDesc,
+          description: getApiErrorMessage(json.error, dict, dict.tools.pricing.networkErrorDesc),
           confirmLabel: dict.common.confirm,
           variant: "danger",
           onConfirm: () => {},
@@ -326,7 +327,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
         setResultModal({
           open: true,
           title: dict.tools.pricing.errorTitle,
-          description: json.error?.message ?? dict.tools.pricing.portalError,
+          description: getApiErrorMessage(json.error, dict, dict.tools.pricing.portalError),
           confirmLabel: dict.common.confirm,
           variant: "danger",
           onConfirm: () => {},

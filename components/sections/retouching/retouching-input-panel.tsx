@@ -13,8 +13,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
+import { getApiErrorMessage } from "@/lib/utils/api-error-message";
 import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { queryKeys } from "@/lib/query-keys";
+import type { UserCreditInfo } from "@/lib/types/credits";
+import { useLocale } from "@/lib/i18n/dictionary-context";
 import { motion, AnimatePresence } from "framer-motion";
 import { RETOUCHING_SAMPLES } from "@/lib/constants/retouching-samples";
 import { compressImageForInput } from "@/lib/utils/compress-image";
@@ -204,6 +208,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
   /* Generation */
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const locale = useLocale();
   const { requireAuth, loginModal } = useRequireAuth();
 
   const hasImage = !!uploadedImage;
@@ -382,6 +387,15 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       return;
     }
 
+    const cachedCredits = queryClient.getQueryData<UserCreditInfo>(queryKeys.credits.balance);
+    if (cachedCredits && cachedCredits.balance.total < CREDIT_COST) {
+      toast(dict.common.errors.insufficientCredits, "error", 5000, {
+        label: dict.common.errors.viewPlans,
+        onClick: () => { window.location.href = `/${locale}/pricing`; },
+      });
+      return;
+    }
+
     setIsGenerating(true);
     const tempId = crypto.randomUUID();
     prependHistoryItem(queryClient, "retouching", {
@@ -421,7 +435,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       });
       const data = await res.json();
       if (!data.success) {
-        throw new Error(data.error?.message ?? dict.common.errors.generationFailed);
+        throw new Error(getApiErrorMessage(data.error, dict));
       }
       replaceHistoryId(queryClient, "retouching", tempId, data.data.historyId);
       onPendingStart?.(data.data.historyId);

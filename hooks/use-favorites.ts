@@ -53,7 +53,7 @@ export function useFavorites(featureType: string = "image-edit", maxFavorites: n
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Authentication required");
+      if (!user) throw new Error("AUTH_REQUIRED");
 
       // 5개 제한 체크
       const { count } = await supabase
@@ -63,7 +63,7 @@ export function useFavorites(featureType: string = "image-edit", maxFavorites: n
         .eq("feature_type", featureType);
 
       if ((count ?? 0) >= maxFavorites) {
-        throw new Error(`Maximum ${maxFavorites} favorites allowed`);
+        throw new Error("MAX_FAVORITES");
       }
 
       // DB row 먼저 생성 (ID 확보)
@@ -86,7 +86,7 @@ export function useFavorites(featureType: string = "image-edit", maxFavorites: n
         .single();
 
       if (insertError || !row) {
-        throw new Error(insertError?.message ?? "Failed to save");
+        throw new Error("SAVE_FAILED");
       }
 
       // 참조이미지 압축 & R2 업로드

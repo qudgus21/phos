@@ -359,9 +359,13 @@ const ar: Dictionary = {
     errors: {
       authRequired: "يلزم تسجيل الدخول",
       insufficientCredits: "رصيد غير كافٍ",
+      viewPlans: "شحن الرص��د",
       generationFailed: "فشل التوليد",
       imageProcessing: "الصورة قيد المعالجة. يرجى المحاولة بعد قليل",
       uploadRequired: "يرجى رفع صورة",
+      unexpectedError: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+      serverUnavailable: "الخادم غير متاح مؤقتاً. يرجى المحاولة بعد قليل.",
+      tooManyRequests: "طلبات كثيرة جداً. يرجى المحاولة لاحقاً.",
     },
     time: {
       justNow: "الآن",
@@ -532,6 +536,7 @@ const ar: Dictionary = {
       deleteDesc: "هل تريد حذف هذا العنصر من المفضلة؟",
       saveFavTitle: "حفظ الإعدادات الحالية",
       maxFavTitle: "الحد الأقصى {max}",
+      maxFavoritesReached: "تم الوصول إلى الحد الأقصى {max} من المفضلة",
       emptyHint: "الإعدادات المحفوظة\nستظهر هنا",
     },
     history: {

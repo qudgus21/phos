@@ -15,15 +15,21 @@ import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: string;
   message: string;
   type: ToastType;
   duration?: number;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
-  toast: (message: string, type?: ToastType, duration?: number) => void;
+  toast: (message: string, type?: ToastType, duration?: number, action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -63,14 +69,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toast = useCallback(
-    (message: string, type: ToastType = "info", duration: number = 4000) => {
+    (message: string, type: ToastType = "info", duration: number = 4000, action?: ToastAction) => {
       // 동일 메시지+타입이 이미 표시 중이면 무시
       setToasts((prev) => {
         if (prev.some((t) => t.message === message && t.type === type)) return prev;
         const id = crypto.randomUUID();
         const timer = setTimeout(() => removeToast(id), duration);
         timersRef.current.set(id, timer);
-        return [...prev, { id, message, type, duration }];
+        return [...prev, { id, message, type, duration, action }];
       });
     },
     [removeToast]
@@ -94,7 +100,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               )}
             >
               {typeIcons[t.type]}
-              <span className="text-sm font-medium flex-1">{t.message}</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium">{t.message}</span>
+                {t.action && (
+                  <button
+                    onClick={() => {
+                      t.action!.onClick();
+                      removeToast(t.id);
+                    }}
+                    className="block text-xs opacity-70 hover:opacity-100 underline underline-offset-2 transition-opacity mt-0.5"
+                  >
+                    {t.action.label}
+                  </button>
+                )}
+              </div>
               <button
                 onClick={() => removeToast(t.id)}
                 aria-label="Close"

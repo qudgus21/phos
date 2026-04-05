@@ -11,7 +11,11 @@ import { FaceEditMaskEditor } from "./face-edit-mask-editor";
 import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
 import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { queryKeys } from "@/lib/query-keys";
+import type { UserCreditInfo } from "@/lib/types/credits";
+import { useLocale } from "@/lib/i18n/dictionary-context";
 import { compressImageForInput } from "@/lib/utils/compress-image";
+import { getApiErrorMessage } from "@/lib/utils/api-error-message";
 
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
@@ -57,6 +61,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const dict = useDictionary();
+  const locale = useLocale();
   const { requireAuth, loginModal } = useRequireAuth();
   const activeSample = FACE_EDIT_SAMPLES.find((s) => s.id === sampleId);
 
@@ -321,6 +326,15 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       return;
     }
 
+    const cachedCredits = queryClient.getQueryData<UserCreditInfo>(queryKeys.credits.balance);
+    if (cachedCredits && cachedCredits.balance.total < CREDIT_COST) {
+      toast(dict.common.errors.insufficientCredits, "error", 5000, {
+        label: dict.common.errors.viewPlans,
+        onClick: () => { window.location.href = `/${locale}/pricing`; },
+      });
+      return;
+    }
+
     setIsGenerating(true);
     const tempId = crypto.randomUUID();
     prependHistoryItem(queryClient, "face-edit", {
@@ -368,7 +382,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
       });
       const data = await res.json();
       if (!data.success) {
-        throw new Error(data.error?.message ?? dict.common.errors.generationFailed);
+        throw new Error(getApiErrorMessage(data.error, dict));
       }
 
       replaceHistoryId(queryClient, "face-edit", tempId, data.data.historyId);

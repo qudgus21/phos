@@ -364,9 +364,13 @@ const ru: Dictionary = {
     errors: {
       authRequired: "Требуется авторизация",
       insufficientCredits: "Недостаточно кредитов",
+      viewPlans: "Пополнить кредиты",
       generationFailed: "Ошибка генерации",
       imageProcessing: "Изображение обрабатывается. Попробуйте чуть позже",
       uploadRequired: "Загрузите изображение",
+      unexpectedError: "Произошла непредвиденная ошибка. Попробуйте ещё раз.",
+      serverUnavailable: "Сервер временно недоступен. Попробуйте чуть позже.",
+      tooManyRequests: "Слишком много запросов. Попробуйте позже.",
     },
     time: {
       justNow: "Только что",
@@ -537,6 +541,7 @@ const ru: Dictionary = {
       deleteDesc: "Удалить этот элемент из избранного?",
       saveFavTitle: "Сохранить текущие настройки",
       maxFavTitle: "Макс. {max}",
+      maxFavoritesReached: "Достигнут максимум — {max} избранных",
       emptyHint: "Сохранённые настройки\nпоявятся здесь",
     },
     history: {

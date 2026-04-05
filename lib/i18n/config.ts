@@ -241,9 +241,13 @@ export interface Dictionary {
     errors: {
       authRequired: string;
       insufficientCredits: string;
+      viewPlans: string;
       generationFailed: string;
       imageProcessing: string;
       uploadRequired: string;
+      unexpectedError: string;
+      serverUnavailable: string;
+      tooManyRequests: string;
     };
     time: {
       justNow: string;
@@ -371,6 +375,7 @@ export interface Dictionary {
       deleteDesc: string;
       saveFavTitle: string;
       maxFavTitle: string;
+      maxFavoritesReached: string;
       emptyHint: string;
     };
     history: {

@@ -361,9 +361,13 @@ const ja: Dictionary = {
     errors: {
       authRequired: "ログインが必要です",
       insufficientCredits: "クレジットが不足しています",
+      viewPlans: "クレ���ットをチャージする",
       generationFailed: "生成に失敗しました",
       imageProcessing: "画像を処理中です。しばらくしてからお試しください",
       uploadRequired: "画像をアップロードしてください",
+      unexpectedError: "予期しないエラーが発生しました。もう一度お試しください。",
+      serverUnavailable: "サーバーが一時的に利用できません。しばらくしてからお試しください。",
+      tooManyRequests: "リクエストが多すぎます。しばらくしてからお試しください。",
     },
     time: {
       justNow: "たった今",
@@ -521,6 +525,7 @@ const ja: Dictionary = {
       deleteDesc: "このお気に入りを削除しますか？",
       saveFavTitle: "現在の設定を保存",
       maxFavTitle: "最大 {max} 件",
+      maxFavoritesReached: "お気に入りは最大 {max} 件までです",
       emptyHint: "保存した設定は\nここに表示されます",
     },
     history: {

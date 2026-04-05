@@ -361,9 +361,13 @@ const id: Dictionary = {
     errors: {
       authRequired: "Diperlukan autentikasi",
       insufficientCredits: "Kredit tidak cukup",
+      viewPlans: "Isi ulang kredit",
       generationFailed: "Pemrosesan gagal",
       imageProcessing: "Gambar sedang diproses. Silakan coba lagi sebentar",
       uploadRequired: "Silakan unggah gambar",
+      unexpectedError: "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
+      serverUnavailable: "Server tidak tersedia sementara. Silakan coba lagi sebentar.",
+      tooManyRequests: "Terlalu banyak permintaan. Silakan coba lagi nanti.",
     },
     time: {
       justNow: "Baru saja",
@@ -534,6 +538,7 @@ const id: Dictionary = {
       deleteDesc: "Hapus favorit ini?",
       saveFavTitle: "Simpan pengaturan saat ini",
       maxFavTitle: "Maks. {max}",
+      maxFavoritesReached: "Maksimal {max} favorit tercapai",
       emptyHint: "Pengaturan yang disimpan\nakan muncul di sini",
     },
     history: {

@@ -360,9 +360,13 @@ const ko: Dictionary = {
     errors: {
       authRequired: "인증이 필요합니다",
       insufficientCredits: "크레딧이 부족합니다",
-      generationFailed: "생성에 실패했습니다",
+      viewPlans: "크레딧 충전하기",
+      generationFailed: "생성에 ���패했습니다",
       imageProcessing: "이미지 처리 중입니다. 잠시 후 다시 시도해주세요",
       uploadRequired: "이미지를 업로드해주세요",
+      unexpectedError: "예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.",
+      serverUnavailable: "서버가 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      tooManyRequests: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
     },
     time: {
       justNow: "방금 전",
@@ -533,6 +537,7 @@ const ko: Dictionary = {
       deleteDesc: "이 즐겨찾기를 삭제하시겠습니까?",
       saveFavTitle: "현재 설정 저장",
       maxFavTitle: "최대 {max}개",
+      maxFavoritesReached: "최대 {max}개까지 저장할 수 있습니다",
       emptyHint: "설정을 저장하면\n여기에 표시됩니다",
     },
     history: {

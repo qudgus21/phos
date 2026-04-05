@@ -365,9 +365,13 @@ const fr: Dictionary = {
     errors: {
       authRequired: "Authentification requise",
       insufficientCredits: "Credits insuffisants",
+      viewPlans: "Recharger des credits",
       generationFailed: "Echec de la generation",
       imageProcessing: "L'image est en cours de traitement. Reessayez dans un instant",
       uploadRequired: "Veuillez importer une image",
+      unexpectedError: "Une erreur inattendue s'est produite. Veuillez reessayer.",
+      serverUnavailable: "Serveur temporairement indisponible. Veuillez reessayer dans un moment.",
+      tooManyRequests: "Trop de requetes. Veuillez reessayer plus tard.",
     },
     time: {
       justNow: "A l'instant",
@@ -525,6 +529,7 @@ const fr: Dictionary = {
       deleteDesc: "Supprimer ce favori ?",
       saveFavTitle: "Enregistrer les paramètres actuels",
       maxFavTitle: "Max. {max}",
+      maxFavoritesReached: "Maximum {max} favoris atteint",
       emptyHint: "Les paramètres sauvegardés\napparaitront ici",
     },
     history: {

@@ -365,9 +365,13 @@ const pt: Dictionary = {
     errors: {
       authRequired: "Autenticacao necessaria",
       insufficientCredits: "Creditos insuficientes",
+      viewPlans: "Recarregar creditos",
       generationFailed: "Falha na geracao",
       imageProcessing: "A imagem esta sendo processada. Tente novamente em instantes",
       uploadRequired: "Envie uma imagem",
+      unexpectedError: "Ocorreu um erro inesperado. Tente novamente.",
+      serverUnavailable: "Servidor temporariamente indisponivel. Tente novamente em breve.",
+      tooManyRequests: "Muitas solicitacoes. Tente novamente mais tarde.",
     },
     time: {
       justNow: "Agora",
@@ -538,6 +542,7 @@ const pt: Dictionary = {
       deleteDesc: "Excluir este favorito?",
       saveFavTitle: "Salvar configuracoes atuais",
       maxFavTitle: "Máx. {max}",
+      maxFavoritesReached: "Maximo de {max} favoritos atingido",
       emptyHint: "As configuracoes salvas\nvao aparecer aqui",
     },
     history: {

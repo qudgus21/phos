@@ -48,7 +48,13 @@ export function FavoriteSaveModal({
       setName("");
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : dict.tools.favorites.saveFailed);
+      const code = e instanceof Error ? e.message : "";
+      const msg = code === "MAX_FAVORITES"
+        ? dict.tools.favorites.maxFavoritesReached.replace("{max}", String(maxCount))
+        : code === "AUTH_REQUIRED"
+          ? dict.common.errors.authRequired
+          : dict.tools.favorites.saveFailed;
+      setError(msg);
     } finally {
       setIsSaving(false);
     }

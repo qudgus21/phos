@@ -356,9 +356,13 @@ const zh: Dictionary = {
     errors: {
       authRequired: "需要登录",
       insufficientCredits: "积分不足",
+      viewPlans: "充值积分",
       generationFailed: "生成失败",
       imageProcessing: "图片处理中，请稍后再试",
       uploadRequired: "请上传图片",
+      unexpectedError: "发生意外错误，请重试。",
+      serverUnavailable: "服务器暂时不可用，请稍后重试。",
+      tooManyRequests: "请求过多，请稍后重试。",
     },
     time: {
       justNow: "刚刚",
@@ -529,6 +533,7 @@ const zh: Dictionary = {
       deleteDesc: "确定删除此收藏？",
       saveFavTitle: "保存当前设置",
       maxFavTitle: "最多 {max} 个",
+      maxFavoritesReached: "最多可保存 {max} 个收藏",
       emptyHint: "保存的设置\n将显示在这里",
     },
     history: {

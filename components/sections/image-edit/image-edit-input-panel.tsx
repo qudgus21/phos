@@ -12,7 +12,11 @@ import { SAMPLES } from "@/lib/constants/samples";
 import { IMAGE_EDIT_MODELS, getImageEditCredits } from "@/lib/services/ai/models";
 import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { queryKeys } from "@/lib/query-keys";
+import type { UserCreditInfo } from "@/lib/types/credits";
+import { useLocale } from "@/lib/i18n/dictionary-context";
 import { compressImageForInput } from "@/lib/utils/compress-image";
+import { getApiErrorMessage } from "@/lib/utils/api-error-message";
 import { useDictionary } from "@/lib/i18n/dictionary-context";
 
 interface UploadedImage {
@@ -83,6 +87,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const { toast } = useToast();
   const { requireAuth, loginModal } = useRequireAuth();
   const dict = useDictionary();
+  const locale = useLocale();
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
 
   const [model, setModelRaw] = useState(MODEL_OPTIONS[0].value);
@@ -221,6 +226,17 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       toast(dict.common.errors.imageProcessing, "warning");
       return;
     }
+
+    const totalCost = creditCost * imageCount;
+    const cachedCredits = queryClient.getQueryData<UserCreditInfo>(queryKeys.credits.balance);
+    if (cachedCredits && cachedCredits.balance.total < totalCost) {
+      toast(dict.common.errors.insufficientCredits, "error", 5000, {
+        label: dict.common.errors.viewPlans,
+        onClick: () => { window.location.href = `/${locale}/pricing`; },
+      });
+      return;
+    }
+
     setIsGenerating(true);
     // 낙관적 업데이트: 버튼 클릭 즉시 히스토리에 pending 추가 + 로딩 UI 표시
     const tempId = crypto.randomUUID();
@@ -269,7 +285,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       });
       const data = await res.json();
       if (!data.success) {
-        throw new Error(data.error?.message ?? dict.common.errors.generationFailed);
+        throw new Error(getApiErrorMessage(data.error, dict));
       }
       // 임시 ID → 실제 historyId로 교체
       replaceHistoryId(queryClient, "image-edit", tempId, data.data.historyId);

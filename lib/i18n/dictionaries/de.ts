@@ -362,9 +362,13 @@ const de: Dictionary = {
     errors: {
       authRequired: "Anmeldung erforderlich",
       insufficientCredits: "Nicht genügend Credits",
+      viewPlans: "Credits aufladen",
       generationFailed: "Generierung fehlgeschlagen",
       imageProcessing: "Bild wird verarbeitet. Bitte versuchen Sie es gleich erneut",
       uploadRequired: "Bitte laden Sie ein Bild hoch",
+      unexpectedError: "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      serverUnavailable: "Server vorübergehend nicht verfügbar. Bitte versuchen Sie es in Kürze erneut.",
+      tooManyRequests: "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
     },
     time: {
       justNow: "Gerade eben",
@@ -535,6 +539,7 @@ const de: Dictionary = {
       deleteDesc: "Diesen Favoriten löschen?",
       saveFavTitle: "Aktuelle Einstellungen speichern",
       maxFavTitle: "Max. {max}",
+      maxFavoritesReached: "Maximal {max} Favoriten erreicht",
       emptyHint: "Gespeicherte Einstellungen\nerscheinen hier",
     },
     history: {

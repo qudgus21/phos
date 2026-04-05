@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
 import { useDictionary } from "@/lib/i18n/dictionary-context";
+import { getApiErrorMessage } from "@/lib/utils/api-error-message";
 import type { User } from "@supabase/supabase-js";
 
 const MAX_CONTENT_LENGTH = 5000;
@@ -121,7 +122,7 @@ export default function ContactForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast(data.error?.message ?? dict.contact.error, "error");
+        toast(getApiErrorMessage(data.error, dict, dict.contact.error), "error");
         return;
       }
 
