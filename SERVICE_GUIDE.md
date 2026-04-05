@@ -131,12 +131,13 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | 이미지 편집 (4K) | 150 크레딧 |
 
 ### 크레딧 시스템 구현
-- **선차감 패턴**: AI 생성 전 `deduct_credits` RPC로 원자적 차감 → 실패 시 `refund_credits`로 환불
+- **선차감 패턴**: AI 생성 전 `deduct_credits` RPC로 원자적 차감 → ���패 시 `refundCredits`로 환불
 - **이중 잔액**: `onetime_balance` + `subscription_balance` — onetime 우선 차감
-- **낙관적 UI**: `credits-updated` CustomEvent로 GNB 크레딧 즉시 반영
-- **쿨다운**: 플랜별 속도 제한 (FREE: 300초, 유료: 플랜별 상이)
-- **RPC 함수**: `deduct_credits`, `add_credits`, `refund_credits`
-- **서비스**: `lib/services/credits/index.ts` — `getUserCreditInfo`, `deductCredits`, `refundCredits`, `checkCooldown`
+- **Realtime UI**: Supabase Realtime으로 `user_credits`/`user_subscriptions` 변경 감지 → React Query 캐시 자동 갱신
+- **쿨다운**: FREE: 300초, 유료 플랜(Basic/Pro/Premium): 0초
+- **핵심 정책**: 결제한 크레딧은 절대 소멸/회수 금지 (취소·해지 시에도 잔액 유지)
+- **RPC 함수**: `deduct_credits`, `add_credits`, `process_subscription_activation`, `process_credit_purchase`, `process_refund`, `process_subscription_revoke`
+- **���비스**: `lib/services/credits/index.ts` — `getUserCreditInfo`, `deductCredits`, `refundCredits`, `checkCooldown`
 
 ### 월간 구독 플랜
 | 플랜 | 가격 | 크레딧 | 비고 |
@@ -155,7 +156,14 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | $20 | 3,300 |
 | $30 | 5,100 |
 
-**결제 연동**: Polar (MoR) 예정
+### 결제 연동 (Polar)
+- **결제 처리**: Polar (Merchant of Record) — 카드 결제, 구독 관리, 환불 처리
+- **웹훅**: `POST /api/webhook/polar` — 서명 검증 + 멱등성(webhook_id) 보장
+- **이벤트**: `order.paid`, `order.refunded`, `subscription.updated`, `subscription.canceled`, `subscription.revoked`, `subscription.uncanceled`
+- **고객 포털**: Polar 제공 페이지에서 결제 수단 변경, 취소 철회, 인보이스 확인
+- **업그레이드**: 즉시 적용 (`prorationBehavior: "invoice"`), 남은 기간 비례 크레딧 재계산
+- **다운그레이드**: 다음 결제일 적�� (`prorationBehavior: "next_period"`), `scheduled_plan_id`로 예약
+- **더블클릭 방지**: 60초 TTL 캐시로 동일 상품 중복 요청 차단
 
 ---
 
@@ -171,10 +179,12 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | **아이콘** | Lucide React |
 | **클래스 결합** | clsx + tailwind-merge → `cn()` |
 | **유효성 검증** | Zod 4 |
-| **DB / Auth / Storage** | Supabase (PostgreSQL + Auth + Storage) |
+| **DB / Auth / Storage** | Supabase (PostgreSQL + Auth + Storage + Realtime) |
+| **결제** | Polar SDK (`@polar-sh/sdk`) — MoR 방식 |
+| **서버 상태** | TanStack Query (React Query) v5 |
 | **AI** | 다중 Provider (Replicate, BytePlus Ark) |
 | **패키지 매니저** | Yarn (v1 classic) |
-| **상태관리** | React hooks + Context API (외부 라이브러리 없음) |
+| **상태관리** | React hooks + Context API |
 | **테스트** | Playwright 1.58 (dev) |
 | **배포** | Vercel (GitHub main 자동 배포) |
 
@@ -186,11 +196,15 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 /
 ├── app/                              # Next.js App Router
 │   ├── api/
+│   │   ├── checkout/route.ts         # Polar 체크아웃 세션 생성 (구독/크레딧팩)
+│   │   ├── webhook/polar/route.ts    # Polar 웹훅 (결제/환불/구독 이벤트)
+│   │   ├── portal/route.ts           # Polar 고객 포털 세션
 │   │   ├── credits/balance/route.ts  # 크레딧 잔액 조회
 │   │   ├── history/route.ts          # 생성 이력 삭제
 │   │   ├── image-edit/generate/route.ts   # 이미지 편집 생성
 │   │   ├── retouching/generate/route.ts   # 스킨 리터칭 생성
 │   │   ├── face-edit/generate/route.ts    # 얼굴 편집 생성
+│   │   ├── admin/reconcile/route.ts  # Polar 동기화 (누락 웹훅 보정)
 │   │   └── admin/users/route.ts      # 관리자 유저 관리
 │   ├── auth/callback/route.ts        # OAuth PKCE 콜백
 │   ├── data-deletion/page.tsx        # 데이터 삭제 정책
@@ -239,12 +253,14 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 │   ├── use-slider.ts                 # Before/After 슬라이더 (mouse+touch)
 │   ├── use-count-up.ts               # 숫자 카운트업 (IntersectionObserver)
 │   ├── use-mask-canvas.ts            # 마스크 캔버스 (draw/erase/rect, undo/redo)
-│   ├── use-credits.ts                # 크레딧 잔액·구독·쿨다운 조회
+│   ├── use-credits.ts                # 크레딧 잔액·구독·쿨다운 조회 (React Query)
+│   ├── use-credits-realtime.ts       # Supabase Realtime 구독 (credits + subscriptions 변경 감지)
 │   ├── use-history.ts                # 생성 이력 조회/삭제 (React Query)
 │   └── use-favorites.ts              # 즐겨찾기 저장/로드/삭제 (Supabase Storage)
 │
 ├── lib/
 │   ├── constants/
+│   │   ├── polar.ts                  # Polar 상품 ID 매핑 (플랜, 크레딧팩)
 │   │   ├── samples.ts                # 이미지 편집 샘플 데이터
 │   │   └── retouching-samples.ts     # 리터칭 샘플 데이터
 │   ├── errors/
@@ -283,23 +299,21 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 │   │   └── image-generation.ts       # Zod 스키마 (모델, 프롬프트, 크기, 비율 등)
 │   ├── utils/
 │   │   └── compress-image.ts         # WebP 이미지 압축
+│   ├── polar.ts                      # Polar SDK 클라이언트 팩토리
 │   ├── query-keys.ts                 # React Query 키 팩토리
 │   ├── animations.ts                 # Framer Motion 프리셋 6종
 │   └── utils.ts                      # cn() 유틸리티
 │
 ├── supabase/
-│   ├── migrations/                   # 15개 마이그레이션
-│   │   ├── 001_create_users_and_credits.sql
-│   │   ├── 002_add_user_updated_trigger.sql
-│   │   ├── 003~004 (구독, 플랜)
-│   │   ├── 005~006 (크레딧 RPC 함수)
-│   │   ├── 007 (유저 역할/관리자)
-│   │   ├── 008 (Free 플랜 초기 크레딧)
-│   │   ├── 009 (인종 컬럼 등)
-│   │   ├── 010 (generation_history 테이블)
-│   │   ├── 011 (데이터 보존 기간)
-│   │   ├── 012~013 (WebP 이미지 최적화)
-│   │   └── 014~015 (즐겨찾기 시스템)
+│   ├── migrations/                   # 27개+ 마이그레이션
+│   │   ├── 001~002 (users, credits, triggers)
+│   │   ├── 003~004 (구독 플랜, 이중 잔액)
+│   │   ├── 005~008 (크레딧 RPC, 관리자 역할, Free 120크레딧)
+│   │   ├── 009~015 (히스토리, 즐겨찾기, WebP)
+│   │   ├── 016~018 (플랜 정렬, i18n)
+│   │   ├── 019~020 (Polar 연동: webhook_events, orders, credit_transactions, 결제 RPC)
+│   │   ├── 021~024 (period_credits_granted, scheduled_plan_id, 크레딧 소멸 금지)
+│   │   └── 025~027 (크레딧 누적, 해지 시 잔액 유지, 비례 업그레이드)
 │   └── templates/
 │       └── confirm-email.html        # 이메일 인증 템플릿
 │
@@ -328,6 +342,7 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | `avatar_url` | TEXT? | 프로필 이미지 URL |
 | `auth_provider` | TEXT | 'email' / 'google' / 'facebook' |
 | `role` | TEXT | 'user' / 'admin' (기본: user) |
+| `polar_customer_id` | TEXT | Polar 고객 ID |
 | `created_at` | TIMESTAMPTZ | 가입일 |
 | `updated_at` | TIMESTAMPTZ | 수정일 |
 
@@ -336,8 +351,11 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 |---|---|---|
 | `id` | UUID (PK) | |
 | `user_id` | UUID (FK → users, UNIQUE) | 1:1 관계 |
+| `balance` | INTEGER | 총 잔액 (subscription + onetime) |
 | `onetime_balance` | INTEGER | 일회성 충전 크레딧 (우선 차감) |
 | `subscription_balance` | INTEGER | 구독 크레딧 |
+| `last_generation_at` | TIMESTAMPTZ | 쿨다운 추적용 |
+| `period_credits_granted` | INTEGER | 이번 결제 주기에 부여된 크레딧 (업그레이드 비례 계산용) |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | |
 
@@ -346,8 +364,10 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 |---|---|---|
 | `id` | UUID (PK) | |
 | `user_id` | UUID (FK → users) | |
-| `plan_id` | UUID (FK → subscription_plans) | |
-| `status` | TEXT | 구독 상태 |
+| `plan_id` | TEXT (FK → subscription_plans) | free / basic / pro / premium |
+| `status` | TEXT | active / canceled / revoked |
+| `external_subscription_id` | TEXT | Polar 구독 ID |
+| `scheduled_plan_id` | TEXT | 다운그레이드 예약 플랜 (다음 결제일 적용) |
 | `current_period_start` | TIMESTAMPTZ | 현재 구독 시작일 |
 | `current_period_end` | TIMESTAMPTZ | 현재 구독 종료일 |
 
@@ -384,6 +404,39 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 | `metadata` | JSONB | 즐겨찾기 설정 + 이미지 정보 |
 | `created_at` | TIMESTAMPTZ | |
 
+#### `orders` (결제 주문)
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | TEXT (PK) | Polar 주문 ID |
+| `user_id` | UUID (FK → users) | |
+| `polar_product_id` | TEXT | Polar 상품 ID |
+| `product_type` | TEXT | 'subscription' / 'credit_pack' |
+| `amount_cents` | INTEGER | 결제 금액 (센트) |
+| `credits_granted` | INTEGER | 부여된 크레딧 |
+| `status` | TEXT | 'paid' / 'refunded' / 'partially_refunded' |
+| `metadata` | JSONB | 환불 추적 정보 |
+
+#### `credit_transactions` (감사 로그)
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | UUID (PK) | |
+| `user_id` | UUID (FK → users) | |
+| `type` | ENUM | signup_bonus / subscription_grant / onetime_purchase / generation_deduct / refund / admin_adjust |
+| `onetime_delta` | INTEGER | 일회성 잔액 변경량 |
+| `subscription_delta` | INTEGER | 구독 잔액 변경�� |
+| `balance_after_onetime` | INTEGER | 변경 후 스냅샷 |
+| `balance_after_subscription` | INTEGER | 변경 후 스냅샷 |
+| `description` | TEXT | 설명 |
+| `metadata` | JSONB | 추가 컨텍스트 |
+
+#### `webhook_events` (웹훅 멱등성)
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | TEXT (PK) | Polar webhook-id 헤더 |
+| `event_type` | TEXT | 이벤트 타입 |
+| `payload` | JSONB | 이벤트 페이로드 |
+| `processed_at` | TIMESTAMPTZ | 처리 시각 |
+
 ### 트리거
 1. **`handle_new_user()`** — `auth.users` INSERT 시 → `users` + `user_credits` + Free 플랜 구독 자동 생성
 2. **`handle_user_updated()`** — `auth.users` UPDATE (메타데이터) 시 → `users` 프로필 동기화
@@ -391,9 +444,12 @@ PHOS는 3개의 독립 도구 페이지 + 1개의 예정 기능으로 구성됩�
 ### RPC 함수
 | 함수 | 용도 |
 |---|---|
-| `deduct_credits(p_user_id, p_amount)` | 원자적 크레딧 차감 (onetime 우선) |
-| `add_credits(p_user_id, p_amount, p_type)` | 크레딧 추가 |
-| `refund_credits(p_user_id, p_onetime, p_subscription)` | 이중 잔액 환불 |
+| `deduct_credits(p_user_id, p_amount)` | 원자적 크레딧 차감 (onetime 우선). 만료 체크 없음 (크레딧 영구 유지) |
+| `add_credits(p_user_id, p_amount, p_type)` | 크레딧 추가 (환불, 관리자 조정) |
+| `process_subscription_activation(...)` | 구독 활성화/갱신/업그레이드. 갱신: 기존 잔액 + 신규 누적. 업그레이드: 날짜 비례 계산 |
+| `process_credit_purchase(...)` | 크레딧 팩 구매 처리. onetime_balance에 추가 |
+| `process_refund(...)` | 환불 처리. 비례 크레딧 회수, shortfall 기록 |
+| `process_subscription_revoke(...)` | 구독 해지. plan→free, 크레딧 잔액은 유지 (period_credits_granted만 리셋) |
 
 ### RLS 정책
 - `users`: 본인 행만 SELECT / UPDATE
@@ -645,15 +701,18 @@ SUPABASE_ACCESS_TOKEN=              # MCP 도구용 액세스 토큰
 REPLICATE_API_TOKEN=                # ✅ Replicate (메인 Provider)
 ARK_API_KEY=                        # BytePlus Ark
 
+# Polar (결제)
+POLAR_ACCESS_TOKEN=                 # Polar API 액세스 토큰
+POLAR_WEBHOOK_SECRET=               # 웹훅 서명 검증 시크릿
+POLAR_ORGANIZATION_ID=              # Polar 조직 ID
+NEXT_PUBLIC_POLAR_PRODUCT_*=        # 각 플랜/크레딧팩의 Polar 상품 ID (env별 분리)
+
 # 기타
 UNSPLASH_ACCESS_KEY=                # 샘플 이미지 소스
 
 # 기능 플래그
 NEXT_PUBLIC_SKIP_IMAGE_OPTIMIZER=   # 이미지 최적화 스킵 (테스트용)
 DRY_RUN=                            # API 드라이런 모드 (테스트용)
-
-# 미구현 (향후)
-STABILITY_API_KEY=
 ```
 
 ---
@@ -667,10 +726,12 @@ STABILITY_API_KEY=
 - [x] 이미지 편집 페이지 — UI + 다중 모델 선택 + API + AI 생성 + 크레딧 차감 + 히스토리 + 즐겨찾기
 - [x] 가격 페이지 (월간/일회성 탭, FAQ)
 - [x] 인증 시스템 (이메일 + Google + Facebook OAuth)
-- [x] DB 스키마 (users, user_credits, user_subscriptions, subscription_plans, generation_history, favorites)
-- [x] 크레딧 시스템 (선차감 → 환불 패턴, 이중 잔액, 쿨다운, RPC 함수)
+- [x] DB 스키마 (users, user_credits, user_subscriptions, subscription_plans, generation_history, favorites, orders, credit_transactions, webhook_events)
+- [x] 크레딧 시스템 (선차감 → 환불 패턴, 이중 잔액, 쿨다운, RPC 함수 6종)
+- [x] **결제 연동 (Polar)** — 체크아웃, 웹훅, 고객 포털, 환불, 업/다운그레이드, 멱등성
+- [x] **구독 관리** — 업그레이드(즉시, 비례 크레딧), 다운그레이드(예약), 취소/해지(크레딧 유지)
 - [x] AI Provider 구현 (Replicate + BytePlus, 프롬프트 빌더 5종)
-- [x] API 라우트 6개 (3개 생성 + 크레딧 조회 + 히스토리 삭제 + 관리자)
+- [x] API 라우트 10개+ (3개 생성 + 체크아웃 + 웹훅 + 포털 + 크레딧 + 히스토리 + 관리자 2개)
 - [x] 생성 이력 시스템 (DB + 훅 + UI)
 - [x] 즐겨찾기 시스템 (DB + Storage + 훅 + UI)
 - [x] 업스케일러 서비스 코드 (Real-ESRGAN)
@@ -678,12 +739,12 @@ STABILITY_API_KEY=
 - [x] 디자인 시스템 (랜딩 테마 + 에디터 테마)
 - [x] 에러 처리 체계
 - [x] 반응형 모바일 대응
-- [x] 관리자 API
+- [x] 관리자 API + Polar 동기화(reconcile)
+- [x] i18n (한국어 + 영어)
+- [x] Supabase Realtime 크레딧 실시간 반영
+- [x] 성능 최적화 (Pretendard 서브셋팅, dynamic import, LCP 최적화)
 
 ### 미구현 (다음 단계)
-- [ ] 결제 연동 (Stripe 또는 Toss Payments)
-- [ ] 구독 관리 UI (플랜 변경, 해지)
 - [ ] 업스케일 독립 페이지
-- [ ] 이미지 저장 최적화 Lambda 연동 (AWS Lambda → WebP 변환 → Supabase Storage)
 - [ ] 배치 처리 (일괄 보정)
 - [ ] Stability AI Provider 구현

@@ -48,7 +48,7 @@ export async function getUserCreditInfo(
         id: "free" as PlanId,
         name: "Free",
         priceUsd: 0,
-        monthlyCredits: 200,
+        monthlyCredits: 120,
         maxBatchSize: 1,
         cooldownSeconds: 300,
         maxFavorites: 3,
