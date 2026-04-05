@@ -17,9 +17,12 @@ export interface PlanInfo {
   features: Record<string, boolean>;
 }
 
+export type SubscriptionStatus = "active" | "canceled" | "revoked";
+
 export interface UserCreditInfo {
   balance: CreditBalance;
   plan: PlanInfo;
+  subscriptionStatus: SubscriptionStatus | null;
   scheduledPlanId: string | null;
   lastGenerationAt: string | null;
   currentPeriodEnd: string | null;

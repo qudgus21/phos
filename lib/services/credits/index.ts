@@ -4,6 +4,7 @@ import type {
   PlanInfo,
   DeductResult,
   PlanId,
+  SubscriptionStatus,
 } from "@/lib/types/credits";
 
 /**
@@ -22,7 +23,7 @@ export async function getUserCreditInfo(
       .single(),
     admin
       .from("user_subscriptions")
-      .select("plan_id, scheduled_plan_id, current_period_end, subscription_plans(*)")
+      .select("plan_id, status, scheduled_plan_id, current_period_end, subscription_plans(*)")
       .eq("user_id", userId)
       .single(),
   ]);
@@ -62,6 +63,7 @@ export async function getUserCreditInfo(
       onetime: creditsRes.data.onetime_balance,
     },
     plan,
+    subscriptionStatus: (subRes.data?.status as SubscriptionStatus) ?? null,
     scheduledPlanId: (subRes.data?.scheduled_plan_id as string) ?? null,
     lastGenerationAt: creditsRes.data.last_generation_at,
     currentPeriodEnd: (subRes.data?.current_period_end as string) ?? null,

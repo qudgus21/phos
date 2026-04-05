@@ -415,6 +415,7 @@ export interface Dictionary {
       defaultPlan: string;
       recommendedBadge: string;
       currentPlanBadge: string;
+      canceledBadge: string;
       scheduledBadge: string;
       upgradeButton: string;
       downgradeButton: string;
@@ -423,7 +424,8 @@ export interface Dictionary {
       upgradeTitle: string;
       upgradeDesc: { basic: string; pro: string; premium: string };
       currentBalance: string;
-      additionalCredits: string;
+      additionalCreditsLabel: string;
+      additionalCreditsSub: string;
       proportionalNote: string;
       upgradeConfirm: string;
       downgradeTitle: string;

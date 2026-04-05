@@ -112,6 +112,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
 
   const currentPlanId = creditInfo?.plan?.id ?? "free";
   const scheduledPlanId = creditInfo?.scheduledPlanId ?? null;
+  const isCanceled = creditInfo?.subscriptionStatus === "canceled";
 
   const closeModal = useCallback(() => setModal(MODAL_INITIAL), []);
   const closeResultModal = useCallback(() => setResultModal(MODAL_INITIAL), []);
@@ -267,8 +268,11 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
                   <span className="text-white font-semibold text-[13px]">{subBalance.toLocaleString()} {dict.tools.pricing.credits}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 px-3.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                  <span className="text-indigo-300 text-[13px]">{dict.tools.pricing.additionalCredits.replace("{days}", String(remainingDays))}</span>
-                  <span className="text-indigo-200 font-bold text-[13px]">+{proportionalDiff.toLocaleString()} {dict.tools.pricing.credits}</span>
+                  <div className="flex flex-col">
+                    <span className="text-indigo-300 text-[13px]">{dict.tools.pricing.additionalCreditsLabel}</span>
+                    <span className="text-indigo-400/70 text-[11px]">{dict.tools.pricing.additionalCreditsSub.replace("{days}", String(remainingDays))}</span>
+                  </div>
+                  <span className="text-indigo-200 font-bold text-[13px] whitespace-nowrap ml-3">+{proportionalDiff.toLocaleString()} {dict.tools.pricing.credits}</span>
                 </div>
               </div>
               <p className="text-[11px] text-slate-500">
@@ -432,8 +436,8 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
               )}
 
               {isCurrentPlan && !isFree && (
-                <Badge className="absolute -top-3 left-5 bg-emerald-500 text-white">
-                  {dict.tools.pricing.currentPlanBadge}
+                <Badge className={cn("absolute -top-3 left-5 text-white", isCanceled ? "bg-rose-500" : "bg-emerald-500")}>
+                  {isCanceled ? dict.tools.pricing.canceledBadge : dict.tools.pricing.currentPlanBadge}
                 </Badge>
               )}
 
