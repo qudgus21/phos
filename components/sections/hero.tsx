@@ -70,9 +70,8 @@ export function Hero({ dict, locale }: HeroProps) {
             ))}
           </motion.div>
 
-          {/* Headline — A */}
-          <motion.h1
-            variants={fadeInUp}
+          {/* Headline — A (no animation for LCP optimization) */}
+          <h1
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-8 font-display leading-[1.1] tracking-tight"
           >
             <span className="whitespace-nowrap">{dict.hero.headline}</span>
@@ -80,17 +79,16 @@ export function Hero({ dict, locale }: HeroProps) {
             <span className="bg-gradient-to-r from-indigo-500 to-violet-500 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent whitespace-pre-line">
               {dict.hero.headlineAccent}
             </span>
-          </motion.h1>
+          </h1>
 
-          {/* Subtitle — A */}
-          <motion.p
-            variants={fadeInUp}
+          {/* Subtitle — A (no animation for LCP optimization) */}
+          <p
             className="text-lg md:text-xl text-foreground/70 mb-12 leading-relaxed"
           >
             {dict.hero.subtitle}
             <br className="hidden md:block" />
             {dict.hero.subtitleHighlight}
-          </motion.p>
+          </p>
 
           {/* CTA — E */}
           <motion.div variants={fadeInUp} className="flex items-center gap-4 mb-8">
