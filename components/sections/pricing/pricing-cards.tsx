@@ -425,7 +425,7 @@ export function PricingCards({ activeTab }: PricingCardsProps) {
               {plan.recommended && (
                 <>
                   <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-indigo-500 to-violet-500" />
-                  <Badge variant="primary" className="absolute -top-3 right-5 bg-indigo-600 dark:bg-indigo-500 text-white font-bold">
+                  <Badge variant="primary" className="absolute -top-3 right-5 bg-indigo-600 text-white font-bold">
                     {dict.tools.pricing.recommendedBadge}
                   </Badge>
                 </>

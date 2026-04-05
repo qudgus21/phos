@@ -17,14 +17,11 @@ export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
 
   return (
     <div className="pt-32 pb-10 text-center">
-      <motion.h2
-        variants={fadeInUp}
-        initial="hidden"
-        animate="visible"
+      <h2
         className="text-[43px] font-extrabold text-foreground font-display mb-8"
       >
         {dict.pricing.title}
-      </motion.h2>
+      </h2>
 
       <motion.div
         variants={fadeInUp}
@@ -37,7 +34,7 @@ export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
           className={cn(
             "px-10 py-3.5 text-lg font-bold rounded-full transition-all cursor-pointer",
             activeTab === "monthly"
-              ? "bg-primary text-primary-foreground shadow-glow-indigo-sm"
+              ? "bg-indigo-600 text-white shadow-glow-indigo-sm"
               : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
           )}
         >
@@ -48,7 +45,7 @@ export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
           className={cn(
             "px-10 py-3.5 text-lg font-bold rounded-full transition-all cursor-pointer",
             activeTab === "onetime"
-              ? "bg-primary text-primary-foreground shadow-glow-indigo-sm"
+              ? "bg-indigo-600 text-white shadow-glow-indigo-sm"
               : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
           )}
         >

@@ -18,18 +18,14 @@ export function Hero({ dict, locale }: HeroProps) {
       {/* Background base */}
       <div className="absolute inset-0 bg-background dark:bg-[#090A14]" />
 
-      {/* Ambient glow particles */}
+      {/* Ambient glow particles — CSS animations to reduce main-thread work */}
       <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden">
-        <motion.div
-          className="absolute w-[500px] h-[500px] rounded-full bg-indigo-500/[0.07] blur-[120px]"
-          animate={{ x: [0, 40, 0], y: [0, -30, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        <div
+          className="absolute w-[500px] h-[500px] rounded-full bg-indigo-500/[0.07] blur-[120px] animate-glow-drift-1"
           style={{ top: "10%", left: "-5%" }}
         />
-        <motion.div
-          className="absolute w-[300px] h-[300px] rounded-full bg-violet-500/[0.05] blur-[100px]"
-          animate={{ x: [0, -30, 0], y: [0, 40, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        <div
+          className="absolute w-[300px] h-[300px] rounded-full bg-violet-500/[0.05] blur-[100px] animate-glow-drift-2"
           style={{ bottom: "20%", left: "10%" }}
         />
       </div>

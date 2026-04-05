@@ -545,7 +545,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
             <span className="text-[13px] font-medium text-card-foreground">
               {dict.tools.retouching.filterSection}
             </span>
-            <span className="text-[13px] font-bold text-primary">
+            <span className="text-[13px] font-bold text-indigo-400">
               {FILTERS.find((f) => f.id === activeFilter)?.label}
               {activeFilter !== "none" && ` ${filterIntensity.toFixed(1)}`}
             </span>
