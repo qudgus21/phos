@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { queryKeys } from "@/lib/query-keys";
 import type { HistoryRow } from "@/hooks/use-history";
 
-const PENDING_TIMEOUT_MS = 2 * 60 * 1000; // 2분
+const PENDING_TIMEOUT_MS = 5 * 60 * 1000; // 5분 (webhook 재시도 + 업스케일 체이닝 시간 고려)
 
 interface UseGenerationRealtimeOptions {
   onCompleted?: (row: HistoryRow) => void;
@@ -48,16 +48,7 @@ export function useGenerationRealtime(
             }
           }
 
-          // 타임아웃된 pending은 failed 처리 (UI에서만 제거)
-          if (expired.length > 0) {
-            for (const row of expired) {
-              optionsRef.current?.onFailed?.({
-                ...row,
-                status: "failed",
-                error_message: "Generation timed out",
-              } as HistoryRow);
-            }
-          }
+          // 타임아웃된 pending은 무시 (useHistory queryFn에서 이미 필터링됨)
 
           if (active.length > 0) {
             const ids = active.map((r) => r.id);

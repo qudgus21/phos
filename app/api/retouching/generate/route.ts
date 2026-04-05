@@ -1,7 +1,7 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
 import { getRetouchingModelDef } from "@/lib/services/ai/models";
-import { resolveProvider } from "@/lib/services/ai/registry";
+import { ReplicateProvider } from "@/lib/services/ai/providers/replicate";
 import { buildSkinRetouchPrompt } from "@/lib/services/ai/prompts";
 import type { SkinRetouchOptions } from "@/lib/services/ai/prompts";
 import {
@@ -10,9 +10,8 @@ import {
   checkCooldown,
 } from "@/lib/services/credits";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
-import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { runGenerationInBackground } from "@/lib/services/generation/background";
+import { getReplicateWebhookUrl } from "@/lib/services/replicate/webhook-url";
 import { CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
 
@@ -188,7 +187,50 @@ export const POST = withAuth(async (request, { user }) => {
     throw new Error("Failed to save history");
   }
 
-  // 10. 즉시 응답 반환
+  // 10. Replicate prediction 생성 (fire-and-forget, webhook으로 결과 수신)
+  const modelInput = modelDef.buildInput({
+    prompt: builtPrompt,
+    images: [imageUrl],
+    width: 0,
+    height: 0,
+    ratio,
+    imageCount: 1,
+    imageSize: outputSize,
+  });
+
+  const provider = new ReplicateProvider();
+  const webhookUrl = getReplicateWebhookUrl();
+  const modelConfig = {
+    provider: modelDef.provider,
+    modelId: modelDef.modelId,
+    version: modelDef.version,
+    defaults: modelDef.defaults,
+  };
+
+  const { predictionId } = await provider.createPrediction(
+    modelConfig,
+    {
+      prompt: modelInput.prompt as string,
+      params: modelInput,
+    },
+    webhookUrl
+  );
+
+  // 11. prediction 추적 행 INSERT
+  const effectiveScale = Math.min(scale > 1 ? Math.round(scale) : 1, 4);
+  await supabaseAdmin.from("replicate_predictions").insert({
+    id: predictionId,
+    history_id: historyRow.id,
+    prediction_type: "generation",
+    status: "pending",
+    metadata: {
+      upscale_scale: effectiveScale >= 2 ? effectiveScale : 0,
+      batch_index: 0,
+      total_batches: 1,
+    },
+  });
+
+  // 12. 즉시 응답 반환
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {
@@ -198,59 +240,6 @@ export const POST = withAuth(async (request, { user }) => {
       status: "pending",
     },
   };
-
-  // 11. 백그라운드에서 AI 생성
-  after(() =>
-    runGenerationInBackground({
-      historyId: historyRow.id,
-      userId: user.id,
-      modelLabel: modelDef.label,
-      imageCount: 1,
-      onetimeDeducted: deductResult.onetimeDeducted ?? 0,
-      subscriptionDeducted: deductResult.subscriptionDeducted ?? 0,
-      generateFn: async () => {
-        const provider = resolveProvider({
-          provider: modelDef.provider,
-          modelId: modelDef.modelId,
-          version: modelDef.version,
-        });
-
-        const modelConfig = {
-          provider: modelDef.provider,
-          modelId: modelDef.modelId,
-          version: modelDef.version,
-          defaults: modelDef.defaults,
-        };
-
-        const modelInput = modelDef.buildInput({
-          prompt: builtPrompt,
-          images: [imageUrl],
-          width: 0,
-          height: 0,
-          ratio,
-          imageCount: 1,
-          imageSize: outputSize,
-        });
-
-        const result = await provider.generate(modelConfig, {
-          prompt: modelInput.prompt as string,
-          params: modelInput,
-        });
-
-        let allOutputUrls = result.outputUrls;
-
-        const effectiveScale = Math.min(
-          scale > 1 ? Math.round(scale) : 1,
-          4
-        );
-        if (effectiveScale >= 2) {
-          allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
-        }
-
-        return allOutputUrls;
-      },
-    })
-  );
 
   return NextResponse.json(body);
 });

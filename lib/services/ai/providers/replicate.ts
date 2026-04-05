@@ -61,6 +61,70 @@ function parseReplicateError(error?: string | null): {
 export class ReplicateProvider implements AIProvider {
   readonly name: AIProviderName = "replicate";
 
+  /**
+   * Webhook 방식: prediction을 생성하고 즉시 반환한다. 결과는 webhook으로 수신.
+   */
+  async createPrediction(
+    model: ModelConfig,
+    input: GenerationInput,
+    webhookUrl: string
+  ): Promise<{ predictionId: string }> {
+    const apiToken = process.env.REPLICATE_API_TOKEN;
+    if (!apiToken) {
+      throw new ApiError("REPLICATE_API_TOKEN environment variable is not set", 500);
+    }
+
+    const modelInput: Record<string, unknown> = { ...input.params };
+
+    if (!input.params || Object.keys(input.params).length === 0) {
+      modelInput.prompt = input.prompt ?? "";
+      if (input.images && input.images.length > 0) {
+        modelInput.image = input.images[0];
+      }
+      if (input.negativePrompt) {
+        modelInput.negative_prompt = input.negativePrompt;
+      }
+    }
+
+    let apiUrl: string;
+    let body: Record<string, unknown>;
+
+    if (model.version) {
+      apiUrl = `${REPLICATE_BASE_URL}/predictions`;
+      body = {
+        version: model.version,
+        input: modelInput,
+        webhook: webhookUrl,
+        webhook_events_filter: ["completed"],
+      };
+    } else {
+      apiUrl = `${REPLICATE_BASE_URL}/models/${model.modelId}/predictions`;
+      body = {
+        input: modelInput,
+        webhook: webhookUrl,
+        webhook_events_filter: ["completed"],
+      };
+    }
+
+    const res = await this.fetchWithRetry(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiToken}`,
+        "Cancel-After": "5m",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const prediction = (await res.json()) as ReplicatePrediction;
+    if (!prediction.id) {
+      throw new ApiError("No prediction ID returned from Replicate", 502);
+    }
+
+    return { predictionId: prediction.id };
+  }
+
+  /** @deprecated polling 방식. webhook 전환 후 제거 예정. */
   async generate(
     model: ModelConfig,
     input: GenerationInput

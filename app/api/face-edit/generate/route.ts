@@ -1,16 +1,16 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
-import { resolveProvider } from "@/lib/services/ai/registry";
+import { ReplicateProvider } from "@/lib/services/ai/providers/replicate";
 import { buildFaceEditPrompt } from "@/lib/services/ai/prompts";
 import {
   getUserCreditInfo,
   deductCredits,
   checkCooldown,
 } from "@/lib/services/credits";
-import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
+import { uploadToR2 } from "@/lib/r2/client";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { runGenerationInBackground } from "@/lib/services/generation/background";
+import { getReplicateWebhookUrl } from "@/lib/services/replicate/webhook-url";
 import { CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
 
@@ -71,7 +71,7 @@ export const POST = withAuth(async (request, { user }) => {
     );
   }
 
-  // 4. 이미지 & 마스크 업로드 (after() 전에 완료)
+  // 4. 이미지 & 마스크 업로드
   const imageUrl = imageEntry instanceof File
     ? await uploadFileToReplicate(imageEntry, imageEntry.name)
     : imageEntry as string;
@@ -79,6 +79,14 @@ export const POST = withAuth(async (request, { user }) => {
   const maskUrl = maskEntry instanceof File
     ? await uploadFileToReplicate(maskEntry, "mask.png")
     : maskEntry as string;
+
+  // 입력 이미지를 R2에 영구 저장 (히스토리 표시용)
+  let permanentInputUrl: string | null = inputImageUrl;
+  if (!permanentInputUrl && imageEntry instanceof File) {
+    const buffer = Buffer.from(await imageEntry.arrayBuffer());
+    const key = `generation-outputs/inputs/${user.id}/${Date.now()}.webp`;
+    permanentInputUrl = await uploadToR2(buffer, key, "image/webp");
+  }
 
   // 5. dry-run 모드
   const isDryRun = process.env.DRY_RUN === "true";
@@ -120,7 +128,7 @@ export const POST = withAuth(async (request, { user }) => {
       feature_type: "face-edit" as const,
       model_id: "flux-fill-pro",
       prompt: `[${gender}] face-edit`,
-      input_urls: inputImageUrl ? [inputImageUrl] : [imageUrl],
+      input_urls: permanentInputUrl ? [permanentInputUrl] : [imageUrl],
       display_urls: [],
       original_urls: [],
       credits_used: CREDIT_COST,
@@ -137,7 +145,50 @@ export const POST = withAuth(async (request, { user }) => {
     throw new Error("Failed to save history");
   }
 
-  // 8. 즉시 응답 반환
+  // 8. Replicate prediction 생성 (fire-and-forget, webhook으로 결과 수신)
+  const prompt = buildFaceEditPrompt(gender as "female" | "male");
+  const steps = Math.round(20 + ((strength - 0.1) / 0.9) * 8);
+  const guidance = Math.round(15 + ((strength - 0.1) / 0.9) * 10);
+
+  const provider = new ReplicateProvider();
+  const webhookUrl = getReplicateWebhookUrl();
+  const modelConfig = {
+    provider: "replicate" as const,
+    modelId: REPLICATE_MODEL,
+  };
+
+  const { predictionId } = await provider.createPrediction(
+    modelConfig,
+    {
+      prompt,
+      params: {
+        prompt,
+        image: imageUrl,
+        mask: maskUrl,
+        steps,
+        guidance,
+        output_format: "png",
+        safety_tolerance: 3,
+      },
+    },
+    webhookUrl
+  );
+
+  // 9. prediction 추적 행 INSERT
+  const scaleNum = scale !== "auto" ? Number(scale) : 0;
+  await supabaseAdmin.from("replicate_predictions").insert({
+    id: predictionId,
+    history_id: historyRow.id,
+    prediction_type: "generation",
+    status: "pending",
+    metadata: {
+      upscale_scale: scaleNum >= 2 ? scaleNum : 0,
+      batch_index: 0,
+      total_batches: 1,
+    },
+  });
+
+  // 10. 즉시 응답 반환
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {
@@ -147,58 +198,6 @@ export const POST = withAuth(async (request, { user }) => {
       status: "pending",
     },
   };
-
-  // 9. 백그라운드에서 AI 생성
-  after(() =>
-    runGenerationInBackground({
-      historyId: historyRow.id,
-      userId: user.id,
-      modelLabel: "Flux Fill Pro",
-      imageCount: 1,
-      onetimeDeducted: deductResult.onetimeDeducted ?? 0,
-      subscriptionDeducted: deductResult.subscriptionDeducted ?? 0,
-      generateFn: async () => {
-        const prompt = buildFaceEditPrompt(gender as "female" | "male");
-
-        const steps = Math.round(20 + ((strength - 0.1) / 0.9) * 8);
-        const guidance = Math.round(15 + ((strength - 0.1) / 0.9) * 10);
-
-        const provider = resolveProvider({
-          provider: "replicate",
-          modelId: REPLICATE_MODEL,
-        });
-
-        const modelConfig = {
-          provider: "replicate" as const,
-          modelId: REPLICATE_MODEL,
-        };
-
-        const result = await provider.generate(modelConfig, {
-          prompt,
-          params: {
-            prompt,
-            image: imageUrl,
-            mask: maskUrl,
-            steps,
-            guidance,
-            output_format: "png",
-            safety_tolerance: 3,
-          },
-        });
-
-        let outputUrls = result.outputUrls;
-
-        if (scale !== "auto") {
-          const scaleNum = Number(scale);
-          if (scaleNum >= 2) {
-            outputUrls = await upscaleImages(outputUrls, scaleNum);
-          }
-        }
-
-        return outputUrls;
-      },
-    })
-  );
 
   return NextResponse.json(body);
 });

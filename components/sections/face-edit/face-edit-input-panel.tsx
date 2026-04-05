@@ -11,8 +11,7 @@ import { FaceEditMaskEditor } from "./face-edit-mask-editor";
 import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
 import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
-import { createClient } from "@/lib/supabase/client";
-import { compressImageForFavorite, compressImageForInput } from "@/lib/utils/compress-image";
+import { compressImageForInput } from "@/lib/utils/compress-image";
 
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
@@ -339,44 +338,10 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     );
 
     try {
-      // 입력 이미지를 WebP 압축 → R2 영구 업로드
-      let permanentInputUrl: string | null = null;
-      if (uploadedImage) {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const compressed = await compressImageForFavorite(
-            uploadedFile ?? uploadedImage
-          );
-          const key = `generation-outputs/inputs/${user.id}/${Date.now()}.webp`;
-
-          const presignRes = await fetch("/api/upload", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ path: key, contentType: "image/webp" }),
-          });
-          if (presignRes.ok) {
-            const { data } = await presignRes.json();
-            const uploadRes = await fetch(data.uploadUrl, {
-              method: "PUT",
-              body: compressed,
-              headers: { "Content-Type": "image/webp" },
-            });
-            if (uploadRes.ok) {
-              permanentInputUrl = data.publicUrl;
-            }
-          }
-        }
-      }
-
       const fd = new FormData();
       fd.append("gender", gender);
       fd.append("strength", String(strength));
       fd.append("scale", String(scale));
-
-      if (permanentInputUrl) {
-        fd.append("inputImageUrl", permanentInputUrl);
-      }
 
       if (uploadedFile) {
         fd.append("image", uploadedFile);

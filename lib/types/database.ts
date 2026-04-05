@@ -496,6 +496,50 @@ export interface Database {
           },
         ];
       };
+      replicate_predictions: {
+        Row: {
+          id: string;
+          history_id: string;
+          prediction_type: string;
+          status: string;
+          output_urls: string[];
+          error_message: string | null;
+          metadata: Record<string, unknown>;
+          created_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id: string;
+          history_id: string;
+          prediction_type: string;
+          status?: string;
+          output_urls?: string[];
+          error_message?: string | null;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          history_id?: string;
+          prediction_type?: string;
+          status?: string;
+          output_urls?: string[];
+          error_message?: string | null;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+          completed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "replicate_predictions_history_id_fkey";
+            columns: ["history_id"];
+            isOneToOne: false;
+            referencedRelation: "generation_history";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

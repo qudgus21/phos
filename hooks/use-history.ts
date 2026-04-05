@@ -25,7 +25,13 @@ export function useHistory(featureType: string) {
         console.error("[HistoryPanel] fetch error:", error.message, error);
         throw error;
       }
-      return (data ?? []) as HistoryRow[];
+      // 5분 이상 pending인 행은 클라이언트에서 제외 (DB cron이 정리하기 전까지의 간극)
+      const PENDING_TIMEOUT_MS = 5 * 60 * 1000;
+      const now = Date.now();
+      return ((data ?? []) as HistoryRow[]).filter((row) => {
+        if (row.status !== "pending") return true;
+        return now - new Date(row.created_at).getTime() <= PENDING_TIMEOUT_MS;
+      });
     },
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,

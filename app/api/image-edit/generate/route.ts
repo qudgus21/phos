@@ -1,17 +1,16 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/supabase/middleware";
 import { getModelDef, getImageEditCredits } from "@/lib/services/ai/models";
-import { resolveProvider } from "@/lib/services/ai/registry";
+import { ReplicateProvider } from "@/lib/services/ai/providers/replicate";
 import { buildImageEditPrompt, buildSeedreamPrompt } from "@/lib/services/ai/prompts";
 import {
   getUserCreditInfo,
   deductCredits,
   checkCooldown,
 } from "@/lib/services/credits";
-import { upscaleImages } from "@/lib/services/ai/upscaler";
 import { uploadFileToReplicate } from "@/lib/services/ai/replicate-files";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { runGenerationInBackground } from "@/lib/services/generation/background";
+import { getReplicateWebhookUrl } from "@/lib/services/replicate/webhook-url";
 import { CreditError, ValidationError } from "@/lib/errors";
 import type { ApiResponse } from "@/lib/types/api";
 
@@ -167,7 +166,73 @@ export const POST = withAuth(async (request, { user }) => {
     throw new Error("Failed to save history");
   }
 
-  // 8. 즉시 응답 반환
+  // 8. Replicate prediction 생성 (fire-and-forget, webhook으로 결과 수신)
+  const provider = new ReplicateProvider();
+  const webhookUrl = getReplicateWebhookUrl();
+  const modelConfig = {
+    provider: modelDef.provider,
+    modelId: modelDef.modelId,
+    version: modelDef.version,
+    defaults: modelDef.defaults,
+  };
+
+  const perCallCount = Math.min(imageCount, modelDef.maxOutputs);
+  const callCount = Math.ceil(imageCount / perCallCount);
+  const isSeedream = modelId.startsWith("seedream");
+
+  // 업스케일 scale 계산
+  const maxScale =
+    imageSize === "4K" || imageSize === "3K" ? 1
+      : imageSize === "2K" ? 2
+      : 4;
+  const effectiveScale = Math.min(
+    scale > 1 ? Math.round(scale) : 1,
+    maxScale
+  );
+
+  for (let i = 0; i < callCount; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 1000)); // stagger
+
+    const remaining = imageCount - i * perCallCount;
+    const count = Math.min(perCallCount, remaining);
+
+    const builtPrompt = isSeedream
+      ? buildSeedreamPrompt(prompt, images.length > 0)
+      : buildImageEditPrompt(prompt);
+    const modelInput = modelDef.buildInput({
+      prompt: builtPrompt,
+      images: images.length > 0 ? images : undefined,
+      width,
+      height,
+      ratio,
+      imageCount: count,
+      imageSize,
+    });
+
+    const { predictionId } = await provider.createPrediction(
+      modelConfig,
+      {
+        prompt: modelInput.prompt as string,
+        params: modelInput,
+      },
+      webhookUrl
+    );
+
+    // 9. prediction 추적 행 INSERT
+    await supabaseAdmin.from("replicate_predictions").insert({
+      id: predictionId,
+      history_id: historyRow.id,
+      prediction_type: "generation",
+      status: "pending",
+      metadata: {
+        upscale_scale: effectiveScale >= 2 ? effectiveScale : 0,
+        batch_index: i,
+        total_batches: callCount,
+      },
+    });
+  }
+
+  // 10. 즉시 응답 반환
   const body: ApiResponse<GenerateResponse> = {
     success: true,
     data: {
@@ -177,82 +242,6 @@ export const POST = withAuth(async (request, { user }) => {
       status: "pending",
     },
   };
-
-  // 9. 백그라운드에서 AI 생성 실행
-  after(() =>
-    runGenerationInBackground({
-      historyId: historyRow.id,
-      userId: user.id,
-      modelLabel: modelDef.label,
-      imageCount,
-      onetimeDeducted: deductResult.onetimeDeducted ?? 0,
-      subscriptionDeducted: deductResult.subscriptionDeducted ?? 0,
-      generateFn: async () => {
-        const provider = resolveProvider({
-          provider: modelDef.provider,
-          modelId: modelDef.modelId,
-          version: modelDef.version,
-        });
-
-        const modelConfig = {
-          provider: modelDef.provider,
-          modelId: modelDef.modelId,
-          version: modelDef.version,
-          defaults: modelDef.defaults,
-        };
-
-        const perCallCount = Math.min(imageCount, modelDef.maxOutputs);
-        const callCount = Math.ceil(imageCount / perCallCount);
-
-        const isSeedream = modelId.startsWith("seedream");
-        const generateOne = (count: number) => {
-          const builtPrompt = isSeedream
-            ? buildSeedreamPrompt(prompt, images.length > 0)
-            : buildImageEditPrompt(prompt);
-          const modelInput = modelDef.buildInput({
-            prompt: builtPrompt,
-            images: images.length > 0 ? images : undefined,
-            width,
-            height,
-            ratio,
-            imageCount: count,
-            imageSize,
-          });
-          return provider.generate(modelConfig, {
-            prompt: modelInput.prompt as string,
-            params: modelInput,
-          });
-        };
-
-        const resultPromises: ReturnType<typeof generateOne>[] = [];
-        for (let i = 0; i < callCount; i++) {
-          if (i > 0) await new Promise((r) => setTimeout(r, 1000));
-          const remaining = imageCount - i * perCallCount;
-          resultPromises.push(generateOne(Math.min(perCallCount, remaining)));
-        }
-        const results = await Promise.all(resultPromises);
-
-        let allOutputUrls = results.flatMap((r) => r.outputUrls);
-
-        // 업스케일
-        const maxScale =
-          imageSize === "4K" || imageSize === "3K" ? 1
-            : imageSize === "2K" ? 2
-            : 4;
-
-        const effectiveScale = Math.min(
-          scale > 1 ? Math.round(scale) : 1,
-          maxScale
-        );
-
-        if (effectiveScale >= 2) {
-          allOutputUrls = await upscaleImages(allOutputUrls, effectiveScale);
-        }
-
-        return allOutputUrls;
-      },
-    })
-  );
 
   return NextResponse.json(body);
 });

@@ -95,6 +95,51 @@ export async function upscaleImage(
 }
 
 /**
+ * Webhook 방식: 업스케일 prediction을 생성하고 즉시 반환한다.
+ * 결과는 webhook으로 수신.
+ */
+export async function createUpscalePrediction(
+  imageUrl: string,
+  scaleFactor: number,
+  webhookUrl: string
+): Promise<string> {
+  const apiToken = process.env.REPLICATE_API_TOKEN;
+  if (!apiToken) {
+    throw new ApiError("REPLICATE_API_TOKEN environment variable is not set", 500);
+  }
+
+  const scale = Math.min(Math.max(Math.round(scaleFactor), 2), 4);
+
+  const res = await fetchWithRetry(
+    `${REPLICATE_BASE_URL}/models/nightmareai/real-esrgan/predictions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiToken}`,
+      },
+      body: JSON.stringify({
+        input: {
+          image: imageUrl,
+          scale: scale,
+          face_enhance: false,
+        },
+        webhook: webhookUrl,
+        webhook_events_filter: ["completed"],
+      }),
+    }
+  );
+
+  const prediction = (await res.json()) as ReplicatePrediction;
+  if (!prediction.id) {
+    throw new ApiError("No prediction ID returned from Upscaler", 502);
+  }
+
+  return prediction.id;
+}
+
+/**
+ * @deprecated polling 방식. webhook 전환 후 제거 예정.
  * 여러 이미지를 stagger 방식으로 업스케일 (요청 간 1초 간격)
  */
 export async function upscaleImages(
