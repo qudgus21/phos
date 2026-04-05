@@ -361,7 +361,7 @@ const ko: Dictionary = {
       authRequired: "인증이 필요합니다",
       insufficientCredits: "크레딧이 부족합니다",
       viewPlans: "크레딧 충전하기",
-      generationFailed: "생성에 ���패했습니다",
+      generationFailed: "생성에 실패했습니다",
       imageProcessing: "이미지 처리 중입니다. 잠시 후 다시 시도해주세요",
       uploadRequired: "이미지를 업로드해주세요",
       unexpectedError: "예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.",

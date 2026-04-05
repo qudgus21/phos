@@ -361,7 +361,7 @@ const ja: Dictionary = {
     errors: {
       authRequired: "ログインが必要です",
       insufficientCredits: "クレジットが不足しています",
-      viewPlans: "クレ���ットをチャージする",
+      viewPlans: "クレジットチャージ",
       generationFailed: "生成に失敗しました",
       imageProcessing: "画像を処理中です。しばらくしてからお試しください",
       uploadRequired: "画像をアップロードしてください",

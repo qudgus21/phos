@@ -359,7 +359,7 @@ const ar: Dictionary = {
     errors: {
       authRequired: "يلزم تسجيل الدخول",
       insufficientCredits: "رصيد غير كافٍ",
-      viewPlans: "شحن الرص��د",
+      viewPlans: "شحن الرصيد",
       generationFailed: "فشل التوليد",
       imageProcessing: "الصورة قيد المعالجة. يرجى المحاولة بعد قليل",
       uploadRequired: "يرجى رفع صورة",
