@@ -49,10 +49,10 @@ export async function getUserCreditInfo(
         name: "Free",
         priceUsd: 0,
         monthlyCredits: 120,
-        maxBatchSize: 1,
+        maxBatchSize: 4,
         cooldownSeconds: 300,
         maxFavorites: 3,
-        features: { watermark: true },
+        features: {},
       };
 
   return {
