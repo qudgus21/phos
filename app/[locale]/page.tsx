@@ -1,12 +1,28 @@
+import dynamic from "next/dynamic";
 import { type Locale, getDictionary } from "@/lib/i18n";
 import { Hero } from "@/components/sections/hero";
-import { Upscale } from "@/components/sections/upscale";
-import { ImageEdit } from "@/components/sections/image-edit";
-import { SkinRetouch } from "@/components/sections/skin-retouch";
-import { FaceSwap } from "@/components/sections/face-swap";
-import { SkinRealism } from "@/components/sections/skin-realism";
-import { Pricing } from "@/components/sections/pricing";
-import { Footer } from "@/components/sections/footer";
+
+const ImageEdit = dynamic(() =>
+  import("@/components/sections/image-edit").then((mod) => mod.ImageEdit)
+);
+const SkinRetouch = dynamic(() =>
+  import("@/components/sections/skin-retouch").then((mod) => mod.SkinRetouch)
+);
+const FaceSwap = dynamic(() =>
+  import("@/components/sections/face-swap").then((mod) => mod.FaceSwap)
+);
+const SkinRealism = dynamic(() =>
+  import("@/components/sections/skin-realism").then((mod) => mod.SkinRealism)
+);
+const Upscale = dynamic(() =>
+  import("@/components/sections/upscale").then((mod) => mod.Upscale)
+);
+const Pricing = dynamic(() =>
+  import("@/components/sections/pricing").then((mod) => mod.Pricing)
+);
+const Footer = dynamic(() =>
+  import("@/components/sections/footer").then((mod) => mod.Footer)
+);
 
 export default async function Home({
   params,
