@@ -372,6 +372,18 @@ const es: Dictionary = {
       unexpectedError: "Se produjo un error inesperado. Intentalo de nuevo.",
       serverUnavailable: "Servidor temporalmente no disponible. Intentalo de nuevo en un momento.",
       tooManyRequests: "Demasiadas solicitudes. Intentalo de nuevo mas tarde.",
+      cooldownActive: "Espere {remaining} antes de intentarlo de nuevo",
+    },
+    cooldownModal: {
+      title: "¿Quieres saltarte la espera?",
+      description: "El plan gratuito tiene un enfriamiento de 5 minutos entre generaciones.",
+      benefits: [
+        "Sin enfriamiento — genera en cualquier momento",
+        "Hasta 4 imágenes a la vez",
+        "2,000+ créditos al mes",
+      ],
+      upgradeButton: "Ver planes",
+      waitButton: "Esperar {remaining}",
     },
     time: {
       justNow: "Ahora",

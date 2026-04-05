@@ -368,6 +368,18 @@ const ja: Dictionary = {
       unexpectedError: "予期しないエラーが発生しました。もう一度お試しください。",
       serverUnavailable: "サーバーが一時的に利用できません。しばらくしてからお試しください。",
       tooManyRequests: "リクエストが多すぎます。しばらくしてからお試しください。",
+      cooldownActive: "{remaining}後にもう一度お試しください",
+    },
+    cooldownModal: {
+      title: "待たずに生成しませんか？",
+      description: "Freeプランは生成間に5分のクールダウンがあります。",
+      benefits: [
+        "クールダウンなし — いつでも生成",
+        "一度に最大4枚生成",
+        "月2,000以上のクレジット",
+      ],
+      upgradeButton: "プランを見る",
+      waitButton: "{remaining} 待つ",
     },
     time: {
       justNow: "たった今",

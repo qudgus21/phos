@@ -366,6 +366,18 @@ const ar: Dictionary = {
       unexpectedError: "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
       serverUnavailable: "الخادم غير متاح مؤقتاً. يرجى المحاولة بعد قليل.",
       tooManyRequests: "طلبات كثيرة جداً. يرجى المحاولة لاحقاً.",
+      cooldownActive: "يرجى الانتظار {remaining} قبل المحاولة مرة أخرى",
+    },
+    cooldownModal: {
+      title: "هل تريد تخطي الانتظار؟",
+      description: "الخطة المجانية بها فترة انتظار 5 دقائق بين عمليات الإنشاء.",
+      benefits: [
+        "بدون انتظار — أنشئ في أي وقت",
+        "حتى 4 صور في المرة الواحدة",
+        "أكثر من 2,000 رصيد شهرياً",
+      ],
+      upgradeButton: "عرض الخطط",
+      waitButton: "انتظار {remaining}",
     },
     time: {
       justNow: "الآن",

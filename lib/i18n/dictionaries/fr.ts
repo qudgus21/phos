@@ -372,6 +372,18 @@ const fr: Dictionary = {
       unexpectedError: "Une erreur inattendue s'est produite. Veuillez reessayer.",
       serverUnavailable: "Serveur temporairement indisponible. Veuillez reessayer dans un moment.",
       tooManyRequests: "Trop de requetes. Veuillez reessayer plus tard.",
+      cooldownActive: "Veuillez patienter {remaining} avant de réessayer",
+    },
+    cooldownModal: {
+      title: "Envie de passer l'attente ?",
+      description: "Le plan gratuit a un délai de 5 minutes entre les générations.",
+      benefits: [
+        "Aucun délai — générez à tout moment",
+        "Jusqu'à 4 images à la fois",
+        "2 000+ crédits par mois",
+      ],
+      upgradeButton: "Voir les plans",
+      waitButton: "Attendre {remaining}",
     },
     time: {
       justNow: "A l'instant",

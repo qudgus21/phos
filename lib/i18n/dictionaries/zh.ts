@@ -363,6 +363,18 @@ const zh: Dictionary = {
       unexpectedError: "发生意外错误，请重试。",
       serverUnavailable: "服务器暂时不可用，请稍后重试。",
       tooManyRequests: "请求过多，请稍后重试。",
+      cooldownActive: "请在{remaining}后重试",
+    },
+    cooldownModal: {
+      title: "想跳过等待吗？",
+      description: "免费计划每次生成之间有5分钟冷却时间。",
+      benefits: [
+        "无冷却时间 — 随时生成",
+        "一次最多生成4张",
+        "每月2,000+积分",
+      ],
+      upgradeButton: "查看方案",
+      waitButton: "等待 {remaining}",
     },
     time: {
       justNow: "刚刚",

@@ -368,6 +368,18 @@ const id: Dictionary = {
       unexpectedError: "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
       serverUnavailable: "Server tidak tersedia sementara. Silakan coba lagi sebentar.",
       tooManyRequests: "Terlalu banyak permintaan. Silakan coba lagi nanti.",
+      cooldownActive: "Harap tunggu {remaining} sebelum mencoba lagi",
+    },
+    cooldownModal: {
+      title: "Ingin melewati waktu tunggu?",
+      description: "Paket gratis memiliki jeda 5 menit antar pembuatan.",
+      benefits: [
+        "Tanpa jeda — buat kapan saja",
+        "Hingga 4 gambar sekaligus",
+        "2.000+ kredit per bulan",
+      ],
+      upgradeButton: "Lihat Paket",
+      waitButton: "Tunggu {remaining}",
     },
     time: {
       justNow: "Baru saja",

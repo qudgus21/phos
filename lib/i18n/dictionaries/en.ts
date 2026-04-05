@@ -370,6 +370,18 @@ const en: Dictionary = {
       unexpectedError: "An unexpected error occurred. Please try again.",
       serverUnavailable: "Server temporarily unavailable. Please try again shortly.",
       tooManyRequests: "Too many requests. Please try again later.",
+      cooldownActive: "Please wait {remaining} before trying again",
+    },
+    cooldownModal: {
+      title: "Want to skip the wait?",
+      description: "Free plan has a 5-min cooldown between generations.",
+      benefits: [
+        "No cooldown — generate anytime",
+        "Up to 4 images at once",
+        "2,000+ credits per month",
+      ],
+      upgradeButton: "View Plans",
+      waitButton: "Wait {remaining}",
     },
     time: {
       justNow: "Just now",

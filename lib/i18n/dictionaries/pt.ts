@@ -372,6 +372,18 @@ const pt: Dictionary = {
       unexpectedError: "Ocorreu um erro inesperado. Tente novamente.",
       serverUnavailable: "Servidor temporariamente indisponivel. Tente novamente em breve.",
       tooManyRequests: "Muitas solicitacoes. Tente novamente mais tarde.",
+      cooldownActive: "Aguarde {remaining} antes de tentar novamente",
+    },
+    cooldownModal: {
+      title: "Quer pular a espera?",
+      description: "O plano gratuito tem um intervalo de 5 minutos entre gerações.",
+      benefits: [
+        "Sem intervalo — gere a qualquer momento",
+        "Até 4 imagens de uma vez",
+        "2.000+ créditos por mês",
+      ],
+      upgradeButton: "Ver planos",
+      waitButton: "Esperar {remaining}",
     },
     time: {
       justNow: "Agora",

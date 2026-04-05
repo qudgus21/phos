@@ -369,6 +369,18 @@ const de: Dictionary = {
       unexpectedError: "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
       serverUnavailable: "Server vorübergehend nicht verfügbar. Bitte versuchen Sie es in Kürze erneut.",
       tooManyRequests: "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
+      cooldownActive: "Bitte warten Sie {remaining} und versuchen Sie es erneut",
+    },
+    cooldownModal: {
+      title: "Möchten Sie die Wartezeit überspringen?",
+      description: "Der Free-Plan hat eine 5-Minuten-Abklingzeit zwischen Generierungen.",
+      benefits: [
+        "Keine Abklingzeit — jederzeit generieren",
+        "Bis zu 4 Bilder auf einmal",
+        "2.000+ Credits pro Monat",
+      ],
+      upgradeButton: "Pläne ansehen",
+      waitButton: "{remaining} warten",
     },
     time: {
       justNow: "Gerade eben",

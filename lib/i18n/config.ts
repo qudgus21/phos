@@ -248,6 +248,14 @@ export interface Dictionary {
       unexpectedError: string;
       serverUnavailable: string;
       tooManyRequests: string;
+      cooldownActive: string;
+    };
+    cooldownModal: {
+      title: string;
+      description: string;
+      benefits: string[];
+      upgradeButton: string;
+      waitButton: string;
     };
     time: {
       justNow: string;

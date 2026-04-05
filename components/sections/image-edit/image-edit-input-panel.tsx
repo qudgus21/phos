@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Plus, PenLine, X, GripVertical, Zap, Loader2, RotateCcw, Ruler } from "lucide-react";
+import { useState, useRef, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
+import { Plus, PenLine, X, GripVertical, Zap, Loader2, RotateCcw, Ruler, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ import { SAMPLES } from "@/lib/constants/samples";
 import { IMAGE_EDIT_MODELS, getImageEditCredits } from "@/lib/services/ai/models";
 import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { useCreditsBalance } from "@/hooks/use-credits";
 import { queryKeys } from "@/lib/query-keys";
 import type { UserCreditInfo } from "@/lib/types/credits";
 import { useLocale } from "@/lib/i18n/dictionary-context";
@@ -85,7 +86,8 @@ interface ImageEditInputPanelProps {
 export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEditInputPanelProps>(function ImageEditInputPanel({ sampleId, isGenerating: isGeneratingExternal, onSubmit, onSubmitError, onPendingStart }, ref) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { requireAuth, loginModal } = useRequireAuth();
+  const { user, requireAuth, loginModal } = useRequireAuth();
+  const { data: creditInfo } = useCreditsBalance(!!user);
   const dict = useDictionary();
   const locale = useLocale();
   const activeSample = SAMPLES.find((s) => s.id === sampleId);
@@ -115,6 +117,38 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
     (opt) => currentModelDef?.supportedSizes.includes(opt.value)
   );
 
+  // 쿨다운 카운트다운
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+  const cooldownSeconds = creditInfo?.plan.cooldownSeconds ?? 0;
+  const lastGenAt = creditInfo?.lastGenerationAt ?? null;
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0 || !lastGenAt) {
+      setCooldownLeft(0);
+      return;
+    }
+    const calc = () => {
+      const elapsed = (Date.now() - new Date(lastGenAt).getTime()) / 1000;
+      return Math.max(0, Math.ceil(cooldownSeconds - elapsed));
+    };
+    setCooldownLeft(calc());
+    const timer = setInterval(() => {
+      const left = calc();
+      setCooldownLeft(left);
+      if (left <= 0) clearInterval(timer);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds, lastGenAt]);
+
+  const cooldownLabel = useMemo(() => {
+    if (cooldownLeft <= 0) return "";
+    const min = Math.floor(cooldownLeft / 60);
+    const sec = cooldownLeft % 60;
+    return min > 0
+      ? `${min}:${String(sec).padStart(2, "0")}`
+      : `${sec}s`;
+  }, [cooldownLeft]);
+
   const skipModelResetRef = useRef(false);
 
   // 모델 변경 시 설정 초기화 (즐겨찾기 로드 시에는 건너뜀)
@@ -139,6 +173,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
   const [scale, setScale] = useState(1);
   const [imageCount, setImageCount] = useState(1);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showCooldownModal, setShowCooldownModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -229,6 +264,20 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
 
     const totalCost = creditCost * imageCount;
     const cachedCredits = queryClient.getQueryData<UserCreditInfo>(queryKeys.credits.balance);
+
+    // 쿨다운 체크
+    if (cachedCredits && cachedCredits.plan.cooldownSeconds > 0 && cachedCredits.lastGenerationAt) {
+      const elapsed = (Date.now() - new Date(cachedCredits.lastGenerationAt).getTime()) / 1000;
+      const remaining = Math.ceil(cachedCredits.plan.cooldownSeconds - elapsed);
+      if (remaining > 0) {
+        const min = Math.floor(remaining / 60);
+        const sec = remaining % 60;
+        const label = min > 0 ? `${min}:${String(sec).padStart(2, "0")}` : `${sec}s`;
+        toast(dict.common.errors.cooldownActive.replace("{remaining}", label), "warning");
+        return;
+      }
+    }
+
     if (cachedCredits && cachedCredits.balance.total < totalCost) {
       toast(dict.common.errors.insufficientCredits, "error", 5000, {
         label: dict.common.errors.viewPlans,
@@ -290,6 +339,12 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       // 임시 ID → 실제 historyId로 교체
       replaceHistoryId(queryClient, "image-edit", tempId, data.data.historyId);
       onPendingStart?.(data.data.historyId);
+      // 쿨다운 타이머 리셋
+      if (cachedCredits && cachedCredits.plan.cooldownSeconds > 0) {
+        const updated = { ...cachedCredits, lastGenerationAt: new Date().toISOString() };
+        queryClient.setQueryData(queryKeys.credits.balance, updated);
+        setCooldownLeft(cachedCredits.plan.cooldownSeconds);
+      }
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
           new CustomEvent("credits-updated", {
@@ -804,10 +859,10 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             <button
               type="button"
               disabled={isGenerating}
-              onClick={() => requireAuth(handleGenerate)}
+              onClick={() => cooldownLeft > 0 ? setShowCooldownModal(true) : requireAuth(handleGenerate)}
               className={cn(
                 "flex items-center gap-2 px-3 lg:px-5 py-2.5 text-[13px] lg:text-[15px] font-extrabold rounded-xl transition-all duration-300 cursor-pointer tracking-wide",
-                prompt.trim() && !isGenerating
+                prompt.trim() && !isGenerating && cooldownLeft <= 0
                   ? "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.03]"
                   : "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
               )}
@@ -816,6 +871,11 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   {dict.tools.imageEdit.generatingButton}
+                </>
+              ) : cooldownLeft > 0 ? (
+                <>
+                  <Clock className="w-3.5 h-3.5" />
+                  {cooldownLabel}
                 </>
               ) : (
                 <>
@@ -851,6 +911,27 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
         description={dict.tools.imageEdit.resetConfirmDesc}
         confirmLabel={dict.tools.imageEdit.resetConfirmLabel}
         variant="danger"
+      />
+      <ConfirmModal
+        open={showCooldownModal}
+        onClose={() => setShowCooldownModal(false)}
+        onConfirm={() => { window.location.href = `/${locale}/pricing`; }}
+        title={dict.common.cooldownModal.title}
+        description={
+          <div className="space-y-2.5">
+            <p className="text-[13px] text-slate-400">{dict.common.cooldownModal.description}</p>
+            <ul className="text-left space-y-1.5">
+              {dict.common.cooldownModal.benefits.map((b, i) => (
+                <li key={i} className="flex items-center gap-1.5 text-[13px]">
+                  <span className="text-indigo-400">✓</span>
+                  <span className="text-slate-200">{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        }
+        confirmLabel={dict.common.cooldownModal.upgradeButton}
+        cancelLabel={dict.common.cooldownModal.waitButton.replace("{remaining}", cooldownLabel)}
       />
       {loginModal}
     </>

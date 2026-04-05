@@ -367,6 +367,18 @@ const ko: Dictionary = {
       unexpectedError: "예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.",
       serverUnavailable: "서버가 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
       tooManyRequests: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+      cooldownActive: "{remaining} 후에 다시 시도해 주세요",
+    },
+    cooldownModal: {
+      title: "기다리지 않고 바로 생성할까요?",
+      description: "Free 플랜은 생성 간 5분 대기 시간이 있어요.",
+      benefits: [
+        "대기 시간 없이 바로 생성",
+        "한 번에 최대 4장 생성",
+        "월 2,000+ 크레딧 제공",
+      ],
+      upgradeButton: "플랜 보기",
+      waitButton: "{remaining} 기다리기",
     },
     time: {
       justNow: "방금 전",
