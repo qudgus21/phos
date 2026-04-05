@@ -135,7 +135,7 @@ export function SkinRetouch({ dict, locale }: SkinRetouchProps) {
               fill
               className="object-cover"
               sizes="40px"
-              unoptimized
+
             />
           </button>
         ))}
@@ -182,7 +182,7 @@ export function SkinRetouch({ dict, locale }: SkinRetouchProps) {
               className="object-cover"
               draggable={false}
               sizes="(max-width: 768px) 100vw, 560px"
-              unoptimized
+
               {...(getBlur(images.after) ? { placeholder: "blur" as const, blurDataURL: getBlur(images.after) } : {})}
             />
 
@@ -198,7 +198,7 @@ export function SkinRetouch({ dict, locale }: SkinRetouchProps) {
                 className="object-cover"
                 draggable={false}
                 sizes="(max-width: 768px) 100vw, 560px"
-                unoptimized
+  
                 {...(getBlur(images.before) ? { placeholder: "blur" as const, blurDataURL: getBlur(images.before) } : {})}
               />
             </div>

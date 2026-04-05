@@ -35,7 +35,7 @@ export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
         <button
           onClick={() => onTabChange("monthly")}
           className={cn(
-            "px-10 py-3.5 text-lg font-semibold rounded-full transition-all cursor-pointer",
+            "px-10 py-3.5 text-lg font-bold rounded-full transition-all cursor-pointer",
             activeTab === "monthly"
               ? "bg-primary text-primary-foreground shadow-glow-indigo-sm"
               : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
@@ -46,7 +46,7 @@ export function PricingHeader({ activeTab, onTabChange }: PricingHeaderProps) {
         <button
           onClick={() => onTabChange("onetime")}
           className={cn(
-            "px-10 py-3.5 text-lg font-semibold rounded-full transition-all cursor-pointer",
+            "px-10 py-3.5 text-lg font-bold rounded-full transition-all cursor-pointer",
             activeTab === "onetime"
               ? "bg-primary text-primary-foreground shadow-glow-indigo-sm"
               : "border border-border text-muted-foreground hover:text-foreground hover:border-primary/30"

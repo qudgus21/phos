@@ -137,7 +137,7 @@ export function ImageEdit({ dict, locale }: ImageEditProps) {
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 40vw, 200px"
-                        unoptimized
+
                         {...(getBlur(input.src) ? { placeholder: "blur" as const, blurDataURL: getBlur(input.src) } : {})}
                       />
                       <Badge

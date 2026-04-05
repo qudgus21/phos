@@ -70,7 +70,7 @@ export function SkinRealism({ dict, locale }: SkinRealismProps) {
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                unoptimized
+
                 placeholder="blur"
                 blurDataURL={getBlur("/images/retouching/sample1/after.webp")}
               />

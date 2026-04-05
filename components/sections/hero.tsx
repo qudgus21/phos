@@ -43,7 +43,6 @@ export function Hero({ dict, locale }: HeroProps) {
           sizes="(max-width: 768px) 100vw, 65vw"
           className="object-cover object-top"
           priority
-          unoptimized
           placeholder="blur"
           blurDataURL={getBlur("/images/home/hero/hero-model.webp")}
         />

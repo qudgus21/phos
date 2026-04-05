@@ -577,7 +577,7 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
                       e.stopPropagation();
                       setShowGuide(true);
                     }}
-                    className="text-[12px] font-semibold text-primary hover:text-[#818CF8] transition-colors cursor-pointer mt-1"
+                    className="text-[12px] font-semibold text-indigo-400 dark:text-indigo-300 hover:text-[#818CF8] transition-colors cursor-pointer mt-1"
                   >
                     {dict.tools.faceEdit.guideButton}
                   </button>

@@ -70,7 +70,7 @@ export function FaceSwap({ dict, locale }: FaceSwapProps) {
                 fill
                 className="object-cover"
                 sizes="40px"
-                unoptimized
+
               />
             </button>
           ))}
@@ -97,7 +97,7 @@ export function FaceSwap({ dict, locale }: FaceSwapProps) {
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 40vw, 250px"
-                    unoptimized
+    
                     {...(getBlur(`/images/face-edit/${selected}/before.webp`) ? { placeholder: "blur" as const, blurDataURL: getBlur(`/images/face-edit/${selected}/before.webp`) } : {})}
                   />
                   <div className="absolute inset-0 mix-blend-multiply opacity-40">
@@ -107,7 +107,7 @@ export function FaceSwap({ dict, locale }: FaceSwapProps) {
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 40vw, 250px"
-                      unoptimized
+      
                       {...(getBlur(`/images/face-edit/${selected}/mask.webp`) ? { placeholder: "blur" as const, blurDataURL: getBlur(`/images/face-edit/${selected}/mask.webp`) } : {})}
                     />
                   </div>
@@ -130,7 +130,7 @@ export function FaceSwap({ dict, locale }: FaceSwapProps) {
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 40vw, 250px"
-                    unoptimized
+    
                     {...(getBlur(`/images/face-edit/${selected}/after.webp`) ? { placeholder: "blur" as const, blurDataURL: getBlur(`/images/face-edit/${selected}/after.webp`) } : {})}
                   />
                   <Badge
