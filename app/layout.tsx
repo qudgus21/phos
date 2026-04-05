@@ -24,14 +24,57 @@ const spaceGrotesk = Space_Grotesk({
 const pretendard = localFont({
   src: [
     {
-      path: "../public/fonts/PretendardVariable.woff2",
+      path: "../public/fonts/PretendardVariable-latin.woff2",
       style: "normal",
     },
   ],
   variable: "--font-pretendard",
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  declarations: [
+    {
+      prop: "unicode-range",
+      value: "U+0000-02AF, U+1E00-1EFF, U+2000-22FF, U+25A0-25FF, U+FB00-FB06, U+FEFF, U+FFFD",
+    },
+  ],
+});
+
+const pretendardKorean = localFont({
+  src: [
+    {
+      path: "../public/fonts/PretendardVariable-korean.woff2",
+      style: "normal",
+    },
+  ],
+  variable: "--font-pretendard-kr",
+  display: "swap",
   preload: false,
   fallback: ["system-ui", "sans-serif"],
+  declarations: [
+    {
+      prop: "unicode-range",
+      value: "U+AC00-D7AF, U+1100-11FF, U+3130-318F, U+A960-A97F, U+D7B0-D7FF",
+    },
+  ],
+});
+
+const pretendardCjk = localFont({
+  src: [
+    {
+      path: "../public/fonts/PretendardVariable-cjk.woff2",
+      style: "normal",
+    },
+  ],
+  variable: "--font-pretendard-cjk",
+  display: "swap",
+  preload: false,
+  fallback: ["system-ui", "sans-serif"],
+  declarations: [
+    {
+      prop: "unicode-range",
+      value: "U+2E80-2EFF, U+3000-303F, U+3040-30FF, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF",
+    },
+  ],
 });
 
 export default async function RootLayout({
@@ -50,7 +93,7 @@ export default async function RootLayout({
         <JsonLdScript data={organizationJsonLd()} />
       </head>
       <body
-        className={`${spaceGrotesk.variable} ${pretendard.variable} font-sans antialiased`}
+        className={`${spaceGrotesk.variable} ${pretendard.variable} ${pretendardKorean.variable} ${pretendardCjk.variable} font-sans antialiased`}
       >
         <ThemeProvider>
           <QueryProvider>
