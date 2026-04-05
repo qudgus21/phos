@@ -756,7 +756,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             {imageSize !== "custom" && (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-card-foreground shrink-0 w-14">{dict.tools.imageEdit.scale}</span>
-                <input type="range" min={1} max={4} step={0.2} value={scale} onChange={(e) => setScale(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
+                <input type="range" min={1} max={4} step={0.2} value={scale} onChange={(e) => setScale(Number(e.target.value))} aria-label={dict.tools.imageEdit.scale} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
                 <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{scaleDisplay}</span>
               </div>
             )}
@@ -764,7 +764,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
             {/* 수량 */}
             <div className="flex items-center gap-3">
               <span className="text-sm text-card-foreground shrink-0 w-14">{dict.tools.imageEdit.count}</span>
-              <input type="range" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
+              <input type="range" min={1} max={4} value={imageCount} onChange={(e) => setImageCount(Number(e.target.value))} aria-label={dict.tools.imageEdit.count} className={cn("flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-primary", sliderThumb)} />
               <span className="text-sm font-bold text-[#A5B4FC] shrink-0">{imageCount}{dict.tools.imageEdit.countUnit}</span>
             </div>
           </div>

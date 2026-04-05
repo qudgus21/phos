@@ -59,8 +59,10 @@ export default async function PricingLayout({
       {faqItems.length > 0 && (
         <JsonLdScript data={faqPageJsonLd(faqItems)} />
       )}
-      <h1 className="sr-only">{dict.metadata.pricingTitle}</h1>
-      {children}
+      <main>
+        <h1 className="sr-only">{dict.metadata.pricingTitle}</h1>
+        {children}
+      </main>
     </>
   );
 }

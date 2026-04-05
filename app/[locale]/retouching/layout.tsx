@@ -63,11 +63,13 @@ export default async function RetouchingLayout({
           { name: dict.nav.skinRetouch, path: "/retouching" },
         ], dict.footer.links.home)}
       />
-      <section className="sr-only" aria-label={dict.metadata.retouchingTitle}>
-        <h1>{dict.metadata.retouchingTitle}</h1>
-        <p>{dict.metadata.retouchingDescription}</p>
-      </section>
-      {children}
+      <main>
+        <section className="sr-only" aria-label={dict.metadata.retouchingTitle}>
+          <h1>{dict.metadata.retouchingTitle}</h1>
+          <p>{dict.metadata.retouchingDescription}</p>
+        </section>
+        {children}
+      </main>
     </>
   );
 }

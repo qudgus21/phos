@@ -63,11 +63,13 @@ export default async function ImageEditLayout({
           { name: dict.nav.imageEdit, path: "/image-edit" },
         ], dict.footer.links.home)}
       />
-      <section className="sr-only" aria-label={dict.metadata.imageEditTitle}>
-        <h1>{dict.metadata.imageEditTitle}</h1>
-        <p>{dict.metadata.imageEditDescription}</p>
-      </section>
-      {children}
+      <main>
+        <section className="sr-only" aria-label={dict.metadata.imageEditTitle}>
+          <h1>{dict.metadata.imageEditTitle}</h1>
+          <p>{dict.metadata.imageEditDescription}</p>
+        </section>
+        {children}
+      </main>
     </>
   );
 }

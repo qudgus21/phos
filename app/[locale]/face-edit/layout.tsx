@@ -63,11 +63,13 @@ export default async function FaceEditLayout({
           { name: dict.nav.faceEdit, path: "/face-edit" },
         ], dict.footer.links.home)}
       />
-      <section className="sr-only" aria-label={dict.metadata.faceEditTitle}>
-        <h1>{dict.metadata.faceEditTitle}</h1>
-        <p>{dict.metadata.faceEditDescription}</p>
-      </section>
-      {children}
+      <main>
+        <section className="sr-only" aria-label={dict.metadata.faceEditTitle}>
+          <h1>{dict.metadata.faceEditTitle}</h1>
+          <p>{dict.metadata.faceEditDescription}</p>
+        </section>
+        {children}
+      </main>
     </>
   );
 }

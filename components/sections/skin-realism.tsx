@@ -166,9 +166,9 @@ export function SkinRealism({ dict, locale }: SkinRealismProps) {
                       <Icon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-foreground mb-0.5">
+                      <h3 className="text-sm font-bold text-foreground mb-0.5">
                         {f.title}
-                      </h4>
+                      </h3>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         {f.desc}
                       </p>

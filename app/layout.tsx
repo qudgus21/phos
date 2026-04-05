@@ -30,6 +30,7 @@ const pretendard = localFont({
   ],
   variable: "--font-pretendard",
   display: "swap",
+  preload: false,
   fallback: ["system-ui", "sans-serif"],
 });
 
@@ -62,8 +63,6 @@ export default async function RootLayout({
           rel="dns-prefetch"
           href="https://images.phos.studio"
         />
-        <link rel="preconnect" href="https://replicate.delivery" />
-        <link rel="dns-prefetch" href="https://replicate.delivery" />
         <JsonLdScript data={organizationJsonLd()} />
       </head>
       <body

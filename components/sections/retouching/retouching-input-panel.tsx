@@ -522,7 +522,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
                   e.stopPropagation();
                   setShowGuide(true);
                 }}
-                className="text-[12px] font-semibold text-primary hover:text-[#818CF8] transition-colors cursor-pointer mt-1"
+                className="text-[12px] font-semibold text-indigo-400 dark:text-indigo-300 hover:text-[#818CF8] transition-colors cursor-pointer mt-1"
               >
                 {dict.tools.retouching.guideButton}
               </button>
@@ -625,6 +625,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
               onClick={() => setFaceReshape((v) => !v)}
               role="switch"
               aria-checked={faceReshape}
+              aria-label={dict.tools.retouching.reshapeLabel}
               className={cn(
                 "relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer",
                 faceReshape ? "bg-primary" : "bg-muted"
