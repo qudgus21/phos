@@ -72,47 +72,63 @@ export function useGenerationRealtime(
       });
   }, [featureType, queryClient]);
 
-  // Realtime 구독
+  // Realtime 구독 — auth 세션이 준비된 후에 채널 구독 (RLS에 access_token 필요)
+  // 프로덕션 풀 페이지 로드 시, 채널이 auth 복원보다 먼저 join되면
+  // phx_join에 access_token이 빠져서 RLS(auth.uid()=user_id)에 의해 이벤트가 필터링됨
   useEffect(() => {
     const supabase = supabaseRef.current;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
 
-    const channel = supabase
-      .channel(`gen-${featureType}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "generation_history",
-          filter: `feature_type=eq.${featureType}`,
-        },
-        (payload) => {
-          const newRow = payload.new as HistoryRow;
+    (async () => {
+      // 1. auth 세션 복원 대기
+      await supabase.auth.getSession();
+      if (cancelled) return;
 
-          if (newRow.status === "completed") {
-            // 캐시에서 pending row를 completed로 교체
-            queryClient.setQueryData<HistoryRow[]>(
-              queryKeys.history.byFeature(featureType),
-              (old) =>
-                old?.map((h) => (h.id === newRow.id ? newRow : h)) ?? [newRow]
-            );
-            setPendingIds((prev) => prev.filter((id) => id !== newRow.id));
-            optionsRef.current?.onCompleted?.(newRow);
-          } else if (newRow.status === "failed") {
-            // 실패한 row는 캐시에서 제거
-            queryClient.setQueryData<HistoryRow[]>(
-              queryKeys.history.byFeature(featureType),
-              (old) => old?.filter((h) => h.id !== newRow.id) ?? []
-            );
-            setPendingIds((prev) => prev.filter((id) => id !== newRow.id));
-            optionsRef.current?.onFailed?.(newRow);
+      // 2. realtime에 access_token 확실히 설정 (accessToken 콜백 사용)
+      await supabase.realtime.setAuth();
+      if (cancelled) return;
+
+      // 3. 이제 accessTokenValue가 설정된 상태에서 채널 구독
+      channel = supabase
+        .channel(`gen-${featureType}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "generation_history",
+            filter: `feature_type=eq.${featureType}`,
+          },
+          (payload) => {
+            const newRow = payload.new as HistoryRow;
+
+            if (newRow.status === "completed") {
+              queryClient.setQueryData<HistoryRow[]>(
+                queryKeys.history.byFeature(featureType),
+                (old) =>
+                  old?.map((h) => (h.id === newRow.id ? newRow : h)) ?? [
+                    newRow,
+                  ]
+              );
+              setPendingIds((prev) => prev.filter((id) => id !== newRow.id));
+              optionsRef.current?.onCompleted?.(newRow);
+            } else if (newRow.status === "failed") {
+              queryClient.setQueryData<HistoryRow[]>(
+                queryKeys.history.byFeature(featureType),
+                (old) => old?.filter((h) => h.id !== newRow.id) ?? []
+              );
+              setPendingIds((prev) => prev.filter((id) => id !== newRow.id));
+              optionsRef.current?.onFailed?.(newRow);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [featureType, queryClient]);
 
