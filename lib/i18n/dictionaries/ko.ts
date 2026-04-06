@@ -2,18 +2,18 @@ import type { Dictionary } from "../config";
 
 const ko: Dictionary = {
   metadata: {
-    siteTitle: "Phos AI — AI 사진 편집 · 보정 · 얼굴 편집 온라인",
+    siteTitle: "Phos AI — AI 사진 편집 · 보정 · 얼굴 보정 온라인",
     siteDescription:
-      "프롬프트 한 줄로 이미지 편집, 원클릭 피부 보정, AI 얼굴 교체까지. 브라우저에서 스튜디오 퀄리티를 경험하세요.",
+      "프롬프트 한 줄로 이미지 편집, 원클릭 피부 보정, AI 얼굴 보정. 브라우저에서 스튜디오 퀄리티를 경험하세요.",
     imageEditTitle: "AI 사진 편집 | 텍스트 프롬프트로 이미지 편집",
     imageEditDescription:
       "사진 한 장과 프롬프트 한 줄이면 끝. 상업 촬영, 제품 사진, 크리에이티브 프로젝트를 위한 AI 이미지 편집 도구.",
     retouchingTitle: "AI 피부 보정 | 잡티 제거 · 피부 리터칭",
     retouchingDescription:
       "자연스러운 질감을 살리는 AI 피부 보정. 잡티 제거, 피부 톤 보정, 인물 사진 리터칭을 원클릭으로.",
-    faceEditTitle: "AI 얼굴 편집 · 얼굴 교체 온라인",
+    faceEditTitle: "AI 얼굴 보정 | 얼굴 개선 온라인",
     faceEditDescription:
-      "원하는 영역을 선택하고 AI로 새로운 얼굴을 생성하세요. 얼굴 교체, 표정 변경, 인물 변환을 몇 초 만에.",
+      "원하는 영역을 선택하고 AI로 얼굴을 개선하세요. 표정 개선, 얼굴 특성 조정, 얼굴 보정을 몇 초 만에.",
     pricingTitle: "AI 이미지 도구 요금제 안내",
     pricingDescription:
       "Phos AI 요금제를 비교하고 나에게 맞는 플랜을 선택하세요. 이미지 편집, 보정, 얼굴 편집 도구를 위한 유연한 크레딧.",
@@ -88,16 +88,16 @@ const ko: Dictionary = {
       cta: "내 사진으로 확인하기",
     },
     faceSwap: {
-      title: "모델 없이 완성하는",
-      titleAccent: "새로운 얼굴",
-      subtitle: "영역을 지정하고, 새로운 얼굴을 만들어보세요.",
+      title: "프로페셔널한 얼굴 보정 —",
+      titleAccent: "당신만의 방식으로",
+      subtitle: "영역을 지정하고, 얼굴을 개선해보세요.",
       maskBadge: "마스크 지정",
       aiGenerated: "AI 생성",
-      sampleAlt: "얼굴 변경 샘플",
+      sampleAlt: "얼굴 보정 샘플",
       originalAlt: "원본 이미지",
       maskAlt: "마스크 영역",
-      resultAlt: "얼굴 변경 결과",
-      cta: "얼굴 변경 시작하기",
+      resultAlt: "얼굴 보정 결과",
+      cta: "얼굴 보정 시작하기",
     },
     skinRealism: {
       badge: "ULTRA SKIN ENHANCEMENT",

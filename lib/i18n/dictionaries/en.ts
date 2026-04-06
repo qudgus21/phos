@@ -11,9 +11,9 @@ const en: Dictionary = {
     retouchingTitle: "AI Skin Retouching | Smooth Skin & Remove Blemishes",
     retouchingDescription:
       "AI skin retouching that preserves natural texture. Smooth skin, remove blemishes, and enhance portraits with studio-quality results in seconds.",
-    faceEditTitle: "AI Face Editor & Face Swap | Transform Portraits",
+    faceEditTitle: "AI Portrait Enhancement | Transform Portraits",
     faceEditDescription:
-      "AI-powered face editing and face swap for portraits. Change expressions, swap faces, and transform any portrait with a text prompt.",
+      "AI-powered portrait enhancement that refines facial features while preserving your identity. Enhance expressions, adjust appearance, and transform any portrait with a text prompt.",
     pricingTitle: "Plans & Pricing for AI Image Tools",
     pricingDescription:
       "Choose the right Phos AI plan for your workflow. Flexible credits for image editing, retouching, and face editing tools.",
@@ -89,9 +89,9 @@ const en: Dictionary = {
       cta: "Try with your photo",
     },
     faceSwap: {
-      title: "No model needed —",
-      titleAccent: "a brand new face",
-      subtitle: "Select an area and generate a new face.",
+      title: "Professional portrait enhancement —",
+      titleAccent: "enhanced your way",
+      subtitle: "Select an area and enhance facial appearance.",
       maskBadge: "Mask",
       aiGenerated: "AI generated",
       sampleAlt: "Face edit sample",
