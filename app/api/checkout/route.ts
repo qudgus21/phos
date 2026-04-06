@@ -148,9 +148,24 @@ export const POST = withAuth(async (request, { user }) => {
   } catch (err) {
     recentCheckouts.delete(checkoutKey);
 
-    console.error("[checkout] Polar API failed:", err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const errorStack = err instanceof Error ? err.stack : undefined;
+
+    console.error("[checkout] Polar API failed:", {
+      message: errorMessage,
+      stack: errorStack,
+      details: err,
+    });
+
     return NextResponse.json(
-      { success: false, error: { code: "CHECKOUT_FAILED", message: "Checkout failed" } },
+      {
+        success: false,
+        error: {
+          code: "CHECKOUT_FAILED",
+          message: "Checkout failed",
+          detail: errorMessage,
+        }
+      },
       { status: 500 }
     );
   }
