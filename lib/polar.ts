@@ -2,6 +2,7 @@ import { Polar } from "@polar-sh/sdk";
 
 /**
  * Polar SDK 클라이언트 생성 (서버 사이드 전용)
+ * NOTE: Polar 샌드박스 토큰 사용, 항상 sandbox 모드로 실행
  */
 export function createPolarClient(): Polar {
   const accessToken = process.env.POLAR_ACCESS_TOKEN;
@@ -9,6 +10,6 @@ export function createPolarClient(): Polar {
 
   return new Polar({
     accessToken,
-    server: process.env.NODE_ENV === "production" ? "production" : "sandbox",
+    server: "sandbox",
   });
 }
