@@ -287,6 +287,14 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
     }
 
     setIsGenerating(true);
+
+    // 쿨다운 타이머 즉시 시작 (낙관적 업데이트)
+    if (creditInfo && creditInfo.plan.cooldownSeconds > 0) {
+      const updated = { ...creditInfo, lastGenerationAt: new Date().toISOString() };
+      queryClient.setQueryData(queryKeys.credits.balance, updated);
+      setCooldownLeft(creditInfo.plan.cooldownSeconds);
+    }
+
     // 낙관적 업데이트: 버튼 클릭 즉시 히스토리에 pending 추가 + 로딩 UI 표시
     const tempId = crypto.randomUUID();
     prependHistoryItem(queryClient, "image-edit", {
@@ -339,12 +347,7 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       // 임시 ID → 실제 historyId로 교체
       replaceHistoryId(queryClient, "image-edit", tempId, data.data.historyId);
       onPendingStart?.(data.data.historyId);
-      // 쿨다운 타이머 리셋
-      if (cachedCredits && cachedCredits.plan.cooldownSeconds > 0) {
-        const updated = { ...cachedCredits, lastGenerationAt: new Date().toISOString() };
-        queryClient.setQueryData(queryKeys.credits.balance, updated);
-        setCooldownLeft(cachedCredits.plan.cooldownSeconds);
-      }
+
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
           new CustomEvent("credits-updated", {
@@ -356,6 +359,8 @@ export const ImageEditInputPanel = forwardRef<ImageEditInputPanelHandle, ImageEd
       // 실패 시 낙관적으로 추가한 항목 제거
       removeHistoryItem(queryClient, "image-edit", tempId);
       onSubmitError?.();
+      // 실패 시 타이머 초기화
+      setCooldownLeft(0);
       window.dispatchEvent(
         new CustomEvent("credits-updated", {
           detail: { delta: creditCost * imageCount },

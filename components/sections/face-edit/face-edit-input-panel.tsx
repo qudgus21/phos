@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Paintbrush, Upload, RefreshCw, Trash2, Zap, Loader2, RotateCcw } from "lucide-react";
+import { Paintbrush, Upload, RefreshCw, Trash2, Zap, Loader2, RotateCcw, Clock } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { useDictionary } from "@/lib/i18n/dictionary-context";
 import { FaceEditMaskEditor } from "./face-edit-mask-editor";
 import { FACE_EDIT_SAMPLES } from "./face-edit-sample-sidebar";
@@ -83,6 +84,8 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
   const [maskBlob, setMaskBlob] = useState<Blob | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [imgMaxH, setImgMaxH] = useState<number | undefined>(undefined);
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+  const [showCooldownModal, setShowCooldownModal] = useState(false);
   const imgContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevSampleIdRef = useRef<string | null | undefined>(null);
@@ -97,6 +100,32 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  /* 쿨다운 타이머 — cachedCredits에서 남은 시간 계산 */
+  useEffect(() => {
+    const cachedCredits = queryClient.getQueryData<UserCreditInfo>(queryKeys.credits.balance);
+    const cooldownSeconds = cachedCredits?.plan.cooldownSeconds ?? 0;
+    const lastGenAt = cachedCredits?.lastGenerationAt ?? null;
+
+    if (cooldownSeconds <= 0 || !lastGenAt) {
+      setCooldownLeft(0);
+      return;
+    }
+
+    const calc = () => {
+      const elapsed = (Date.now() - new Date(lastGenAt).getTime()) / 1000;
+      return Math.max(0, Math.ceil(cooldownSeconds - elapsed));
+    };
+
+    setCooldownLeft(calc());
+    const timer = setInterval(() => {
+      const left = calc();
+      setCooldownLeft(left);
+      if (left <= 0) clearInterval(timer);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [queryClient]);
 
   /* 샘플 선택 시 반영 */
   useEffect(() => {
@@ -327,6 +356,20 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     }
 
     const cachedCredits = queryClient.getQueryData<UserCreditInfo>(queryKeys.credits.balance);
+
+    // 쿨다운 체크
+    if (cachedCredits && cachedCredits.plan.cooldownSeconds > 0 && cachedCredits.lastGenerationAt) {
+      const elapsed = (Date.now() - new Date(cachedCredits.lastGenerationAt).getTime()) / 1000;
+      const remaining = Math.ceil(cachedCredits.plan.cooldownSeconds - elapsed);
+      if (remaining > 0) {
+        const min = Math.floor(remaining / 60);
+        const sec = remaining % 60;
+        const label = min > 0 ? `${min}:${String(sec).padStart(2, "0")}` : `${sec}s`;
+        toast(dict.common.errors.cooldownActive.replace("{remaining}", label), "warning");
+        return;
+      }
+    }
+
     if (cachedCredits && cachedCredits.balance.total < CREDIT_COST) {
       toast(dict.common.errors.insufficientCredits, "error", 5000, {
         label: dict.common.errors.viewPlans,
@@ -336,6 +379,14 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     }
 
     setIsGenerating(true);
+
+    // 쿨다운 타이머 즉시 시작 (낙관적 업데이트)
+    if (cachedCredits && cachedCredits.plan.cooldownSeconds > 0) {
+      const updated = { ...cachedCredits, lastGenerationAt: new Date().toISOString() };
+      queryClient.setQueryData(queryKeys.credits.balance, updated);
+      setCooldownLeft(cachedCredits.plan.cooldownSeconds);
+    }
+
     const tempId = crypto.randomUUID();
     prependHistoryItem(queryClient, "face-edit", {
       id: tempId,
@@ -396,6 +447,8 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
     } catch (err) {
       removeHistoryItem(queryClient, "face-edit", tempId);
       onSubmitError?.();
+      // 실패 시 타이머 초기화
+      setCooldownLeft(0);
       window.dispatchEvent(
         new CustomEvent("credits-updated", { detail: { delta: CREDIT_COST } })
       );
@@ -650,20 +703,27 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
             <button
               type="button"
               disabled={isGenerating}
-              onClick={() => requireAuth(handleGenerate)}
+              onClick={() => cooldownLeft > 0 ? setShowCooldownModal(true) : requireAuth(handleGenerate)}
               className={cn(
                 "flex items-center gap-2 px-5 py-2.5 text-[15px] font-extrabold rounded-xl transition-all duration-300 cursor-pointer tracking-wide",
                 isGenerating
                   ? "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
-                  : !(hasImage && hasMask)
-                    ? "text-white bg-gradient-to-r from-primary to-secondary opacity-60"
-                    : "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.03]"
+                  : cooldownLeft > 0
+                    ? "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
+                    : !(hasImage && hasMask)
+                      ? "text-white bg-gradient-to-r from-primary to-secondary opacity-60"
+                      : "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.03]"
               )}
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   {dict.tools.faceEdit.generatingButton}
+                </>
+              ) : cooldownLeft > 0 ? (
+                <>
+                  <Clock className="w-3.5 h-3.5" />
+                  {`${Math.floor(cooldownLeft / 60)}:${String(cooldownLeft % 60).padStart(2, "0")}`}
                 </>
               ) : (
                 <>
@@ -716,6 +776,27 @@ export const FaceEditInputPanel = forwardRef<FaceEditInputPanelHandle, FaceEditI
           </div>
         </div>
       )}
+      <ConfirmModal
+        open={showCooldownModal}
+        onClose={() => setShowCooldownModal(false)}
+        onConfirm={() => { window.location.href = `/${locale}/pricing`; }}
+        title={dict.common.cooldownModal.title}
+        description={
+          <div className="space-y-2.5">
+            <p className="text-[13px] text-slate-400">{dict.common.cooldownModal.description}</p>
+            <ul className="text-left space-y-1.5">
+              {dict.common.cooldownModal.benefits.map((b, i) => (
+                <li key={i} className="flex items-center gap-1.5 text-[13px]">
+                  <span className="text-indigo-400">✓</span>
+                  <span className="text-slate-200">{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        }
+        confirmLabel={dict.common.cooldownModal.upgradeButton}
+        cancelLabel={dict.common.cooldownModal.waitButton.replace("{remaining}", `${Math.floor(cooldownLeft / 60)}:${String(cooldownLeft % 60).padStart(2, "0")}`)}
+      />
       {loginModal}
 </>
   );

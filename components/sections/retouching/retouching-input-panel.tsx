@@ -8,14 +8,17 @@ import {
   Loader2,
   ChevronDown,
   Check,
+  Clock,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown";
 import { useToast } from "@/components/ui/toast";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { getApiErrorMessage } from "@/lib/utils/api-error-message";
 import { prependHistoryItem, replaceHistoryId, removeHistoryItem } from "@/hooks/use-history";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { useCreditsBalance } from "@/hooks/use-credits";
 import { queryKeys } from "@/lib/query-keys";
 import type { UserCreditInfo } from "@/lib/types/credits";
 import { useLocale } from "@/lib/i18n/dictionary-context";
@@ -170,6 +173,8 @@ interface RetouchingInputPanelProps {
 export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, RetouchingInputPanelProps>(function RetouchingInputPanel({ sampleId, isGenerating: isGeneratingExternal, onSubmit, onSubmitError, onPendingStart, externalImageUrl }, ref) {
   const dict = useDictionary();
   const queryClient = useQueryClient();
+  const { user } = useRequireAuth();
+  const { data: creditInfo } = useCreditsBalance(!!user);
 
   const FILTERS = [
     { id: "none", label: dict.tools.retouching.filters.none },
@@ -207,6 +212,8 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
 
   /* Generation */
   const [isGenerating, setIsGenerating] = useState(false);
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+  const [showCooldownModal, setShowCooldownModal] = useState(false);
   const { toast } = useToast();
   const locale = useLocale();
   const { requireAuth, loginModal } = useRequireAuth();
@@ -214,6 +221,31 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
   const hasImage = !!uploadedImage;
 
   const [isImageLoading, setIsImageLoading] = useState(false);
+
+  /* 쿨다운 타이머 — creditInfo에서 남은 시간 계산 */
+  const cooldownSeconds = creditInfo?.plan.cooldownSeconds ?? 0;
+  const lastGenAt = creditInfo?.lastGenerationAt ?? null;
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0 || !lastGenAt) {
+      setCooldownLeft(0);
+      return;
+    }
+
+    const calc = () => {
+      const elapsed = (Date.now() - new Date(lastGenAt).getTime()) / 1000;
+      return Math.max(0, Math.ceil(cooldownSeconds - elapsed));
+    };
+
+    setCooldownLeft(calc());
+    const timer = setInterval(() => {
+      const left = calc();
+      setCooldownLeft(left);
+      if (left <= 0) clearInterval(timer);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldownSeconds, lastGenAt]);
 
   const processFile = useCallback(async (file: File) => {
     setIsImageLoading(true);
@@ -388,6 +420,20 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     }
 
     const cachedCredits = queryClient.getQueryData<UserCreditInfo>(queryKeys.credits.balance);
+
+    // 쿨다운 체크
+    if (cachedCredits && cachedCredits.plan.cooldownSeconds > 0 && cachedCredits.lastGenerationAt) {
+      const elapsed = (Date.now() - new Date(cachedCredits.lastGenerationAt).getTime()) / 1000;
+      const remaining = Math.ceil(cachedCredits.plan.cooldownSeconds - elapsed);
+      if (remaining > 0) {
+        const min = Math.floor(remaining / 60);
+        const sec = remaining % 60;
+        const label = min > 0 ? `${min}:${String(sec).padStart(2, "0")}` : `${sec}s`;
+        toast(dict.common.errors.cooldownActive.replace("{remaining}", label), "warning");
+        return;
+      }
+    }
+
     if (cachedCredits && cachedCredits.balance.total < CREDIT_COST) {
       toast(dict.common.errors.insufficientCredits, "error", 5000, {
         label: dict.common.errors.viewPlans,
@@ -397,6 +443,14 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     }
 
     setIsGenerating(true);
+
+    // 쿨다운 타이머 즉시 시작 (낙관적 업데이트)
+    if (creditInfo && creditInfo.plan.cooldownSeconds > 0) {
+      const updated = { ...creditInfo, lastGenerationAt: new Date().toISOString() };
+      queryClient.setQueryData(queryKeys.credits.balance, updated);
+      setCooldownLeft(creditInfo.plan.cooldownSeconds);
+    }
+
     const tempId = crypto.randomUUID();
     prependHistoryItem(queryClient, "retouching", {
       id: tempId,
@@ -439,6 +493,7 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
       }
       replaceHistoryId(queryClient, "retouching", tempId, data.data.historyId);
       onPendingStart?.(data.data.historyId);
+
       if (data.data.balanceAfter != null) {
         window.dispatchEvent(
           new CustomEvent("credits-updated", {
@@ -449,6 +504,8 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
     } catch (err) {
       removeHistoryItem(queryClient, "retouching", tempId);
       onSubmitError?.();
+      // 실패 시 타이머 초기화
+      setCooldownLeft(0);
       window.dispatchEvent(
         new CustomEvent("credits-updated", {
           detail: { delta: CREDIT_COST },
@@ -707,20 +764,25 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
           <button
             type="button"
             disabled={isGenerating}
-            onClick={() => requireAuth(handleGenerate)}
+            onClick={() => cooldownLeft > 0 ? setShowCooldownModal(true) : requireAuth(handleGenerate)}
             className={cn(
-              "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[16px] font-extrabold tracking-wide text-white transition-all duration-300",
-              isGenerating
-                ? "bg-muted cursor-not-allowed opacity-50"
+              "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[16px] font-extrabold tracking-wide transition-all duration-300",
+              isGenerating || cooldownLeft > 0
+                ? "text-white/50 bg-gradient-to-r from-primary to-secondary opacity-40 cursor-not-allowed"
                 : !hasImage
-                  ? "bg-gradient-to-r from-primary to-secondary opacity-60 cursor-pointer"
-                  : "bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.02] cursor-pointer"
+                  ? "text-white bg-gradient-to-r from-primary to-secondary opacity-60 cursor-pointer"
+                  : "text-white bg-gradient-to-r from-primary to-secondary shadow-[0_0_20px_rgba(99,102,241,0.45)] hover:shadow-[0_0_32px_rgba(99,102,241,0.6)] hover:brightness-110 hover:scale-[1.02] cursor-pointer"
             )}
           >
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 {dict.tools.retouching.generatingButton}
+              </>
+            ) : cooldownLeft > 0 ? (
+              <>
+                <Clock className="w-4 h-4" />
+                {`${Math.floor(cooldownLeft / 60)}:${String(cooldownLeft % 60).padStart(2, "0")}`}
               </>
             ) : (
               <>
@@ -760,6 +822,27 @@ export const RetouchingInputPanel = forwardRef<RetouchingInputPanelHandle, Retou
           </div>
         )}
       </div>
+      <ConfirmModal
+        open={showCooldownModal}
+        onClose={() => setShowCooldownModal(false)}
+        onConfirm={() => { window.location.href = `/${locale}/pricing`; }}
+        title={dict.common.cooldownModal.title}
+        description={
+          <div className="space-y-2.5">
+            <p className="text-[13px] text-slate-400">{dict.common.cooldownModal.description}</p>
+            <ul className="text-left space-y-1.5">
+              {dict.common.cooldownModal.benefits.map((b, i) => (
+                <li key={i} className="flex items-center gap-1.5 text-[13px]">
+                  <span className="text-indigo-400">✓</span>
+                  <span className="text-slate-200">{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        }
+        confirmLabel={dict.common.cooldownModal.upgradeButton}
+        cancelLabel={dict.common.cooldownModal.waitButton.replace("{remaining}", `${Math.floor(cooldownLeft / 60)}:${String(cooldownLeft % 60).padStart(2, "0")}`)}
+      />
       {loginModal}
     </div>
   );
