@@ -358,15 +358,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             <GoogleIcon className="w-5 h-5 shrink-0" />
                             <span className="flex-1 text-center pr-8">{dict.auth.continueWithGoogle}</span>
                           </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleOAuth("facebook")}
-                            className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl bg-[#1877F2] text-white font-semibold text-[15px] hover:bg-[#166AE0] hover:shadow-md transition-all shadow-sm cursor-pointer"
-                          >
-                            <FacebookIcon className="w-5 h-5 shrink-0" />
-                            <span className="flex-1 text-center pr-8">{dict.auth.continueWithFacebook}</span>
-                          </motion.button>
+                          {/* Facebook login disabled — under review */}
                         </div>
 
                         {/* Divider */}
