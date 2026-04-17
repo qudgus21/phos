@@ -35,7 +35,7 @@ export async function generateMetadata({
       url: `https://phos.studio/${locale}`,
       images: [
         {
-          url: "/opengraph-image",
+          url: "/opengraph-image?v=2",
           width: 1200,
           height: 630,
           alt: "Phos AI — AI Image Editing & Retouching",
@@ -46,7 +46,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: dict.metadata.siteTitle,
       description: dict.metadata.siteDescription,
-      images: ["/opengraph-image"],
+      images: ["/opengraph-image?v=2"],
     },
     alternates: generateAlternates(""),
   };
