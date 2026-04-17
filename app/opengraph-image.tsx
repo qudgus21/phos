@@ -7,12 +7,22 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NODE_ENV === "development"
+  const baseUrl =
+    process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
       : "https://phos.studio";
-  const heroSrc = `${baseUrl}/images/og/hero-model.jpg`;
+
+  let heroSrc = `${baseUrl}/images/og/hero-model.jpg`;
+  try {
+    const res = await fetch(heroSrc, { cache: "force-cache" });
+    if (res.ok) {
+      const buf = await res.arrayBuffer();
+      const b64 = Buffer.from(buf).toString("base64");
+      heroSrc = `data:image/jpeg;base64,${b64}`;
+    }
+  } catch {
+    // fall back to URL; Satori will try to fetch directly
+  }
 
   return new ImageResponse(
     (
