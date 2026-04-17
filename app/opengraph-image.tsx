@@ -6,7 +6,14 @@ export const alt = "Phos AI — AI Image Editing & Retouching";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function Image() {
+export default async function Image() {
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NODE_ENV === "development"
+      ? "http://localhost:3000"
+      : "https://phos.studio";
+  const heroSrc = `${baseUrl}/images/og/hero-model.jpg`;
+
   return new ImageResponse(
     (
       <div
@@ -14,94 +21,138 @@ export default function Image() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #090A14 0%, #10112A 50%, #090A14 100%)",
           position: "relative",
+          background:
+            "linear-gradient(135deg, #090A14 0%, #10112A 50%, #090A14 100%)",
         }}
       >
-        {/* Background glow */}
+        {/* Model image — right side */}
+        <img
+          src={heroSrc}
+          width={820}
+          height={630}
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            width: 820,
+            height: 630,
+            objectFit: "cover",
+            objectPosition: "50% 18%",
+          }}
+        />
+
+        {/* Left-to-right fade over image for text readability */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to right, #090A14 0%, #090A14 32%, rgba(9,10,20,0.75) 48%, rgba(9,10,20,0.25) 68%, rgba(9,10,20,0) 90%)",
+          }}
+        />
+
+        {/* Ambient indigo glow */}
         <div
           style={{
             position: "absolute",
             width: 600,
             height: 600,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%)",
+            top: -120,
+            left: -120,
           }}
         />
 
-        {/* Icon */}
+        {/* Content — left side */}
         <div
           style={{
+            position: "relative",
             display: "flex",
-            alignItems: "center",
+            flexDirection: "column",
             justifyContent: "center",
-            width: 88,
-            height: 88,
-            borderRadius: 24,
-            background: "linear-gradient(135deg, #6366F1, #818CF8)",
-            marginBottom: 32,
+            padding: "0 80px",
+            width: 640,
+            height: "100%",
           }}
         >
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          {/* Icon */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 76,
+              height: 76,
+              borderRadius: 22,
+              background: "linear-gradient(135deg, #6366F1, #818CF8)",
+              marginBottom: 28,
+              boxShadow: "0 0 40px rgba(99,102,241,0.35)",
+            }}
           >
-            <path d="m10 2.5-1.593 4.844a1.667 1.667 0 0 1-1.063 1.063L2.5 10l4.844 1.593a1.667 1.667 0 0 1 1.063 1.063L10 17.5l1.593-4.844a1.667 1.667 0 0 1 1.063-1.063L17.5 10l-4.844-1.593a1.667 1.667 0 0 1-1.063-1.063L10 2.5Z" />
-          </svg>
-        </div>
+            <svg
+              width="44"
+              height="44"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m10 2.5-1.593 4.844a1.667 1.667 0 0 1-1.063 1.063L2.5 10l4.844 1.593a1.667 1.667 0 0 1 1.063 1.063L10 17.5l1.593-4.844a1.667 1.667 0 0 1 1.063-1.063L17.5 10l-4.844-1.593a1.667 1.667 0 0 1-1.063-1.063L10 2.5Z" />
+            </svg>
+          </div>
 
-        {/* Title */}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 64,
-            fontWeight: 800,
-            letterSpacing: "-0.02em",
-            background: "linear-gradient(135deg, #FFFFFF 0%, #C7D2FE 100%)",
-            backgroundClip: "text",
-            color: "transparent",
-            marginBottom: 16,
-          }}
-        >
-          Phos AI
-        </div>
+          {/* Title */}
+          <div
+            style={{
+              display: "flex",
+              fontSize: 76,
+              fontWeight: 800,
+              letterSpacing: "-0.02em",
+              background:
+                "linear-gradient(135deg, #FFFFFF 0%, #C7D2FE 100%)",
+              backgroundClip: "text",
+              color: "transparent",
+              marginBottom: 20,
+              lineHeight: 1,
+            }}
+          >
+            Phos AI
+          </div>
 
-        {/* Subtitle */}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 24,
-            color: "#94A3B8",
-            fontWeight: 500,
-          }}
-        >
-          AI-powered image editing, retouching & generation
-        </div>
+          {/* Subtitle — 2 lines for clean break */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              fontSize: 30,
+              color: "#CBD5E1",
+              fontWeight: 500,
+              lineHeight: 1.35,
+              marginBottom: 32,
+            }}
+          >
+            <div style={{ display: "flex" }}>AI image editing</div>
+            <div style={{ display: "flex" }}>& retouching studio</div>
+          </div>
 
-        {/* Domain */}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 18,
-            color: "#6366F1",
-            fontWeight: 600,
-            marginTop: 24,
-            letterSpacing: "0.05em",
-          }}
-        >
-          phos.studio
+          {/* Domain */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              fontSize: 22,
+              color: "#A5B4FC",
+              fontWeight: 600,
+              letterSpacing: "0.05em",
+            }}
+          >
+            phos.studio
+          </div>
         </div>
       </div>
     ),

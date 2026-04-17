@@ -50,11 +50,16 @@ async function handleSupabase(request: NextRequest): Promise<NextResponse> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Static files, API, auth, webhooks — skip locale handling
+  // Static files, API, auth, webhooks, metadata images — skip locale handling
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/auth/") ||
+    pathname === "/opengraph-image" ||
+    pathname === "/twitter-image" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/manifest.webmanifest" ||
     pathname.includes(".")
   ) {
     return handleSupabase(request);
