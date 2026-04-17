@@ -245,7 +245,6 @@ const fr: Dictionary = {
       ],
     },
     paymentSuccess: "Paiement effectue ! Les credits seront ajoutes sous peu.",
-    discordLabel: "Rejoindre le serveur Discord",
   },
   contact: {
     title: "Contactez-nous",

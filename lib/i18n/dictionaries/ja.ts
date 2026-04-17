@@ -5,19 +5,19 @@ const ja: Dictionary = {
     siteTitle: "Phos AI — AI 画像編集・レタッチ",
     siteDescription:
       "AI による画像編集・スキンレタッチ・フェイス生成ツール。テキストプロンプトで写真を編集し、数秒でスタジオ品質の仕上がりに。ブラウザで完結。",
-    imageEditTitle: "AI 画像編集",
+    imageEditTitle: "AI 画像編集｜テキストプロンプトで写真を編集",
     imageEditDescription:
       "写真とプロンプトから新しい画像を生成。AI による商用レベルの画像編集。",
-    retouchingTitle: "AI スキンレタッチ",
+    retouchingTitle: "AI スキンレタッチ｜シミ除去・肌の自然な補正",
     retouchingDescription:
       "AI が肌の質感を分析し、自然にレタッチ。スタジオ品質の肌補正。",
-    faceEditTitle: "AI フェイス編集",
+    faceEditTitle: "AI フェイス補正｜顔編集をオンラインで",
     faceEditDescription:
       "エリアを選択して新しい顔を生成。AI によるフェイス編集・入れ替え。",
-    pricingTitle: "料金プラン",
+    pricingTitle: "AI 画像編集ツールの料金プランのご案内",
     pricingDescription:
       "Phos AI のプランとクレジットパックをご確認ください。手頃な価格で AI 画像ツールを始めましょう。",
-    contactTitle: "お問い合わせ",
+    contactTitle: "お問い合わせ・カスタマーサポート",
     contactDescription:
       "ご質問、バグ報告、機能リクエストなど、お気軽にお問い合わせください。",
   },
@@ -242,7 +242,6 @@ const ja: Dictionary = {
       ],
     },
     paymentSuccess: "お支払い完了！まもなくクレジットが追加されます。",
-    discordLabel: "Discordサーバーへ",
   },
   contact: {
     title: "お問い合わせ",

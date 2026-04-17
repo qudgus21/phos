@@ -241,7 +241,6 @@ const ar: Dictionary = {
       ],
     },
     paymentSuccess: "تمت عملية الدفع! سيُضاف الرصيد قريبًا.",
-    discordLabel: "الانتقال إلى خادم Discord",
   },
   contact: {
     title: "تواصل معنا",

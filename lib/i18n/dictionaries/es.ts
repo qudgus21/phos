@@ -245,7 +245,6 @@ const es: Dictionary = {
       ],
     },
     paymentSuccess: "¡Pago completado! Los creditos se agregaran en breve.",
-    discordLabel: "Ir al servidor de Discord",
   },
   contact: {
     title: "Contactanos",

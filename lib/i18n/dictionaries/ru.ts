@@ -245,7 +245,6 @@ const ru: Dictionary = {
       ],
     },
     paymentSuccess: "Оплата завершена! Кредиты будут начислены в ближайшее время.",
-    discordLabel: "Перейти на сервер Discord",
   },
   contact: {
     title: "Свяжитесь с нами",

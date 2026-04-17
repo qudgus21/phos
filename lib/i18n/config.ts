@@ -136,7 +136,6 @@ export interface Dictionary {
       items: { question: string; answer: string }[];
     };
     paymentSuccess: string;
-    discordLabel: string;
   };
   contact: {
     title: string;

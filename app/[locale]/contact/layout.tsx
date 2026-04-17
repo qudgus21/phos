@@ -22,13 +22,22 @@ export async function generateMetadata({
       locale,
       alternateLocale: locales.filter((l) => l !== locale),
       type: "website",
+      images: [
+        {
+          url: "/opengraph-image?v=2",
+          width: 1200,
+          height: 630,
+          alt: "Phos AI — AI Image Editing & Retouching",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: dict.metadata.contactTitle,
       description: dict.metadata.contactDescription,
+      images: ["/opengraph-image?v=2"],
     },
-    alternates: generateAlternates("contact"),
+    alternates: generateAlternates("contact", locale),
   };
 }
 
@@ -49,7 +58,18 @@ export default async function ContactLayout({
           { name: dict.contact.title, path: "/contact" },
         ], dict.footer.links.home)}
       />
-      {children}
+      <nav aria-label="Breadcrumb" className="sr-only">
+        <ol>
+          <li>
+            <a href={`/${locale}`}>{dict.footer.links.home}</a>
+          </li>
+          <li aria-current="page">{dict.contact.title}</li>
+        </ol>
+      </nav>
+      <main>
+        <h1 className="sr-only">{dict.metadata.contactTitle}</h1>
+        {children}
+      </main>
     </>
   );
 }

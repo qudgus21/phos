@@ -48,7 +48,7 @@ export async function generateMetadata({
       description: dict.metadata.siteDescription,
       images: ["/opengraph-image?v=2"],
     },
-    alternates: generateAlternates(""),
+    alternates: generateAlternates("", locale),
   };
 }
 

@@ -242,7 +242,6 @@ const de: Dictionary = {
       ],
     },
     paymentSuccess: "Zahlung abgeschlossen! Credits werden in Kürze gutgeschrieben.",
-    discordLabel: "Discord-Server beitreten",
   },
   contact: {
     title: "Kontakt",

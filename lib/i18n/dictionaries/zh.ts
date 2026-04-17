@@ -5,19 +5,19 @@ const zh: Dictionary = {
     siteTitle: "Phos AI — AI 图片编辑与修图",
     siteDescription:
       "AI 驱动的图片编辑、皮肤修图与面部生成工具。通过文字描述即可编辑照片，几秒内获得专业影棚级效果，一切在浏览器中完成。",
-    imageEditTitle: "AI 图片编辑",
+    imageEditTitle: "AI 图片编辑｜用文字描述编辑照片",
     imageEditDescription:
       "通过一张照片和一段描述生成全新图片。AI 驱动的商业级图片编辑。",
-    retouchingTitle: "AI 皮肤修图",
+    retouchingTitle: "AI 皮肤修图｜瑕疵清除与人像精修",
     retouchingDescription:
       "AI 分析肤质并自然修饰，呈现影棚级肌肤效果。",
-    faceEditTitle: "AI 面部编辑",
+    faceEditTitle: "AI 面部编辑｜在线人脸精修工具",
     faceEditDescription:
       "选定区域即可生成全新面容。AI 驱动的面部编辑与替换。",
-    pricingTitle: "价格方案",
+    pricingTitle: "AI 图片编辑工具价格方案与套餐",
     pricingDescription:
       "了解 Phos AI 套餐与积分包，以合理价格开始使用 AI 图片工具。",
-    contactTitle: "联系我们",
+    contactTitle: "联系我们｜客户支持与反馈",
     contactDescription:
       "有任何问题、Bug 反馈或功能建议，欢迎联系我们。",
   },
@@ -241,7 +241,6 @@ const zh: Dictionary = {
       ],
     },
     paymentSuccess: "支付成功！积分将很快到账。",
-    discordLabel: "前往 Discord 服务器",
   },
   contact: {
     title: "联系我们",

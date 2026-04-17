@@ -117,7 +117,6 @@ export function Upscale({ dict, locale }: UpscaleProps) {
               style={{ objectPosition: "center 25%" }}
               draggable={false}
               sizes="(max-width: 672px) 100vw, 672px"
-              priority
             />
 
             {/* Before */}

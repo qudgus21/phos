@@ -28,6 +28,7 @@ Google 검색 1페이지 노출을 목표로, `/seo` 한 번 실행하면 **감�
   - `ar`은 RTL (`dir="rtl"`) 지원
   - `[locale]` 동적 세그먼트로 라우팅
 - **이미지 CDN**: `https://images.phos.studio` (Cloudflare R2)
+- **title 템플릿**: `Phos AI — %s` (브랜드 앞쪽). 페이지 title에 " — Phos AI"를 포함하면 이중 브랜딩 버그 주의
 
 ### 금지 키워드
 
@@ -49,29 +50,49 @@ Google 검색 1페이지 노출을 목표로, `/seo` 한 번 실행하면 **감�
 
 ### 현재 SEO 인프라 (이미 구현된 것)
 
-감사 전에 현재 상태를 반드시 코드를 읽어 최신 상태로 파악한다:
+감사 전에 현재 상태를 반드시 코드를 읽어 최신 상태로 파악한다. **아래 목록은 2026-04 기준이며 실제 코드 확인이 우선**:
 
-- `app/[locale]/layout.tsx` — 레이아웃 수준 `generateMetadata` (title 템플릿 `%s — Phos AI`, description, metadataBase `https://phos.studio`, openGraph, twitter, alternates 11 로케일 + x-default)
+**루트 레벨**
+- `app/layout.tsx` — 서버사이드 `<html lang={locale} dir={dir}>` (middleware `x-locale`/`x-dir` 헤더 활용), `Organization` JSON-LD, favicon.svg, viewport export
 - `app/opengraph-image.tsx` — 루트 OG 이미지 (1200x630, Edge Runtime, Satori)
 - `app/icon.tsx`, `app/apple-icon.tsx` — 파비콘/애플 아이콘
-- `lib/i18n/dictionaries/*.ts` — 각 로케일별 metadata 키 (siteTitle, siteDescription, imageEditTitle, imageEditDescription, retouchingTitle, retouchingDescription, faceEditTitle, faceEditDescription, pricingTitle, pricingDescription, contactTitle, contactDescription)
-- `app/[locale]/layout.tsx` — `generateStaticParams` (11 로케일)
-- `middleware.ts` — 로케일 감지 + 리디렉트 (307) + RTL 헤더
+- `public/favicon.svg` — 정적 파비콘 (dev 환경 안정성)
+- `app/sitemap.ts` — 6 페이지 × 11 로케일 = 66개 URL (privacy/terms/data-deletion은 noindex라 제외). 각 엔트리에 `alternates.languages` 포함
+- `app/robots.ts` — Allow `/` + Disallow `/api/` + Sitemap 지시문
+- `next.config.ts` — 보안 헤더 (`X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`) + 이미지 `minimumCacheTTL` 1년
 
-### 알려진 SEO 갭 (누락 항목)
+**로케일 레벨**
+- `app/[locale]/layout.tsx` — `generateMetadata` (title 템플릿 `Phos AI — %s`, metadataBase `https://phos.studio`, OG, Twitter, `alternates: generateAlternates("")`), `generateStaticParams` (11 로케일), `WebApplication` JSON-LD
+- `middleware.ts` — 로케일 감지 + 307 리디렉트 + `x-locale`/`x-dir` 헤더 주입
+
+**페이지별 layout.tsx (모든 9개 페이지 존재)**
+- `image-edit/layout.tsx`, `retouching/layout.tsx`, `face-edit/layout.tsx` — 도구별 `generateMetadata` + `SoftwareApplication` JSON-LD + `BreadcrumbList` JSON-LD + `<main>` 래퍼 + sr-only h1/desc (크롤러에게 콘텐츠 제공)
+- `pricing/layout.tsx` — `generateMetadata` + `BreadcrumbList` JSON-LD + `FAQPage` JSON-LD (dict.pricing.faq.items) + sr-only h1
+- `contact/layout.tsx` — `generateMetadata`
+- `privacy/layout.tsx`, `terms/layout.tsx`, `data-deletion/layout.tsx` — `generateMetadata` with `robots: { index: false, follow: true }`
+
+**SEO 유틸리티 (`lib/seo/`)**
+- `index.ts` — re-exports
+- `alternates.ts` — `generateAlternates(pagePath)` → 11 로케일 + x-default hreflang (경로 포함)
+- `json-ld.tsx` — 빌더: `organizationJsonLd`, `webApplicationJsonLd`, `softwareApplicationJsonLd`, `breadcrumbJsonLd`, `faqPageJsonLd` + `<JsonLdScript>` 컴포넌트. **`.tsx` 필수** (JSX 컴포넌트 포함)
+
+**Dictionary (`lib/i18n/dictionaries/*.ts`, 11개)**
+- `metadata.{siteTitle, siteDescription, imageEditTitle, imageEditDescription, retouchingTitle, retouchingDescription, faceEditTitle, faceEditDescription, pricingTitle, pricingDescription, contactTitle, contactDescription}` 키
+- `pricing.faq.items[]` (FAQPage 스키마 소스)
+- `footer.links.home` (BreadcrumbList "Home" 라벨 — 로케일별 번역)
+
+### 남은 SEO 갭
 
 | 항목 | 상태 | 심각도 |
 |------|------|--------|
-| `sitemap.ts` | 없음 | Critical |
-| `robots.ts` | 없음 | Critical |
-| 페이지별 `generateMetadata` | 없음 (모든 페이지가 레이아웃 기본값 사용) | Critical |
-| `<html lang>` 서버사이드 | 클라이언트 스크립트로만 설정 (크롤러에 안 보임) | Critical |
-| hreflang 경로 버그 | 레이아웃 alternates가 로케일 루트만 가리킴 (페이지 경로 미포함) | Critical |
-| 구조화 데이터 (JSON-LD) | 없음 | Warning |
-| 페이지별 OG 이미지 | 없음 (루트 OG만 존재) | Warning |
-| `twitter-image.tsx` | 없음 | Warning |
-| 보안 헤더 | 이미지 캐시 헤더만 존재 | Warning |
-| `lib/seo/` 유틸리티 | 없음 | Info |
+| 페이지별 OG 이미지 | 없음 (루트 OG만 존재, 모든 페이지가 공유) | Warning |
+| `twitter-image.tsx` | 없음 (openGraph 이미지로 fallback) | Info |
+| Organization `sameAs` | 빈 배열 (소셜 링크 미입력) | Info |
+| CSP (Content-Security-Policy) | 미설정 | Info |
+
+### 알려진 비이슈 (수정 금지)
+
+- **PSI "Unknown directive" in robots.txt (`Content-Signal: search=yes,ai-train=no`)** — Cloudflare가 자동 주입하는 AI 크롤링 제어 지시어. Google은 모르는 지시어를 무시할 뿐 SEO에 영향 없음. Lighthouse v13.0.2 (Chrome 146)에서 이미 인식하도록 수정됨. **끄지 말고 유지**
 
 ### "use client" 페이지의 metadata 패턴
 
@@ -343,7 +364,7 @@ Read: middleware.ts
 - [ ] canonical URL이 sitemap의 URL과 일치
 - [ ] robots 메타 적절 (실수로 noindex하지 않았는지)
 - [ ] `metadataBase`가 설정
-- [ ] title 템플릿이 적절 (`%s — Phos AI`)
+- [ ] title 템플릿이 적절 (`Phos AI — %s`)
 - [ ] **"use client" 페이지에 metadata가 있는지** — wrapping `layout.tsx`가 존재하는지 확인
 - [ ] Dictionary metadata 키가 실제로 페이지 수준에서 사용되는지 확인
 
@@ -438,12 +459,13 @@ Read: middleware.ts
 `sitemap.ts`와 `robots.ts` 검사:
 
 - [ ] `app/sitemap.ts` 존재
-- [ ] 9개 페이지 × 11개 로케일 = 99개 URL이 사이트맵에 포함
+- [ ] 6개 페이지 × 11개 로케일 = 66개 URL이 사이트맵에 포함 (privacy/terms/data-deletion은 noindex라 제외)
 - [ ] `lastModified`가 정적 날짜 (매 빌드마다 변경 안 됨)
-- [ ] priority 논리적 (landing: 1.0, tools: 0.9, pricing: 0.8, contact: 0.5, legal: 0.3)
-- [ ] changeFrequency 적절 (tools: weekly, legal: yearly)
+- [ ] priority 논리적 (landing: 1.0, tools: 0.9, pricing: 0.8, contact: 0.5)
+- [ ] changeFrequency 적절 (tools: weekly)
+- [ ] 각 엔트리에 `alternates.languages` 포함 (11 로케일 + x-default)
 - [ ] sitemap URL = canonical URL
-- [ ] 50MB / 50,000 URL 제한 준수 (99개 — 문제 없음)
+- [ ] 50MB / 50,000 URL 제한 준수 (66개 — 문제 없음)
 - [ ] `app/robots.ts` 존재
 - [ ] robots.txt에 `Sitemap:` 지시문 (`https://phos.studio/sitemap.xml`)
 - [ ] CSS/JS 미차단
@@ -481,8 +503,8 @@ Read: middleware.ts
 
 - [ ] 시맨틱 HTML (`<main>`, `<nav>`, `<header>`, `<footer>`, `<section>`)
 - [ ] 헤딩 계층 (페이지당 단일 `<h1>`, h2→h3 순서)
-- [ ] **`<html lang="{locale}">` 서버사이드 설정** — 현재 클라이언트 스크립트로만 설정됨 (Critical)
-- [ ] `<html dir="rtl|ltr">` 서버사이드 설정
+- [ ] **`<html lang="{locale}">` 서버사이드 설정** — `app/layout.tsx`에서 `headers()` 통해 middleware `x-locale` 헤더 활용 (클라이언트 스크립트 금지)
+- [ ] `<html dir="rtl|ltr">` 서버사이드 설정 — middleware `x-dir` 헤더 활용
 - [ ] ARIA 랜드마크 (필요시)
 - [ ] 폼 요소에 `<label>` 연결
 - [ ] 색상 대비 WCAG AA 이상
@@ -551,10 +573,10 @@ Read: middleware.ts
 
 | 심각도 | 기준 | 예시 |
 |--------|------|------|
-| **Critical** | 인덱싱/랭킹에 직접적 영향. 즉시 수정 필요 | sitemap 없음, robots.txt 없음, 페이지별 metadata 없음, html lang 미설정, hreflang 경로 버그 |
-| **Warning** | SEO 경쟁력 저하. 수정하면 확실한 개선 | JSON-LD 없음, 보안 헤더 없음, 페이지별 OG 이미지 없음 |
-| **Info** | 차별화 요소. 경쟁사 대비 우위 확보 | FAQPage 스키마, 콘텐츠 강화, 크로스 링킹 |
-| **Good** | 현재 잘 되어 있는 부분 (유지 필요) | metadataBase, hreflang 11 로케일, OG 이미지, generateStaticParams |
+| **Critical** | 인덱싱/랭킹에 직접적 영향. 즉시 수정 필요 | sitemap/robots 파일 결손, 페이지별 metadata 결손, html lang 미설정, hreflang 경로 버그, noindex 오적용, 이중 브랜딩(title에 "— Phos AI" 포함) |
+| **Warning** | SEO 경쟁력 저하. 수정하면 확실한 개선 | 페이지별 OG 이미지 없음, CJK description 과소 (40자 미만), OG offers에 "0" 또는 "Free" 표현, thin content |
+| **Info** | 차별화 요소. 경쟁사 대비 우위 확보 | Organization sameAs 미입력, twitter-image 없음, CSP 미설정, 크로스 링킹 보강 |
+| **Good** | 현재 잘 되어 있는 부분 (유지 필요) | sitemap/robots/lib-seo 구비, 9개 페이지 metadata, 서버사이드 html lang, JSON-LD 5종, 보안 헤더 4종, 경로 포함 hreflang, sr-only h1 |
 
 ---
 
@@ -565,36 +587,36 @@ Phase 2에서 발견된 이슈를 즉시 자동으로 수정한다.
 
 ### Step 1: 자동 수정 가능 항목 분류
 
+**먼저 "현재 SEO 인프라" 섹션의 항목이 실제로 존재하는지 코드로 확인한다.** 아래 표는 *남은 갭*에 초점을 맞춘다. 누락된 인프라(sitemap/robots/lib-seo/page layouts 등)가 있으면 생성 우선.
+
 | 우선순위 | 수정 항목 | 방법 |
 |---------|----------|------|
-| P0 Critical | `<html lang>` 서버사이드 설정 | 루트 `app/layout.tsx`의 `<html>` 태그에 lang/dir 전달 (params/headers 활용) |
-| P1 Critical | `app/sitemap.ts` 생성 | 9 페이지 × 11 로케일 동적 사이트맵 |
-| P1 Critical | `app/robots.ts` 생성 | Allow all + Sitemap 지시문 + /api/ 차단 |
-| P1 Critical | 도구 페이지별 metadata | `app/[locale]/{tool}/layout.tsx` 생성 (generateMetadata + dict 활용) |
-| P1 Critical | hreflang 경로 수정 | alternates에 현재 페이지 경로 포함 |
-| P2 Warning | `lib/seo/` 유틸리티 생성 | JSON-LD 빌더 (Organization, WebApplication, SoftwareApplication, BreadcrumbList, FAQPage), alternates 헬퍼 |
-| P2 Warning | JSON-LD 구조화 데이터 추가 | Organization(루트), WebApplication(랜딩), SoftwareApplication(도구), BreadcrumbList(전체), FAQPage(pricing) |
-| P2 Warning | 페이지별 OG 이미지 | 각 도구 디렉토리에 `opengraph-image.tsx` + `twitter-image.tsx` |
-| P2 Warning | 보안 헤더 추가 | `next.config.ts` headers()에 X-Frame-Options, X-Content-Type-Options, Referrer-Policy 등 |
-| P2 Warning | 비도구 페이지 metadata | pricing, contact, privacy, terms, data-deletion에 `generateMetadata` 추가 |
-| P3 Info | BreadcrumbList JSON-LD | 모든 하위 페이지에 적용 |
+| P1 Critical (재발 시) | `<html lang>` 서버사이드 | `app/layout.tsx`의 `<html>` 태그에 headers() x-locale/x-dir 전달 |
+| P1 Critical (재발 시) | `app/sitemap.ts` | 6 페이지 × 11 로케일 = 66 URL. noindex 페이지(privacy/terms/data-deletion) 제외 |
+| P1 Critical (재발 시) | `app/robots.ts` | Allow all + Sitemap 지시문 + /api/ 차단 |
+| P1 Critical (재발 시) | 페이지별 `layout.tsx` + `generateMetadata` | `app/[locale]/{page}/layout.tsx` (도구는 "use client" page.tsx 래핑) |
+| P1 Critical (재발 시) | hreflang 경로 포함 | `generateAlternates(pagePath)` 사용 — 로케일 루트 아닌 전체 경로 |
+| P2 Warning | 페이지별 OG 이미지 | 각 페이지 디렉토리에 `opengraph-image.tsx` (현재 루트 OG만 공유) |
+| P2 Warning | `twitter-image.tsx` | 루트 또는 페이지별 |
+| P2 Info | Organization `sameAs` | 소셜 링크 추가 (Discord 등) |
 | P3 Info | 도구 간 크로스 링킹 | 관련 도구 섹션 컴포넌트 |
+| P3 Info | CSP 헤더 | `next.config.ts` headers()에 `Content-Security-Policy` 추가 (외부 도메인: replicate.delivery, supabase, images.phos.studio) |
 
-### Step 2: `lib/seo/` 라이브러리 생성
+### Step 2: `lib/seo/` 라이브러리 구조
+
+현재 구조 (2026-04 기준):
 
 ```
 lib/seo/
 ├── index.ts           # Re-exports
-├── types.ts           # JsonLd 타입, BreadcrumbItem 등
-├── json-ld.ts         # Organization, WebApplication, SoftwareApplication, BreadcrumbList, FAQPage 빌더
 ├── alternates.ts      # 경로 인식 hreflang 생성기 (11 로케일 + x-default)
+└── json-ld.tsx        # Organization/WebApplication/SoftwareApplication/BreadcrumbList/FAQPage 빌더 + <JsonLdScript>
 ```
 
 **주요 유틸리티 역할:**
 
-- `json-ld.ts`: 각 스키마 타입별 빌더 함수. 로케일 인식. offers에 "무료" 표현 금지.
-- `alternates.ts`: `generateAlternates(path: string)` → `{ languages: { en: "/en/{path}", ko: "/ko/{path}", ..., "x-default": "/en/{path}" } }`
-- `types.ts`: TypeScript 타입 정의
+- `json-ld.tsx`: 각 스키마 타입별 빌더 함수 + `<JsonLdScript>` React 컴포넌트. **반드시 `.tsx`** (JSX 포함). offers는 AggregateOffer로 실제 가격 범위 (price:"0" 금지 — "Free" 표시됨)
+- `alternates.ts`: `generateAlternates(pagePath: string)` → `{ languages: { en: "/en/{path}", ko: "/ko/{path}", ..., "x-default": "/en/{path}" } }`
 
 ### Step 3: 앱 코드에 적용
 
@@ -623,7 +645,7 @@ yarn build
 ### 새로 생성된 파일
 | 파일 | 역할 |
 |------|------|
-| lib/seo/json-ld.ts | JSON-LD 스키마 빌더 |
+| lib/seo/json-ld.tsx | JSON-LD 스키마 빌더 + JsonLdScript 컴포넌트 |
 
 ### 빌드: {성공/실패}
 ```
@@ -730,7 +752,7 @@ WebSearch: site:phos.studio/en/pricing
 
 ### 인덱싱 현황
 - 총 인덱싱 페이지: 약 {N}개
-- 예상 전체 페이지: 99개 (9 페이지 × 11 로케일)
+- 예상 전체 페이지: 66개 (6 페이지 × 11 로케일, privacy/terms/data-deletion 제외)
 - 인덱싱 비율: {N}%
 
 ### 페이지별 인덱싱 현황

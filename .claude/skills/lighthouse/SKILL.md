@@ -2,7 +2,7 @@
 name: lighthouse
 description: PSI API로 프로덕션 성능 감사 → 수정 계획 → 적용 → 로컬 Before/After 비교까지. ALL Green (90+) 달성을 목표로 하는 종합 성능 최적화 스킬.
 disable-model-invocation: false
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git *), Bash(yarn *), Bash(npx *), Bash(curl *), Bash(node *), Bash(cat /tmp/*), Bash(rm /tmp/lighthouse*), WebFetch, Agent
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git *), Bash(yarn *), Bash(npx *), Bash(curl *), Bash(node *), Bash(grep *), Bash(cat /tmp/*), Bash(rm /tmp/lighthouse*), WebFetch, Agent
 user-invocable: true
 ---
 
@@ -19,15 +19,27 @@ PSI API로 프로덕션 사이트 성능을 측정하고, 코드 레벨에서 �
 
 - **구조**: 단일 Next.js 프로젝트 (yarn)
 - **프레임워크**: Next.js 15 (App Router), React 18
-- **스타일링**: Tailwind CSS v3 + Framer Motion
-- **폰트**: next/font (Space Grotesk + Pretendard Variable)
+- **스타일링**: Tailwind CSS v3 + Framer Motion 12
+- **폰트**:
+  - Space Grotesk — `next/font/google`
+  - Pretendard Variable — `next/font/local` (3-subset: latin / korean / cjk, `unicode-range`로 분할 로드 이미 최적화 완료)
+  - 위치: `public/fonts/PretendardVariable-{latin,korean,cjk}.woff2`, 정의: `app/layout.tsx`
 - **배포**: Vercel
-- **프로덕션 URL**: `https://phos.studio`
+- **프로덕션 URL**: `https://phos.studio` (canonical/metadataBase, `app/[locale]/layout.tsx`)
 - **로컬 서버**: `yarn dev` (port 3000)
 - **PSI API 키**: `.env.local`의 `PSI_API_KEY`
-- **백엔드**: Supabase (Auth/DB), AWS Lambda (이미지 처리)
+- **백엔드/외부 서비스**:
+  - Supabase (Auth/DB, `@supabase/ssr` + `@supabase/supabase-js`)
+  - AWS Lambda + S3 (이미지 처리/저장, `@aws-sdk/*`)
+  - Polar (결제/구독, `@polar-sh/sdk`)
+  - Resend (트랜잭션 이메일)
+  - Replicate (모델 추론, 이미지 URL `replicate.delivery`)
+- **상태/유틸**: `@tanstack/react-query` v5 (devtools 미포함), `next-themes`, `zod`
+- **테스트**: Vitest (unit, `__tests__/`) + Playwright (e2e, `e2e/`)
 - **i18n**: 11개 로케일 (en, zh, es, ar, pt, fr, ja, ru, de, id, ko / 기본: en)
-- **페이지 라우트**:
+  - 사전: `lib/i18n/dictionaries/{locale}.ts`
+  - 미들웨어: `middleware.ts`에서 로케일 감지 + Supabase auth
+- **페이지 라우트** (`app/[locale]/**/page.tsx`):
   - `app/page.tsx` — 루트 (로케일 감지 → `/{locale}` 리다이렉트)
   - `app/[locale]/page.tsx` — 홈/랜딩
   - `app/[locale]/image-edit/` — AI 이미지 편집
@@ -83,6 +95,8 @@ PSI API로 프로덕션 사이트 성능을 측정하고, 코드 레벨에서 �
    없으면: "`.env.local`에 `PSI_API_KEY=your_key`를 추가해주세요. https://developers.google.com/speed/docs/insights/v5/get-started 에서 발급 가능합니다." 출력 후 중단.
 
 2. 프로젝트 메모리의 `lighthouse-lessons.md` 파일 읽기 (존재하면). 이전 감사에서 배운 교훈을 참고.
+   - 경로: `/Users/hwangbyeonghyeon/.claude/projects/-Applications-hbh-dev-phos/memory/lighthouse-lessons.md`
+   - 이미 해결된 항목(폰트 서브셋팅, Hero 애니메이션 최적화, Dynamic import 등)이나 코드로 해결 불가 항목(Cloudflare beacon, robots Content-Signal 등)은 중복 제안하지 않는다.
 
 ### 0-2. 인자 파싱 ($ARGUMENTS)
 
@@ -126,11 +140,13 @@ PSI API로 프로덕션 사이트 성능을 측정하고, 코드 레벨에서 �
 
 ### 0-3. 감사 대상 페이지 결정
 
-페이지가 결정되면 `app/[locale]/` 라우트 구조를 Glob으로 탐색하여 실제 존재하는 페이지만 포함:
+페이지가 결정되면 라우트 구조를 Glob으로 탐색하여 실제 존재하는 페이지만 포함:
 
 ```
-Glob: app/[locale]/**/page.tsx
+Glob: app/**/page.tsx
 ```
+
+> ⚠️ `app/[locale]/**/page.tsx`는 `[locale]`의 대괄호가 glob 문자 클래스로 해석되어 매칭되지 않음. `app/**/page.tsx`로 전체 탐색 후 `[locale]` 하위 경로만 필터링.
 
 URL 매핑:
 - 홈: `app/[locale]/page.tsx` → `https://phos.studio/en`
@@ -446,17 +462,21 @@ const { chromium } = require('playwright');
 
 ### Phos 프로젝트 특화 점검 항목
 
-이 프로젝트에서 자주 발생하는 성능 병목:
+이 프로젝트에서 자주 발생하는 성능 병목 (lessons 반영):
 
 | 영역 | 점검 포인트 |
 |------|-----------|
-| **Framer Motion** | `motion.div`가 뷰포트 밖에서 불필요하게 애니메이트되는지, `whileInView`로 지연 가능한지 |
-| **이미지 처리** | 에디터 페이지의 캔버스/프리뷰 이미지가 과도하게 큰지, WebP/AVIF 변환 여부 |
-| **Supabase Client** | `@supabase/ssr` 클라이언트 번들 크기, 불필요한 클라이언트 임포트 |
-| **React Query** | `@tanstack/react-query` devtools 프로덕션 포함 여부 |
-| **폰트** | Pretendard Variable (로컬) + Space Grotesk (Google) — display: swap 적용 확인 |
-| **서드파티 스크립트** | GA, GTM 등 — `next/script` strategy="afterInteractive" 또는 "lazyOnload" 사용 여부 |
-| **`"use client"` 범위** | 불필요하게 넓은 client boundary → 서버 컴포넌트로 분리 가능한지 |
+| **Framer Motion — LCP 차단** | Hero의 h1/LCP 후보 요소에 `initial="hidden"` / `opacity:0` 애니메이션 금지 (render delay 원인). 이미 해결된 패턴 재도입 방지 |
+| **Framer Motion — 장식 애니메이션** | 뷰포트 밖 / 데코레이션용 `infinite` 모션은 CSS `@keyframes` + `will-change: transform`로 GPU 가속 전환 검토 |
+| **Framer Motion — 뷰포트 지연** | 아래쪽 섹션은 `whileInView` / `viewport={{ once: true }}`로 지연 |
+| **이미지 처리** | 에디터(image-edit/retouching/face-edit)의 캔버스/프리뷰, Hero 모델 이미지 — `next/image`, `priority`, `sizes`, 포맷(WebP/AVIF) 확인. `next.config.ts`의 `remotePatterns` 범위(`replicate.delivery`, `*.supabase.co`, `images.phos.studio`) 내에서 최적화 파이프라인 통과 여부 |
+| **Supabase Client** | `@supabase/ssr`/`@supabase/supabase-js` 번들 크기, 서버 컴포넌트에서 불필요한 client 임포트 여부. 미들웨어의 auth 체크가 edge에서 동작하는지 |
+| **React Query** | `@tanstack/react-query` v5 — Provider 범위 최소화, `staleTime`/`gcTime` 기본값 남용 여부. (devtools는 deps에 없음 → 체크 불필요) |
+| **폰트 (이미 최적화됨)** | Pretendard 3-subset(latin/korean/cjk) + Space Grotesk — `display: swap`, `unicode-range` 분할 상태 유지. 새로운 폰트 추가 시 서브셋팅 필수 |
+| **Dynamic import (이미 적용됨)** | 홈의 Hero 외 섹션은 `next/dynamic` 분할. 새 섹션 추가 시 동일 패턴 적용. `ssr: false` 사용 금지 (SEO 콘텐츠 손실) |
+| **서드파티 스크립트** | GA/GTM/광고 픽셀 등 — `next/script` `strategy="afterInteractive"` 또는 `"lazyOnload"` 사용. Polar/Resend는 서버 사이드라 번들 영향 없음 |
+| **`"use client"` 범위** | 불필요하게 넓은 client boundary → 서버 컴포넌트로 분리 가능한지. 페이지 최상단을 client로 만들지 말 것 |
+| **Replicate 이미지** | `replicate.delivery` URL은 `next/image` 통해 로드 — 직접 `<img>` 금지 |
 
 ### 5-2. 빌드 검증
 
@@ -531,13 +551,14 @@ Phase 4와 동일 방법으로 `/tmp/lighthouse-after-{page}-{strategy}.json` �
 
 ## Phase 7: 학습 저장
 
-작업 완료 후, 새로 알게 된 성능 패턴이나 교훈이 있으면 프로젝트 메모리의 `lighthouse-lessons.md`에 저장한다.
+작업 완료 후, 새로 알게 된 성능 패턴이나 교훈이 있으면 `/Users/hwangbyeonghyeon/.claude/projects/-Applications-hbh-dev-phos/memory/lighthouse-lessons.md`에 **추가**한다 (기존 내용 덮어쓰기 금지, Round N 형태로 append).
 
 예시:
-- 어떤 수정이 가장 효과적이었는지
-- 프로젝트 특유의 성능 병목 패턴
+- 어떤 수정이 가장 효과적이었는지 (임팩트 순, 몇 점 → 몇 점)
+- 프로젝트 특유의 성능 병목 패턴 (Hero LCP, 에디터 캔버스 등)
 - PSI vs 로컬 측정의 차이점
-- 특정 Next.js / React / Framer Motion 패턴의 성능 영향
+- 특정 Next.js 15 / React 18 / Framer Motion 12 패턴의 성능 영향
+- 새로 발견한 "코드로 해결 불가" 항목 (서드파티/인프라 이슈)
 
 ---
 
@@ -548,6 +569,11 @@ Phase 4와 동일 방법으로 `/tmp/lighthouse-after-{page}-{strategy}.json` �
 - ❌ `.env.local`의 API 키를 출력에 포함
 - ❌ 커밋 (`/commit-and-push`로 별도 진행)
 - ❌ PSI 점수 조작 트릭 (UA 스푸핑 등)
-- ❌ Framer Motion 애니메이션 전면 삭제
+- ❌ Framer Motion 애니메이션 전면 삭제 (LCP 요소만 선별적으로 제거)
 - ❌ 사용자 확인 없이 SSR → CSR 전환 (SEO 영향)
-- ❌ 루트(`/`) 측정 (로케일 감지 리다이렉트 — `/en` 등을 대신 측정)
+- ❌ `next/dynamic`에 `ssr: false` 사용 (SEO 콘텐츠 손실 — lessons 참고)
+- ❌ 루트(`/`) 측정 (middleware가 로케일 감지 리다이렉트 — `/en` 등을 대신 측정)
+- ❌ `metadataBase` / canonical URL을 `phos.studio`에서 임의 변경 (이미 `app/[locale]/layout.tsx`에 설정됨)
+- ❌ 로컬 측정값을 프로덕션 기준으로 보고 (로컬 ≠ PSI. 상대적 변화만 보고)
+- ❌ PSI 단일 측정 결과에 과도하게 반응 (±5~15점 변동, 최소 2회 측정 권장)
+- ❌ 이미 해결된 항목 재제안 (폰트 서브셋팅, Hero 애니메이션 등 — lessons 선독 필수)

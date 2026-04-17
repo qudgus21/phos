@@ -27,13 +27,22 @@ export async function generateMetadata({
       locale,
       alternateLocale: locales.filter((l) => l !== locale),
       type: "website",
+      images: [
+        {
+          url: "/opengraph-image?v=2",
+          width: 1200,
+          height: 630,
+          alt: "Phos AI — AI Image Editing & Retouching",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: dict.metadata.pricingTitle,
       description: dict.metadata.pricingDescription,
+      images: ["/opengraph-image?v=2"],
     },
-    alternates: generateAlternates("pricing"),
+    alternates: generateAlternates("pricing", locale),
   };
 }
 
@@ -59,6 +68,14 @@ export default async function PricingLayout({
       {faqItems.length > 0 && (
         <JsonLdScript data={faqPageJsonLd(faqItems)} />
       )}
+      <nav aria-label="Breadcrumb" className="sr-only">
+        <ol>
+          <li>
+            <a href={`/${locale}`}>{dict.footer.links.home}</a>
+          </li>
+          <li aria-current="page">{dict.nav.pricing}</li>
+        </ol>
+      </nav>
       <main>
         <h1 className="sr-only">{dict.metadata.pricingTitle}</h1>
         {children}

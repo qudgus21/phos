@@ -8,8 +8,20 @@ function requireEnv(key: string): string {
   return value;
 }
 
-async function handleSupabase(request: NextRequest): Promise<NextResponse> {
-  let supabaseResponse = NextResponse.next({ request });
+async function handleSupabase(
+  request: NextRequest,
+  extraRequestHeaders?: Record<string, string>
+): Promise<NextResponse> {
+  const requestHeaders = new Headers(request.headers);
+  if (extraRequestHeaders) {
+    for (const [key, value] of Object.entries(extraRequestHeaders)) {
+      requestHeaders.set(key, value);
+    }
+  }
+
+  let supabaseResponse = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 
   const supabase = createServerClient(
     requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
@@ -23,7 +35,9 @@ async function handleSupabase(request: NextRequest): Promise<NextResponse> {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({
+            request: { headers: requestHeaders },
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -83,13 +97,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 307);
   }
 
-  // Valid locale — proceed with Supabase session + set locale headers
-  const response = await handleSupabase(request);
-  response.headers.set("x-locale", firstSegment);
-  response.headers.set(
-    "x-dir",
-    firstSegment === "ar" ? "rtl" : "ltr"
-  );
+  // Valid locale — proceed with Supabase session + inject locale headers into the
+  // forwarded request so that RSCs can read them via `headers()`.
+  const response = await handleSupabase(request, {
+    "x-locale": firstSegment,
+    "x-dir": firstSegment === "ar" ? "rtl" : "ltr",
+  });
   return response;
 }
 

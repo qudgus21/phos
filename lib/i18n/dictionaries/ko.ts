@@ -243,7 +243,6 @@ const ko: Dictionary = {
       ],
     },
     paymentSuccess: "결제가 완료되었습니다! 크레딧이 곧 반영됩니다.",
-    discordLabel: "디스코드 서버로 이동",
   },
   contact: {
     title: "문의하기",

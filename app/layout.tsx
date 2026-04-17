@@ -90,6 +90,12 @@ export default async function RootLayout({
     <html lang={locale} dir={dir as "ltr" | "rtl"} suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="preconnect" href="https://images.phos.studio" />
+        <link
+          rel="preconnect"
+          href="https://ltqzuqvjbiecbjdqgjge.supabase.co"
+        />
+        <link rel="dns-prefetch" href="https://replicate.delivery" />
         <JsonLdScript data={organizationJsonLd()} />
       </head>
       <body

@@ -15,7 +15,30 @@ export async function generateMetadata({
     title: dict.legal.terms.title,
     description: dict.metadata.siteDescription,
     robots: { index: false, follow: true },
-    alternates: generateAlternates("terms"),
+    openGraph: {
+      title: dict.legal.terms.title,
+      description: dict.metadata.siteDescription,
+      url: `https://phos.studio/${locale}/terms`,
+      siteName: "Phos AI",
+      locale,
+      alternateLocale: locales.filter((l) => l !== locale),
+      type: "website",
+      images: [
+        {
+          url: "/opengraph-image?v=2",
+          width: 1200,
+          height: 630,
+          alt: "Phos AI — AI Image Editing & Retouching",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: dict.legal.terms.title,
+      description: dict.metadata.siteDescription,
+      images: ["/opengraph-image?v=2"],
+    },
+    alternates: generateAlternates("terms", locale),
   };
 }
 

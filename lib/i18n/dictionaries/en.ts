@@ -17,7 +17,7 @@ const en: Dictionary = {
     pricingTitle: "Plans & Pricing for AI Image Tools",
     pricingDescription:
       "Choose the right Phos AI plan for your workflow. Flexible credits for image editing, retouching, and face editing tools.",
-    contactTitle: "Contact & Support",
+    contactTitle: "Contact Us — Questions & Support",
     contactDescription:
       "Have a question or feedback? Reach out to the Phos AI team for support, bug reports, or feature requests.",
   },
@@ -245,7 +245,6 @@ const en: Dictionary = {
       ],
     },
     paymentSuccess: "Payment complete! Credits will be added shortly.",
-    discordLabel: "Join Discord server",
   },
   contact: {
     title: "Contact us",
@@ -292,7 +291,7 @@ const en: Dictionary = {
     signInTitle: "Sign in to Phos AI",
     signInSubtitle: "The new standard for AI image editing",
     signUpTitle: "Get started with Phos AI",
-    signUpSubtitle: "Create your free account",
+    signUpSubtitle: "Create your account",
     continueWithGoogle: "Continue with Google",
     continueWithFacebook: "Continue with Facebook",
     or: "or",
@@ -605,7 +604,7 @@ const en: Dictionary = {
       buyButton: "Buy",
       upgradeTitle: "Upgrade plan",
       upgradeDesc: {
-        basic: "Generate freely without worrying about credits.",
+        basic: "Generate without worrying about credits.",
         pro: "Boost your workflow with more credits and advanced features.",
         premium: "Full credits and all features with no restrictions.",
       },

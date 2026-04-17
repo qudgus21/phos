@@ -10,7 +10,6 @@ import { useDictionary, useLocale } from "@/lib/i18n/dictionary-context";
 import { PricingHeader } from "@/components/sections/pricing/pricing-header";
 import { PricingCards } from "@/components/sections/pricing/pricing-cards";
 import { PricingFaq } from "@/components/sections/pricing/pricing-faq";
-import { DiscordFab } from "@/components/sections/pricing/discord-fab";
 
 type PricingTab = "monthly" | "onetime";
 
@@ -54,7 +53,6 @@ export default function PricingContent() {
       <PricingHeader activeTab={activeTab} onTabChange={setActiveTab} />
       <PricingCards activeTab={activeTab} />
       <PricingFaq />
-      <DiscordFab />
     </div>
   );
 }

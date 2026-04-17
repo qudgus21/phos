@@ -242,7 +242,6 @@ const id: Dictionary = {
       ],
     },
     paymentSuccess: "Pembayaran selesai! Kredit akan ditambahkan segera.",
-    discordLabel: "Gabung server Discord",
   },
   contact: {
     title: "Hubungi kami",

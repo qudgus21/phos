@@ -108,7 +108,6 @@ const dict = useDictionary();
 - [ ] `components/sections/pricing/pricing-cards.tsx`
 - [ ] `components/sections/pricing/pricing-faq.tsx`
 - [ ] `components/sections/pricing/pricing-header.tsx`
-- [ ] `components/sections/pricing/discord-fab.tsx`
 - [ ] `app/[locale]/pricing/pricing-content.tsx`
 
 #### Contact 페이지
