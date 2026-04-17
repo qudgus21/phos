@@ -2,6 +2,7 @@ import type { Viewport } from "next";
 import { headers } from "next/headers";
 import { Space_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
+import Script from "next/script";
 import { ToastProvider } from "@/components/ui/toast";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -97,6 +98,18 @@ export default async function RootLayout({
         />
         <link rel="dns-prefetch" href="https://replicate.delivery" />
         <JsonLdScript data={organizationJsonLd()} />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-9FD9GNS4PH"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-9FD9GNS4PH');
+          `}
+        </Script>
       </head>
       <body
         className={`${spaceGrotesk.variable} ${pretendard.variable} ${pretendardKorean.variable} ${pretendardCjk.variable} font-sans antialiased`}
