@@ -64,6 +64,11 @@ ${createdAt}${ip ? ` / IP: ${ip}` : ""}`;
 
   const html = `<pre style="font-family:monospace;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;margin:0;padding:20px;color:#333;background:#fff">${plain.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`;
 
+  const ownerEmail = process.env.OWNER_EMAIL;
+  if (!ownerEmail) {
+    throw new Error("OWNER_EMAIL environment variable is not set");
+  }
+
   const replyTo = userEmail ?? guestEmail ?? undefined;
 
   const userInfoText = isLoggedIn
@@ -83,7 +88,7 @@ Received: ${createdAt}${ip ? ` | IP: ${ip}` : ""}`;
 
   await getResend().emails.send({
     from: "Phos AI <onboarding@resend.dev>",
-    to: "hbh4231@gmail.com",
+    to: ownerEmail,
     replyTo: replyTo || undefined,
     subject: `[Phos Contact] ${categoryLabel} - ${subject}`,
     html,
